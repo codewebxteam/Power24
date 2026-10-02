@@ -41,7 +41,7 @@ const Navbar = ({ onOpenCustomKit }) => {
                 </span>
               </div>
               <span className="block text-[9px] sm:text-[10px] font-bold text-slate-500 tracking-widest uppercase -mt-0.5">
-                Power & Solar Services Pvt Ltd
+                Solar Services Pvt Ltd
               </span>
             </div>
           </Link>
