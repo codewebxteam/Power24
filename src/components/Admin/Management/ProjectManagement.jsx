@@ -108,81 +108,87 @@ const ProjectManagement = ({ onShowToast }) => {
   const [printingExpense, setPrintingExpense] = useState(null);
   const [printingPayment, setPrintingPayment] = useState(null);
 
-  // Forms
-  const [newSiteForm, setNewSiteForm] = useState({
+  // Forms & Empty Generators
+  const getEmptySiteForm = () => ({
     id: '',
     customerName: '',
     siteAddress: '',
-    district: 'Gorakhpur',
-    capacity: '3kw',
-    projectValue: 230000,
-    loanAmount: 200000,
-    customerMargin: 0,
-    materialCost: 0,
-    labourCost: 0,
-    transportCost: 0,
-    miscCost: 0,
-    amountReceived: 0,
+    district: '',
+    capacity: '',
+    projectValue: '',
+    loanAmount: '',
+    customerMargin: '',
+    materialCost: '',
+    labourCost: '',
+    transportCost: '',
+    miscCost: '',
+    amountReceived: '',
     siteStatus: 'Running',
-    startDate: '26.03.2026',
+    startDate: '',
     completionDate: '',
     remarks: '',
     phone: ''
   });
 
-  const [newExpenseForm, setNewExpenseForm] = useState({
+  const getEmptyExpenseForm = (currentSites = []) => ({
     id: '',
-    siteId: 'P24-001',
-    date: '26.09.2026',
-    vendor: 'AMIT',
+    siteId: currentSites.length > 0 ? currentSites[0].id : '',
+    date: '',
+    vendor: '',
     vendorContact: '',
-    itemType: 'Solar PV Panels',
+    itemType: '',
     description: '',
-    category: 'Material', // 'Material' | 'Labour' | 'Transport' | 'Misc'
-    qty: 1,
+    category: 'Material',
+    qty: '',
     unit: 'NO',
-    rate: 150000,
-    amount: 150000,
-    gstAmount: 0,
+    rate: '',
+    amount: '',
+    gstAmount: '',
     paymentMode: 'UPI',
     paymentStatus: 'Paid',
     billNo: '',
-    paidBy: 'Accounts',
+    paidBy: '',
     remarks: ''
   });
 
-  const [newPaymentForm, setNewPaymentForm] = useState({
+  const getEmptyPaymentForm = (currentSites = []) => ({
     id: '',
-    siteId: 'P24-001',
+    siteId: currentSites.length > 0 ? currentSites[0].id : '',
     customerName: '',
-    date: '25.09.2026',
-    paymentType: 'Loan',
-    amount: 200000,
+    date: '',
+    paymentType: 'Loan - Disbursement 1',
+    disbursementStage: 'Disbursement 1',
+    amount: '',
     paymentMode: 'NEFT/RTGS',
-    bankName: 'State Bank of India (SBI)',
+    bankName: '',
     refNo: '',
-    receivedBy: 'Accounts Dept.',
+    receivedBy: '',
     receiptNo: '',
     remarks: ''
   });
 
-  const [newBudgetItemForm, setNewBudgetItemForm] = useState({
+  const getEmptyBudgetItemForm = (currentSites = []) => ({
     id: '',
-    siteId: 'P24-001',
-    material: 'SOLAR SYSTEM',
+    siteId: currentSites.length > 0 ? currentSites[0].id : '',
+    material: '',
     category: 'Solar Modules',
-    brand: 'WAREE',
-    specification: '540W Mono PERC Half-Cut',
-    qty: 1,
+    brand: '',
+    specification: '',
+    qty: '',
     unit: 'NO',
-    budgetRate: 150000,
-    budgetAmount: 150000,
-    actualRate: 150000,
-    actualAmount: 150000,
+    budgetRate: '',
+    budgetAmount: '',
+    actualRate: '',
+    actualAmount: '',
     procurementStatus: 'Delivered on Site',
-    supplier: 'Waaree Energies Ltd',
+    supplier: '',
     remarks: ''
   });
+
+  const [newSiteForm, setNewSiteForm] = useState(getEmptySiteForm());
+  const [newExpenseForm, setNewExpenseForm] = useState(getEmptyExpenseForm());
+  const [newPaymentForm, setNewPaymentForm] = useState(getEmptyPaymentForm());
+  const [newBudgetItemForm, setNewBudgetItemForm] = useState(getEmptyBudgetItemForm());
 
   // Normalization Helpers
   const normSiteId = (id) => String(id || '').trim().toUpperCase();
@@ -385,10 +391,10 @@ const ProjectManagement = ({ onShowToast }) => {
       id: generatedId,
       customerName: customer,
       clientName: customer,
-      name: `${customer} ${newSiteForm.capacity || '3kw'} Solar`,
-      siteAddress: newSiteForm.siteAddress || newSiteForm.location || 'Gorakhpur, UP',
-      location: newSiteForm.siteAddress || newSiteForm.location || 'Gorakhpur, UP',
-      district: newSiteForm.district || 'Gorakhpur',
+      name: `${customer} ${newSiteForm.capacity ? newSiteForm.capacity + ' ' : ''}Solar`.trim(),
+      siteAddress: newSiteForm.siteAddress || newSiteForm.location || '',
+      location: newSiteForm.siteAddress || newSiteForm.location || '',
+      district: newSiteForm.district || '',
       projectValue: Number(newSiteForm.projectValue) || 0,
       loanAmount: loan,
       customerMargin: margin,
@@ -406,40 +412,21 @@ const ProjectManagement = ({ onShowToast }) => {
       status: newSiteForm.siteStatus || newSiteForm.status || 'Running',
       remarks: newSiteForm.remarks || newSiteForm.notes || '',
       notes: newSiteForm.remarks || newSiteForm.notes || '',
-      startDate: newSiteForm.startDate || '26.03.2026',
+      startDate: newSiteForm.startDate || '',
       completionDate: newSiteForm.completionDate || ''
     };
 
     const updated = addManagementSite(siteObj);
     setSites(updated);
     setShowAddSiteModal(false);
-    setNewSiteForm({
-      id: '',
-      customerName: '',
-      siteAddress: '',
-      district: 'Gorakhpur',
-      capacity: '3kw',
-      projectValue: 230000,
-      loanAmount: 200000,
-      customerMargin: 0,
-      materialCost: 0,
-      labourCost: 0,
-      transportCost: 0,
-      miscCost: 0,
-      amountReceived: 0,
-      siteStatus: 'Running',
-      startDate: '26.03.2026',
-      completionDate: '',
-      remarks: '',
-      phone: ''
-    });
+    setNewSiteForm(getEmptySiteForm());
     toast(`Solar Project Site ${generatedId} created successfully!`);
   };
 
   const handleEditSiteSave = (e) => {
     e.preventDefault();
     if (!editingSite) return;
-    const customer = editingSite.customerName?.trim() || editingSite.clientName?.trim() || editingSite.name?.trim();
+    const customer = editingSite.customerName?.trim() || editingSite.clientName?.trim() || editingSite.name?.trim() || '';
     const loan = Number(editingSite.loanAmount) || 0;
     const margin = Number(editingSite.customerMargin) || 0;
     const calcIncome = (loan + margin) > 0 ? (loan + margin) : (Number(editingSite.projectValue) || 0);
@@ -458,10 +445,10 @@ const ProjectManagement = ({ onShowToast }) => {
       ...editingSite,
       customerName: customer,
       clientName: customer,
-      name: `${customer} ${editingSite.capacity || '3kw'} Solar`,
-      siteAddress: editingSite.siteAddress || editingSite.location || 'Gorakhpur, UP',
-      location: editingSite.siteAddress || editingSite.location || 'Gorakhpur, UP',
-      district: editingSite.district || 'Gorakhpur',
+      name: `${customer} ${editingSite.capacity ? editingSite.capacity + ' ' : ''}Solar`.trim(),
+      siteAddress: editingSite.siteAddress || editingSite.location || '',
+      location: editingSite.siteAddress || editingSite.location || '',
+      district: editingSite.district || '',
       projectValue: Number(editingSite.projectValue) || 0,
       loanAmount: loan,
       customerMargin: margin,
@@ -479,7 +466,7 @@ const ProjectManagement = ({ onShowToast }) => {
       status: editingSite.siteStatus || editingSite.status || 'Running',
       remarks: editingSite.remarks || editingSite.notes || '',
       notes: editingSite.remarks || editingSite.notes || '',
-      startDate: editingSite.startDate || '26.03.2026',
+      startDate: editingSite.startDate || '',
       completionDate: editingSite.completionDate || ''
     };
 
@@ -567,8 +554,8 @@ const ProjectManagement = ({ onShowToast }) => {
         `"${st.id}"`,
         `"${(st.customerName || st.clientName || '').replace(/"/g, '""')}"`,
         `"${(st.siteAddress || st.location || '').replace(/"/g, '""')}"`,
-        `"${st.district || 'Gorakhpur'}"`,
-        `"${st.capacity || '3kw'}"`,
+        `"${st.district || ''}"`,
+        `"${st.capacity || ''}"`,
         st.projectValue || 0,
         loanAmt,
         marginAmt,
@@ -621,11 +608,11 @@ const ProjectManagement = ({ onShowToast }) => {
       ...newExpenseForm,
       id: generatedId,
       siteId: newExpenseForm.siteId,
-      siteName: targetSite ? (targetSite.customerName || targetSite.name) : (newExpenseForm.siteName || 'Solar Site'),
-      date: newExpenseForm.date || '26.09.2026',
-      vendor: newExpenseForm.vendor || 'AMIT',
+      siteName: targetSite ? (targetSite.customerName || targetSite.name) : (newExpenseForm.siteName || ''),
+      date: newExpenseForm.date || '',
+      vendor: newExpenseForm.vendor || '',
       vendorContact: newExpenseForm.vendorContact || '',
-      itemType: newExpenseForm.itemType || 'Solar PV Panels',
+      itemType: newExpenseForm.itemType || '',
       category: newExpenseForm.category || 'Material',
       qty: q,
       unit: newExpenseForm.unit || 'NO',
@@ -635,7 +622,7 @@ const ProjectManagement = ({ onShowToast }) => {
       paymentMode: newExpenseForm.paymentMode || 'UPI',
       paymentStatus: newExpenseForm.paymentStatus || 'Paid',
       billNo: newExpenseForm.billNo || '',
-      paidBy: newExpenseForm.paidBy || 'Accounts',
+      paidBy: newExpenseForm.paidBy || '',
       description: newExpenseForm.description || '',
       remarks: newExpenseForm.remarks || ''
     };
@@ -643,26 +630,7 @@ const ProjectManagement = ({ onShowToast }) => {
     const updated = addManagementExpense(expenseObj);
     setExpenses(updated);
     setShowAddExpenseModal(false);
-    setNewExpenseForm({
-      id: '',
-      siteId: sites.length > 0 ? sites[0].id : 'P24-001',
-      date: '26.09.2026',
-      vendor: 'AMIT',
-      vendorContact: '',
-      itemType: 'Solar PV Panels',
-      description: '',
-      category: 'Material',
-      qty: 1,
-      unit: 'NO',
-      rate: 150000,
-      amount: 150000,
-      gstAmount: 0,
-      paymentMode: 'UPI',
-      paymentStatus: 'Paid',
-      billNo: '',
-      paidBy: 'Accounts',
-      remarks: ''
-    });
+    setNewExpenseForm(getEmptyExpenseForm(sites));
     toast(`Expense voucher ${generatedId} recorded successfully!`);
   };
 
@@ -677,7 +645,7 @@ const ProjectManagement = ({ onShowToast }) => {
 
     const expenseObj = {
       ...editingExpense,
-      siteName: targetSite ? (targetSite.customerName || targetSite.name) : editingExpense.siteName || 'Solar Site',
+      siteName: targetSite ? (targetSite.customerName || targetSite.name) : editingExpense.siteName || '',
       qty: q,
       unit: editingExpense.unit || 'NO',
       rate: rate,
@@ -685,7 +653,7 @@ const ProjectManagement = ({ onShowToast }) => {
       gstAmount: gst,
       paymentMode: editingExpense.paymentMode || 'UPI',
       paymentStatus: editingExpense.paymentStatus || 'Paid',
-      paidBy: editingExpense.paidBy || 'Accounts'
+      paidBy: editingExpense.paidBy || ''
     };
 
     const updated = updateManagementExpense(editingExpense.id, expenseObj);
@@ -784,14 +752,17 @@ const ProjectManagement = ({ onShowToast }) => {
       siteId: newPaymentForm.siteId,
       customerName: cust,
       payerName: cust,
-      siteName: targetSite ? (targetSite.customerName || targetSite.name) : 'Solar Site',
-      date: newPaymentForm.date || '25.09.2026',
-      paymentType: newPaymentForm.paymentType || 'Loan',
+      siteName: targetSite ? (targetSite.customerName || targetSite.name) : '',
+      date: newPaymentForm.date || '',
+      paymentType: newPaymentForm.paymentType || 'Loan - Disbursement 1',
+      disbursementStage: normCategory(newPaymentForm.paymentType).includes('loan')
+        ? (newPaymentForm.disbursementStage || (String(newPaymentForm.paymentType).includes('2') ? 'Disbursement 2' : 'Disbursement 1'))
+        : '',
       amount: Number(newPaymentForm.amount) || 0,
       paymentMode: newPaymentForm.paymentMode || 'NEFT/RTGS',
-      bankName: newPaymentForm.bankName || 'SBI',
+      bankName: newPaymentForm.bankName || '',
       refNo: newPaymentForm.refNo || '',
-      receivedBy: newPaymentForm.receivedBy || 'Accounts Dept.',
+      receivedBy: newPaymentForm.receivedBy || '',
       receiptNo: newPaymentForm.receiptNo || generatedId,
       remarks: newPaymentForm.remarks || ''
     };
@@ -799,20 +770,7 @@ const ProjectManagement = ({ onShowToast }) => {
     const updated = addManagementPayment(payObj);
     setPayments(updated);
     setShowAddPaymentModal(false);
-    setNewPaymentForm({
-      id: '',
-      siteId: sites.length > 0 ? sites[0].id : 'P24-001',
-      customerName: '',
-      date: '25.09.2026',
-      paymentType: 'Loan',
-      amount: 200000,
-      paymentMode: 'NEFT/RTGS',
-      bankName: 'State Bank of India (SBI)',
-      refNo: '',
-      receivedBy: 'Accounts Dept.',
-      receiptNo: '',
-      remarks: ''
-    });
+    setNewPaymentForm(getEmptyPaymentForm(sites));
     toast(`Payment receipt ${generatedId} recorded successfully!`);
   };
 
@@ -826,11 +784,15 @@ const ProjectManagement = ({ onShowToast }) => {
       ...editingPayment,
       customerName: cust,
       payerName: cust,
-      siteName: targetSite ? (targetSite.customerName || targetSite.name) : editingPayment.siteName || 'Solar Site',
+      siteName: targetSite ? (targetSite.customerName || targetSite.name) : editingPayment.siteName || '',
+      paymentType: editingPayment.paymentType,
+      disbursementStage: normCategory(editingPayment.paymentType).includes('loan')
+        ? (editingPayment.disbursementStage || (String(editingPayment.paymentType).includes('2') ? 'Disbursement 2' : 'Disbursement 1'))
+        : '',
       amount: Number(editingPayment.amount) || 0,
       paymentMode: editingPayment.paymentMode || 'NEFT/RTGS',
       bankName: editingPayment.bankName || '',
-      receivedBy: editingPayment.receivedBy || 'Accounts Dept.'
+      receivedBy: editingPayment.receivedBy || ''
     };
 
     const updated = updateManagementPayment(editingPayment.id, payObj);
@@ -874,12 +836,12 @@ const ProjectManagement = ({ onShowToast }) => {
       `"${p.siteId || ''}"`,
       `"${(p.customerName || p.payerName || p.siteName || '').replace(/"/g, '""')}"`,
       `"${p.date || ''}"`,
-      `"${p.paymentType || ''}"`,
+      `"${p.disbursementStage ? `Loan (${p.disbursementStage})` : (p.paymentType || '')}"`,
       Number(p.amount) || 0,
       `"${p.paymentMode || ''}"`,
       `"${p.bankName || ''}"`,
       `"${p.refNo || ''}"`,
-      `"${p.receivedBy || 'Accounts Dept.'}"`,
+      `"${p.receivedBy || ''}"`,
       `"${p.receiptNo || p.id || ''}"`,
       `"${(p.remarks || '').replace(/"/g, '""')}"`
     ].join(','));
@@ -917,7 +879,7 @@ const ProjectManagement = ({ onShowToast }) => {
       id: generatedId,
       material: newBudgetItemForm.material.trim(),
       category: newBudgetItemForm.category || 'Solar Modules',
-      brand: newBudgetItemForm.brand || 'WAREE',
+      brand: newBudgetItemForm.brand || '',
       specification: newBudgetItemForm.specification || '',
       qty: q,
       unit: newBudgetItemForm.unit || 'NO',
@@ -934,23 +896,7 @@ const ProjectManagement = ({ onShowToast }) => {
     const updated = addManagementBudgetItem(budgetObj);
     setBudgets(updated);
     setShowAddBudgetItemModal(false);
-    setNewBudgetItemForm({
-      id: '',
-      siteId: sites.length > 0 ? sites[0].id : 'P24-001',
-      material: 'SOLAR SYSTEM',
-      category: 'Solar Modules',
-      brand: 'WAREE',
-      specification: '540W Mono PERC Half-Cut',
-      qty: 1,
-      unit: 'NO',
-      budgetRate: 150000,
-      budgetAmount: 150000,
-      actualRate: 150000,
-      actualAmount: 150000,
-      procurementStatus: 'Delivered on Site',
-      supplier: 'Waaree Energies Ltd',
-      remarks: ''
-    });
+    setNewBudgetItemForm(getEmptyBudgetItemForm(sites));
     toast(`Material budget item ${generatedId} added!`);
   };
 
@@ -1403,9 +1349,7 @@ const ProjectManagement = ({ onShowToast }) => {
                   </div>
                   <button
                     onClick={() => {
-                      if (sites.length > 0) {
-                        setNewExpenseForm({ ...newExpenseForm, siteId: sites[0].id });
-                      }
+                      setNewExpenseForm(getEmptyExpenseForm(sites));
                       setShowAddExpenseModal(true);
                     }}
                     className="px-3 py-1 rounded-xl bg-white/20 hover:bg-white/30 text-white text-xs font-black uppercase flex items-center gap-1 transition-colors cursor-pointer border border-white/30"
@@ -1579,7 +1523,7 @@ const ProjectManagement = ({ onShowToast }) => {
                 <span className="text-xs text-blue-200 font-mono">POWER24 ADVANCED ENTERPRISE</span>
               </div>
               <h2 className="text-base sm:text-lg font-black text-white tracking-wide uppercase font-mono mt-1">
-                POWER24 AND SOLAR SERVICES PRIVATE LIMITED
+                POWER24Solar Services Pvt Ltd
               </h2>
               <h3 className="text-xs sm:text-sm font-bold text-sky-300 tracking-wider uppercase font-mono">
                 ADVANCED SOLAR SITE-WISE PROJECT PROFIT & LOSS — SITE MASTER
@@ -1609,7 +1553,10 @@ const ProjectManagement = ({ onShowToast }) => {
 
               <button
                 type="button"
-                onClick={() => setShowAddSiteModal(true)}
+                onClick={() => {
+                  setNewSiteForm(getEmptySiteForm());
+                  setShowAddSiteModal(true);
+                }}
                 className="px-4 py-2 rounded-xl bg-blue-500 hover:bg-blue-400 text-white font-black text-xs uppercase tracking-wider flex items-center gap-1.5 shadow-md shadow-blue-900/30 cursor-pointer"
               >
                 <Plus className="w-4 h-4 stroke-[3]" />
@@ -1827,7 +1774,7 @@ const ProjectManagement = ({ onShowToast }) => {
                         (st.siteAddress || st.location || '').toLowerCase().includes(siteSearch.toLowerCase()) ||
                         (st.district || '').toLowerCase().includes(siteSearch.toLowerCase());
                       const matchStatus = siteStatusFilter === 'ALL' || (st.siteStatus || st.status || 'Running') === siteStatusFilter;
-                      const matchDistrict = siteDistrictFilter === 'ALL' || (st.district || 'Gorakhpur') === siteDistrictFilter;
+                      const matchDistrict = siteDistrictFilter === 'ALL' || (st.district || '') === siteDistrictFilter;
                       return matchQuery && matchStatus && matchDistrict;
                     });
 
@@ -1865,12 +1812,18 @@ const ProjectManagement = ({ onShowToast }) => {
                       const siteProfitMargin = totalIncome > 0 ? ((siteProfit / totalIncome) * 100) : 0;
 
                       // Rule 5: Amount Received & Amount Pending
-                      const paymentReceived = payments
-                        .filter((p) => normSiteId(p.siteId) === normSiteId(st.id))
-                        .reduce((acc, curr) => acc + (Number(curr.amount) || 0), 0);
+                      const sitePaymentsList = payments.filter((p) => normSiteId(p.siteId) === normSiteId(st.id));
+                      const paymentReceived = sitePaymentsList.reduce((acc, curr) => acc + (Number(curr.amount) || 0), 0);
                       const siteReceived = Number(st.amountReceived) > 0 ? Number(st.amountReceived) : paymentReceived;
-
                       const sitePending = totalIncome - siteReceived;
+
+                      const siteLoanPayments = sitePaymentsList.filter((p) => normCategory(p.paymentType).includes('loan'));
+                      const siteDisb1 = siteLoanPayments
+                        .filter((p) => (p.disbursementStage === 'Disbursement 1' || String(p.paymentType).includes('1') || (!p.disbursementStage && !String(p.paymentType).includes('2'))))
+                        .reduce((acc, curr) => acc + (Number(curr.amount) || 0), 0);
+                      const siteDisb2 = siteLoanPayments
+                        .filter((p) => (p.disbursementStage === 'Disbursement 2' || String(p.paymentType).includes('2')))
+                        .reduce((acc, curr) => acc + (Number(curr.amount) || 0), 0);
 
                       return (
                         <tr
@@ -1886,22 +1839,22 @@ const ProjectManagement = ({ onShowToast }) => {
 
                           {/* 2. Customer Name */}
                           <td className="p-3 border-r border-blue-100 font-bold text-slate-900 whitespace-nowrap">
-                            {st.customerName || st.clientName || 'Customer'}
+                            {st.customerName || st.clientName || '-'}
                           </td>
 
                           {/* 3. Site Address */}
                           <td className="p-3 border-r border-blue-100 text-slate-700">
-                            {st.siteAddress || st.location || 'Gorakhpur, UP'}
+                            {st.siteAddress || st.location || '-'}
                           </td>
 
                           {/* 4. District */}
                           <td className="p-3 border-r border-blue-100 text-slate-700 font-semibold">
-                            {st.district || 'Gorakhpur'}
+                            {st.district || '-'}
                           </td>
 
                           {/* 5. System (kW) */}
                           <td className="p-3 border-r border-blue-100 text-center font-bold text-blue-700">
-                            {st.capacity || '3kw'}
+                            {st.capacity || '-'}
                           </td>
 
                           {/* 6. Project Value */}
@@ -1909,9 +1862,23 @@ const ProjectManagement = ({ onShowToast }) => {
                             {formatINR(st.projectValue || 0)}
                           </td>
 
-                          {/* 7. Loan Amount (Rule 2) */}
-                          <td className="p-3 border-r border-blue-100 text-right font-mono font-bold text-slate-700">
-                            {formatINR(loanAmt)}
+                          {/* 7. Loan Amount & Disbursements */}
+                          <td className="p-3 border-r border-blue-100 text-right font-mono whitespace-nowrap">
+                            <span className="font-bold text-slate-900">{formatINR(loanAmt)}</span>
+                            {loanAmt > 0 && (
+                              <div className="flex flex-col items-end gap-0.5 mt-1 text-[10px] leading-tight font-sans">
+                                <span className={`px-1.5 py-0.5 rounded font-mono font-bold ${
+                                  siteDisb1 > 0 ? 'bg-blue-100 text-blue-800 border border-blue-200' : 'bg-slate-100 text-slate-500'
+                                }`}>
+                                  Disb 1: {siteDisb1 > 0 ? formatINR(siteDisb1) : 'Pending'}
+                                </span>
+                                <span className={`px-1.5 py-0.5 rounded font-mono font-bold ${
+                                  siteDisb2 > 0 ? 'bg-indigo-100 text-indigo-800 border border-indigo-200' : 'bg-slate-100 text-slate-500'
+                                }`}>
+                                  Disb 2: {siteDisb2 > 0 ? formatINR(siteDisb2) : 'Pending'}
+                                </span>
+                              </div>
+                            )}
                           </td>
 
                           {/* 8. Customer Margin Received (Rule 2) */}
@@ -1988,7 +1955,7 @@ const ProjectManagement = ({ onShowToast }) => {
 
                           {/* 20. Start Date */}
                           <td className="p-3 border-r border-blue-100 font-mono text-slate-700 whitespace-nowrap">
-                            {st.startDate || '26.03.2026'}
+                            {st.startDate || '-'}
                           </td>
 
                           {/* 21. Completion Date (Rule 6) */}
@@ -2019,10 +1986,10 @@ const ProjectManagement = ({ onShowToast }) => {
                                     ...st,
                                     customerName: st.customerName || st.clientName || '',
                                     siteAddress: st.siteAddress || st.location || '',
-                                    district: st.district || 'Gorakhpur',
-                                    capacity: st.capacity || '3kw',
-                                    projectValue: st.projectValue || 230000,
-                                    loanAmount: st.loanAmount || 200000,
+                                    district: st.district || '',
+                                    capacity: st.capacity || '',
+                                    projectValue: st.projectValue || '',
+                                    loanAmount: st.loanAmount || '',
                                     customerMargin: st.customerMargin || 0,
                                     materialCost: st.materialCost || 0,
                                     labourCost: st.labourCost || 0,
@@ -2030,7 +1997,7 @@ const ProjectManagement = ({ onShowToast }) => {
                                     miscCost: st.miscCost || 0,
                                     amountReceived: st.amountReceived || 0,
                                     siteStatus: st.siteStatus || st.status || 'Running',
-                                    startDate: st.startDate || '26.03.2026',
+                                    startDate: st.startDate || '',
                                     completionDate: st.completionDate || '',
                                     remarks: st.remarks || st.notes || ''
                                   });
@@ -2067,7 +2034,7 @@ const ProjectManagement = ({ onShowToast }) => {
                       (st.siteAddress || st.location || '').toLowerCase().includes(siteSearch.toLowerCase()) ||
                       (st.district || '').toLowerCase().includes(siteSearch.toLowerCase());
                     const matchStatus = siteStatusFilter === 'ALL' || (st.siteStatus || st.status || 'Running') === siteStatusFilter;
-                    const matchDistrict = siteDistrictFilter === 'ALL' || (st.district || 'Gorakhpur') === siteDistrictFilter;
+                    const matchDistrict = siteDistrictFilter === 'ALL' || (st.district || '') === siteDistrictFilter;
                     return matchQuery && matchStatus && matchDistrict;
                   });
 
@@ -2190,7 +2157,7 @@ const ProjectManagement = ({ onShowToast }) => {
                 <span className="text-xs text-blue-200 font-mono">POWER24 ADVANCED ENTERPRISE</span>
               </div>
               <h2 className="text-base sm:text-lg font-black text-white tracking-wide uppercase font-mono mt-1">
-                POWER24 AND SOLAR SERVICES PRIVATE LIMITED
+                POWER24Solar Services Pvt Ltd
               </h2>
               <h3 className="text-xs sm:text-sm font-bold text-sky-300 tracking-wider uppercase font-mono">
                 EXPENSE ENTRY – DATE-WISE MATERIAL / LABOUR / MISC COST
@@ -2221,9 +2188,7 @@ const ProjectManagement = ({ onShowToast }) => {
               <button
                 type="button"
                 onClick={() => {
-                  if (sites.length > 0 && !newExpenseForm.siteId) {
-                    setNewExpenseForm({ ...newExpenseForm, siteId: sites[0].id });
-                  }
+                  setNewExpenseForm(getEmptyExpenseForm(sites));
                   setShowAddExpenseModal(true);
                 }}
                 className="px-4 py-2 rounded-xl bg-blue-500 hover:bg-blue-400 text-white font-black text-xs uppercase tracking-wider flex items-center gap-1.5 shadow-md shadow-blue-900/30 cursor-pointer"
@@ -2416,13 +2381,13 @@ const ProjectManagement = ({ onShowToast }) => {
                             {exp.id || `EXP-${String(idx + 1).padStart(3, '0')}`}
                           </td>
                           <td className="p-3 border-r border-blue-100 font-mono font-bold text-slate-800 whitespace-nowrap">
-                            {exp.siteId || 'P24-001'}
+                            {exp.siteId || '-'}
                           </td>
                           <td className="p-3 border-r border-blue-100 font-mono text-slate-700 whitespace-nowrap">
-                            {exp.date || '26.09.2026'}
+                            {exp.date || '-'}
                           </td>
                           <td className="p-3 border-r border-blue-100 font-bold text-slate-900 uppercase whitespace-nowrap">
-                            {exp.vendor || exp.vendorPerson || 'AMIT'}
+                            {exp.vendor || exp.vendorPerson || '-'}
                           </td>
                           <td className="p-3 border-r border-blue-100 text-slate-700">
                             {exp.description ? exp.description : <span className="text-slate-400 italic">-</span>}
@@ -2470,9 +2435,9 @@ const ProjectManagement = ({ onShowToast }) => {
                                   setEditingExpense({
                                     ...exp,
                                     id: exp.id || `EXP-${String(idx + 1).padStart(3, '0')}`,
-                                    siteId: exp.siteId || 'P24-001',
-                                    date: exp.date || '26.09.2026',
-                                    vendor: exp.vendor || 'AMIT',
+                                    siteId: exp.siteId || '',
+                                    date: exp.date || '',
+                                    vendor: exp.vendor || '',
                                     vendorContact: exp.vendorContact || '',
                                     description: exp.description || '',
                                     category: exp.category || 'Material',
@@ -2622,7 +2587,7 @@ const ProjectManagement = ({ onShowToast }) => {
                 <span className="text-xs text-blue-200 font-mono">POWER24 ADVANCED ENTERPRISE</span>
               </div>
               <h2 className="text-base sm:text-lg font-black text-white tracking-wide uppercase font-mono mt-1">
-                POWER24 AND SOLAR SERVICES PRIVATE LIMITED
+                POWER24Solar Services Pvt Ltd
               </h2>
               <h3 className="text-xs sm:text-sm font-bold text-sky-300 tracking-wider uppercase font-mono">
                 PAYMENT ENTRY – CUSTOMER / LOAN / OTHER RECEIPTS
@@ -2653,9 +2618,7 @@ const ProjectManagement = ({ onShowToast }) => {
               <button
                 type="button"
                 onClick={() => {
-                  if (sites.length > 0 && !newPaymentForm.siteId) {
-                    setNewPaymentForm({ ...newPaymentForm, siteId: sites[0].id });
-                  }
+                  setNewPaymentForm(getEmptyPaymentForm(sites));
                   setShowAddPaymentModal(true);
                 }}
                 className="px-4 py-2 rounded-xl bg-blue-500 hover:bg-blue-400 text-white font-black text-xs uppercase tracking-wider flex items-center gap-1.5 shadow-md shadow-blue-900/30 cursor-pointer"
@@ -2704,7 +2667,9 @@ const ProjectManagement = ({ onShowToast }) => {
                   className="py-1.5 px-3 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-700 focus:outline-none focus:border-blue-500 cursor-pointer"
                 >
                   <option value="ALL">All Payment Types</option>
-                  <option value="Loan">Loan</option>
+                  <option value="Loan">All Loans (सभी बैंक लोन)</option>
+                  <option value="Disbursement 1">Loan - Disbursement 1 (1st किश्त)</option>
+                  <option value="Disbursement 2">Loan - Disbursement 2 (2nd किश्त)</option>
                   <option value="Customer Margin">Customer Margin</option>
                   <option value="Customer Advance">Customer Advance</option>
                   <option value="Milestone / Stage">Milestone / Stage</option>
@@ -2811,8 +2776,15 @@ const ProjectManagement = ({ onShowToast }) => {
                         (pay.remarks || '').toLowerCase().includes(paymentSearch.toLowerCase()) ||
                         (pay.notes || '').toLowerCase().includes(paymentSearch.toLowerCase());
                       const matchType =
-                        paymentTypeFilter === 'ALL' ||
-                        normCategory(pay.paymentType).includes(normCategory(paymentTypeFilter));
+                        paymentTypeFilter === 'ALL'
+                          ? true
+                          : paymentTypeFilter === 'Disbursement 1'
+                          ? (pay.disbursementStage === 'Disbursement 1' || String(pay.paymentType || '').toLowerCase().includes('disbursement 1') || String(pay.paymentType || '').toLowerCase().includes('disb 1') || (normCategory(pay.paymentType).includes('loan') && !String(pay.paymentType || '').includes('2') && pay.disbursementStage !== 'Disbursement 2'))
+                          : paymentTypeFilter === 'Disbursement 2'
+                          ? (pay.disbursementStage === 'Disbursement 2' || String(pay.paymentType || '').toLowerCase().includes('disbursement 2') || String(pay.paymentType || '').toLowerCase().includes('disb 2'))
+                          : paymentTypeFilter === 'Loan'
+                          ? normCategory(pay.paymentType).includes('loan')
+                          : normCategory(pay.paymentType).includes(normCategory(paymentTypeFilter));
                       const matchSite =
                         paymentSiteFilter === 'ALL' ||
                         normSiteId(pay.siteId) === normSiteId(paymentSiteFilter);
@@ -2838,23 +2810,46 @@ const ProjectManagement = ({ onShowToast }) => {
                             {pay.id || `PAY-${String(idx + 1).padStart(3, '0')}`}
                           </td>
                           <td className="p-3 border-r border-blue-100 font-mono font-bold text-slate-800 whitespace-nowrap">
-                            {pay.siteId || 'P24-001'}
+                            {pay.siteId || '-'}
                           </td>
                           <td className="p-3 border-r border-blue-100 font-mono text-slate-700 whitespace-nowrap">
-                            {pay.date || '25.09.2026'}
+                            {pay.date || '-'}
                           </td>
                           <td className="p-3 border-r border-blue-100 whitespace-nowrap">
-                            <span
-                              className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold ${
-                                normCategory(pay.paymentType).includes('loan')
-                                  ? 'bg-blue-100 text-blue-800 border border-blue-300'
-                                  : normCategory(pay.paymentType).includes('margin')
-                                  ? 'bg-amber-100 text-amber-800 border border-amber-300'
-                                  : 'bg-emerald-100 text-emerald-800 border border-emerald-300'
-                              }`}
-                            >
-                              {pay.paymentType || 'Loan'}
-                            </span>
+                            {(() => {
+                              const isLoan = normCategory(pay.paymentType).includes('loan');
+                              const isMargin = normCategory(pay.paymentType).includes('margin');
+                              const isDisb2 = pay.disbursementStage === 'Disbursement 2' || String(pay.paymentType || '').toLowerCase().includes('disbursement 2') || String(pay.paymentType || '').toLowerCase().includes('disb 2');
+
+                              if (isLoan) {
+                                if (isDisb2) {
+                                  return (
+                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-black bg-indigo-100 text-indigo-900 border border-indigo-300 shadow-xs">
+                                      <span className="w-1.5 h-1.5 rounded-full bg-indigo-600 animate-pulse"></span>
+                                      Loan (Disb. 2 - 2nd किश्त)
+                                    </span>
+                                  );
+                                }
+                                return (
+                                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-black bg-blue-100 text-blue-900 border border-blue-300 shadow-xs">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-blue-600"></span>
+                                    Loan (Disb. 1 - 1st किश्त)
+                                  </span>
+                                );
+                              }
+
+                              return (
+                                <span
+                                  className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold ${
+                                    isMargin
+                                      ? 'bg-amber-100 text-amber-800 border border-amber-300'
+                                      : 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                                  }`}
+                                >
+                                  {pay.paymentType || 'Receipt'}
+                                </span>
+                              );
+                            })()}
                           </td>
                           <td className="p-3 border-r border-blue-100 text-right font-mono font-black text-emerald-700 text-sm whitespace-nowrap">
                             {formatINR(pay.amount)}
@@ -2884,9 +2879,9 @@ const ProjectManagement = ({ onShowToast }) => {
                                   setEditingPayment({
                                     ...pay,
                                     id: pay.id || `PAY-${String(idx + 1).padStart(3, '0')}`,
-                                    siteId: pay.siteId || 'P24-001',
+                                    siteId: pay.siteId || '',
                                     customerName: pay.customerName || '',
-                                    date: pay.date || '25.09.2026',
+                                    date: pay.date || '',
                                     paymentType: pay.paymentType || 'Loan',
                                     amount: pay.amount || '',
                                     paymentMode: pay.paymentMode || pay.mode || 'NEFT/RTGS',
@@ -2957,8 +2952,15 @@ const ProjectManagement = ({ onShowToast }) => {
                       (pay.remarks || '').toLowerCase().includes(paymentSearch.toLowerCase()) ||
                       (pay.notes || '').toLowerCase().includes(paymentSearch.toLowerCase());
                     const matchType =
-                      paymentTypeFilter === 'ALL' ||
-                      normCategory(pay.paymentType).includes(normCategory(paymentTypeFilter));
+                      paymentTypeFilter === 'ALL'
+                        ? true
+                        : paymentTypeFilter === 'Disbursement 1'
+                        ? (pay.disbursementStage === 'Disbursement 1' || String(pay.paymentType || '').toLowerCase().includes('disbursement 1') || String(pay.paymentType || '').toLowerCase().includes('disb 1') || (normCategory(pay.paymentType).includes('loan') && !String(pay.paymentType || '').includes('2') && pay.disbursementStage !== 'Disbursement 2'))
+                        : paymentTypeFilter === 'Disbursement 2'
+                        ? (pay.disbursementStage === 'Disbursement 2' || String(pay.paymentType || '').toLowerCase().includes('disbursement 2') || String(pay.paymentType || '').toLowerCase().includes('disb 2'))
+                        : paymentTypeFilter === 'Loan'
+                        ? normCategory(pay.paymentType).includes('loan')
+                        : normCategory(pay.paymentType).includes(normCategory(paymentTypeFilter));
                     const matchSite =
                       paymentSiteFilter === 'ALL' ||
                       normSiteId(pay.siteId) === normSiteId(paymentSiteFilter);
@@ -3026,7 +3028,7 @@ const ProjectManagement = ({ onShowToast }) => {
                 <span className="text-xs text-blue-200 font-mono">POWER24 ADVANCED ENTERPRISE</span>
               </div>
               <h2 className="text-base sm:text-lg font-black text-white tracking-wide uppercase font-mono mt-1">
-                POWER24 AND SOLAR SERVICES PRIVATE LIMITED
+                POWER24Solar Services Pvt Ltd
               </h2>
               <h3 className="text-xs sm:text-sm font-bold text-sky-300 tracking-wider uppercase font-mono">
                 SITE-WISE MATERIAL BUDGET VS ACTUAL (BOQ VARIANCE)
@@ -3057,9 +3059,7 @@ const ProjectManagement = ({ onShowToast }) => {
               <button
                 type="button"
                 onClick={() => {
-                  if (sites.length > 0 && !newBudgetItemForm.siteId) {
-                    setNewBudgetItemForm({ ...newBudgetItemForm, siteId: sites[0].id });
-                  }
+                  setNewBudgetItemForm(getEmptyBudgetItemForm(sites));
                   setShowAddBudgetItemModal(true);
                 }}
                 className="px-4 py-2 rounded-xl bg-blue-500 hover:bg-blue-400 text-white font-black text-xs uppercase tracking-wider flex items-center gap-1.5 shadow-md shadow-blue-900/30 cursor-pointer"
@@ -3238,13 +3238,13 @@ const ProjectManagement = ({ onShowToast }) => {
                             {idx + 4}
                           </td>
                           <td className="p-3 border-r border-blue-100 font-mono font-bold text-slate-800 whitespace-nowrap">
-                            {b.siteId || 'P24-001'}
+                            {b.siteId || '-'}
                           </td>
                           <td className="p-3 border-r border-blue-100 font-bold text-slate-900 uppercase whitespace-nowrap">
-                            {b.material || 'SOLAR SYSTEM'}
+                            {b.material || '-'}
                           </td>
                           <td className="p-3 border-r border-blue-100 font-semibold text-blue-700 uppercase whitespace-nowrap">
-                            {b.brand || 'WAREE'}
+                            {b.brand || '-'}
                           </td>
                           <td className="p-3 border-r border-blue-100 text-center font-mono font-bold text-slate-800">
                             {b.qty !== undefined ? b.qty : 1}
@@ -3277,10 +3277,10 @@ const ProjectManagement = ({ onShowToast }) => {
                                   setEditingBudgetItem({
                                     ...b,
                                     id: b.id || `MAT-${String(idx + 1).padStart(3, '0')}`,
-                                    siteId: b.siteId || 'P24-001',
+                                    siteId: b.siteId || '',
                                     category: b.category || 'Solar Panels',
-                                    material: b.material || 'SOLAR SYSTEM',
-                                    brand: b.brand || 'WAREE',
+                                    material: b.material || '',
+                                    brand: b.brand || '',
                                     specification: b.specification || '',
                                     qty: b.qty !== undefined ? b.qty : 1,
                                     unit: b.unit || 'NO',
@@ -3475,7 +3475,7 @@ const ProjectManagement = ({ onShowToast }) => {
                         <input
                           type="text"
                           required
-                          placeholder="e.g. Prem Chand"
+                          placeholder="Enter Customer Name"
                           value={newSiteForm.customerName}
                           onChange={(e) => setNewSiteForm({ ...newSiteForm, customerName: e.target.value })}
                           className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-900 font-bold focus:outline-none focus:border-blue-500"
@@ -3488,7 +3488,7 @@ const ProjectManagement = ({ onShowToast }) => {
                       <input
                         type="text"
                         required
-                        placeholder="e.g. Gorakhpur Singhorwa Bajar, Up, Ind"
+                        placeholder="e.g. Site Address, City, State"
                         value={newSiteForm.siteAddress}
                         onChange={(e) => setNewSiteForm({ ...newSiteForm, siteAddress: e.target.value })}
                         className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-900 font-medium focus:outline-none focus:border-blue-500"
@@ -3501,7 +3501,7 @@ const ProjectManagement = ({ onShowToast }) => {
                         <input
                           type="text"
                           required
-                          placeholder="Gorakhpur"
+                          placeholder="e.g. District / City"
                           value={newSiteForm.district}
                           onChange={(e) => setNewSiteForm({ ...newSiteForm, district: e.target.value })}
                           className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-900 font-bold focus:outline-none focus:border-blue-500"
@@ -3513,7 +3513,7 @@ const ProjectManagement = ({ onShowToast }) => {
                         <input
                           type="text"
                           required
-                          placeholder="e.g. 3kw / 5kw"
+                          placeholder="e.g. 3kW / 5kW"
                           value={newSiteForm.capacity}
                           onChange={(e) => setNewSiteForm({ ...newSiteForm, capacity: e.target.value })}
                           className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-900 font-bold focus:outline-none focus:border-blue-500"
@@ -3552,7 +3552,7 @@ const ProjectManagement = ({ onShowToast }) => {
                         <input
                           type="number"
                           required
-                          placeholder="230000"
+                          placeholder="Enter Project Value (₹)"
                           value={newSiteForm.projectValue}
                           onChange={(e) => setNewSiteForm({ ...newSiteForm, projectValue: e.target.value })}
                           className="w-full px-3 py-2 rounded-xl bg-white border border-slate-300 text-slate-900 font-mono font-bold focus:outline-none focus:border-blue-500"
@@ -3563,7 +3563,7 @@ const ProjectManagement = ({ onShowToast }) => {
                         <label className="text-slate-700 font-bold block mb-1">Loan Amount (₹)</label>
                         <input
                           type="number"
-                          placeholder="200000"
+                          placeholder="Enter Loan Amount (₹)"
                           value={newSiteForm.loanAmount}
                           onChange={(e) => setNewSiteForm({ ...newSiteForm, loanAmount: e.target.value })}
                           className="w-full px-3 py-2 rounded-xl bg-white border border-slate-300 text-slate-900 font-mono font-bold focus:outline-none focus:border-blue-500"
@@ -3715,7 +3715,7 @@ const ProjectManagement = ({ onShowToast }) => {
                       <label className="text-slate-700 font-bold block mb-1">Start Date</label>
                       <input
                         type="text"
-                        placeholder="26.03.2026"
+                        placeholder="DD.MM.YYYY"
                         value={newSiteForm.startDate}
                         onChange={(e) => setNewSiteForm({ ...newSiteForm, startDate: e.target.value })}
                         className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-300 text-slate-900 font-mono focus:outline-none focus:bg-white focus:border-blue-500"
@@ -3726,7 +3726,7 @@ const ProjectManagement = ({ onShowToast }) => {
                       <label className="text-slate-700 font-bold block mb-1">Completion Date</label>
                       <input
                         type="text"
-                        placeholder="e.g. 15.04.2026 or leave blank"
+                        placeholder="DD.MM.YYYY (or leave blank)"
                         value={newSiteForm.completionDate}
                         onChange={(e) => setNewSiteForm({ ...newSiteForm, completionDate: e.target.value })}
                         className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-300 text-slate-900 font-mono focus:outline-none focus:bg-white focus:border-blue-500"
@@ -3850,7 +3850,7 @@ const ProjectManagement = ({ onShowToast }) => {
                         <label className="text-slate-700 font-bold block mb-1">District</label>
                         <input
                           type="text"
-                          value={editingSite.district || 'Gorakhpur'}
+                          value={editingSite.district || ''}
                           onChange={(e) => setEditingSite({ ...editingSite, district: e.target.value })}
                           className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-900 font-bold focus:outline-none focus:border-blue-500"
                         />
@@ -3860,7 +3860,7 @@ const ProjectManagement = ({ onShowToast }) => {
                         <label className="text-slate-700 font-bold block mb-1">System Capacity (kW)</label>
                         <input
                           type="text"
-                          value={editingSite.capacity || '3kw'}
+                          value={editingSite.capacity || ''}
                           onChange={(e) => setEditingSite({ ...editingSite, capacity: e.target.value })}
                           className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-900 font-bold focus:outline-none focus:border-blue-500"
                         />
@@ -4057,7 +4057,8 @@ const ProjectManagement = ({ onShowToast }) => {
                       <label className="text-slate-700 font-bold block mb-1">Start Date</label>
                       <input
                         type="text"
-                        value={editingSite.startDate || '26.03.2026'}
+                        placeholder="DD.MM.YYYY"
+                        value={editingSite.startDate || ''}
                         onChange={(e) => setEditingSite({ ...editingSite, startDate: e.target.value })}
                         className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-300 text-slate-900 font-mono focus:outline-none focus:bg-white focus:border-blue-500"
                       />
@@ -4067,7 +4068,7 @@ const ProjectManagement = ({ onShowToast }) => {
                       <label className="text-slate-700 font-bold block mb-1">Completion Date</label>
                       <input
                         type="text"
-                        placeholder="e.g. 15.04.2026 or -"
+                        placeholder="DD.MM.YYYY (or leave blank)"
                         value={editingSite.completionDate || ''}
                         onChange={(e) => setEditingSite({ ...editingSite, completionDate: e.target.value })}
                         className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-300 text-slate-900 font-mono focus:outline-none focus:bg-white focus:border-blue-500"
@@ -4178,7 +4179,7 @@ const ProjectManagement = ({ onShowToast }) => {
                         <input
                           type="text"
                           required
-                          placeholder="26.09.2026"
+                          placeholder="DD.MM.YYYY"
                           value={newExpenseForm.date}
                           onChange={(e) => setNewExpenseForm({ ...newExpenseForm, date: e.target.value })}
                           className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-900 font-mono focus:outline-none focus:border-rose-500"
@@ -4217,7 +4218,7 @@ const ProjectManagement = ({ onShowToast }) => {
                         <input
                           type="text"
                           required
-                          placeholder="e.g. AMIT / Ramesh Sharma"
+                          placeholder="e.g. Ramesh Sharma / Vendor Name"
                           value={newExpenseForm.vendor}
                           onChange={(e) => setNewExpenseForm({ ...newExpenseForm, vendor: e.target.value })}
                           className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-900 font-bold focus:outline-none focus:border-rose-500 uppercase"
@@ -4351,7 +4352,7 @@ const ProjectManagement = ({ onShowToast }) => {
                         <input
                           type="text"
                           placeholder="e.g. Accounts / Site Supervisor"
-                          value={newExpenseForm.paidBy || 'Accounts'}
+                          value={newExpenseForm.paidBy || ''}
                           onChange={(e) => setNewExpenseForm({ ...newExpenseForm, paidBy: e.target.value })}
                           className="w-full px-3 py-2 rounded-xl bg-white border border-slate-300 text-slate-900 font-medium focus:outline-none focus:border-blue-500"
                         />
@@ -4493,7 +4494,8 @@ const ProjectManagement = ({ onShowToast }) => {
                         <input
                           type="text"
                           required
-                          value={editingExpense.date || '26.09.2026'}
+                          placeholder="DD.MM.YYYY"
+                          value={editingExpense.date || ''}
                           onChange={(e) => setEditingExpense({ ...editingExpense, date: e.target.value })}
                           className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-900 font-mono focus:outline-none focus:border-rose-500"
                         />
@@ -4793,7 +4795,7 @@ const ProjectManagement = ({ onShowToast }) => {
                         <label className="text-slate-700 font-bold block mb-1">Customer / Payer Name</label>
                         <input
                           type="text"
-                          placeholder="e.g. Prem Chand / Bank"
+                          placeholder="Enter Customer / Payer Name"
                           value={newPaymentForm.customerName}
                           onChange={(e) => setNewPaymentForm({ ...newPaymentForm, customerName: e.target.value })}
                           className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-900 font-bold focus:outline-none focus:border-emerald-500"
@@ -4807,7 +4809,7 @@ const ProjectManagement = ({ onShowToast }) => {
                         <input
                           type="text"
                           required
-                          placeholder="25.09.2026"
+                          placeholder="DD.MM.YYYY"
                           value={newPaymentForm.date}
                           onChange={(e) => setNewPaymentForm({ ...newPaymentForm, date: e.target.value })}
                           className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-900 font-mono focus:outline-none focus:border-emerald-500"
@@ -4818,10 +4820,20 @@ const ProjectManagement = ({ onShowToast }) => {
                         <label className="text-slate-700 font-bold block mb-1">Payment Category / Type *</label>
                         <select
                           value={newPaymentForm.paymentType}
-                          onChange={(e) => setNewPaymentForm({ ...newPaymentForm, paymentType: e.target.value })}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            const isLoanType = normCategory(val).includes('loan');
+                            const stage = val === 'Loan - Disbursement 2' ? 'Disbursement 2' : 'Disbursement 1';
+                            setNewPaymentForm({
+                              ...newPaymentForm,
+                              paymentType: val,
+                              disbursementStage: isLoanType ? (newPaymentForm.disbursementStage || stage) : '',
+                            });
+                          }}
                           className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-900 font-bold focus:outline-none focus:border-emerald-500 cursor-pointer"
                         >
-                          <option value="Loan">Loan (बैंक लोन डिस्बर्समेंट)</option>
+                          <option value="Loan - Disbursement 1">Loan - Disbursement 1 (1st किश्त - Material Tranche)</option>
+                          <option value="Loan - Disbursement 2">Loan - Disbursement 2 (2nd किश्त - Final Tranche)</option>
                           <option value="Customer Margin">Customer Margin (ग्राहक मार्जिन राशि)</option>
                           <option value="Customer Advance">Customer Advance (बुकिंग एडवांस)</option>
                           <option value="Milestone / Stage">Milestone / Stage Payment (चरणबद्ध भुगतान)</option>
@@ -4831,6 +4843,98 @@ const ProjectManagement = ({ onShowToast }) => {
                         </select>
                       </div>
                     </div>
+
+                    {/* Dedicated Bank Loan Tranche Selector & Progress */}
+                    {normCategory(newPaymentForm.paymentType).includes('loan') && (
+                      <div className="p-3.5 bg-blue-50/80 rounded-xl border border-blue-200 mt-2 space-y-2.5">
+                        <div className="flex items-center justify-between">
+                          <span className="font-black text-blue-900 text-xs flex items-center gap-1.5">
+                            🏦 Loan Disbursement Stage (बैंक लोन किश्त):
+                          </span>
+                          <span className="text-[10px] text-blue-700 font-bold bg-white px-2 py-0.5 rounded-md border border-blue-200">
+                            Surya Ghar 2-Stage Loan
+                          </span>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-2.5">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setNewPaymentForm({
+                                ...newPaymentForm,
+                                paymentType: 'Loan - Disbursement 1',
+                                disbursementStage: 'Disbursement 1',
+                              })
+                            }
+                            className={`p-2.5 rounded-xl border text-xs font-bold flex items-center gap-2 cursor-pointer transition-all ${
+                              (newPaymentForm.disbursementStage === 'Disbursement 1' ||
+                                (newPaymentForm.paymentType === 'Loan - Disbursement 1' &&
+                                  newPaymentForm.disbursementStage !== 'Disbursement 2'))
+                                ? 'bg-blue-600 text-white border-blue-600 shadow-md ring-2 ring-blue-300'
+                                : 'bg-white text-blue-800 border-blue-200 hover:bg-blue-100/50'
+                            }`}
+                          >
+                            <span className="text-base">1️⃣</span>
+                            <div className="text-left">
+                              <div className="font-black">Disbursement 1</div>
+                              <div className="text-[10px] font-normal opacity-90">1st किश्त (सामान डिस्पैच पर)</div>
+                            </div>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setNewPaymentForm({
+                                ...newPaymentForm,
+                                paymentType: 'Loan - Disbursement 2',
+                                disbursementStage: 'Disbursement 2',
+                              })
+                            }
+                            className={`p-2.5 rounded-xl border text-xs font-bold flex items-center gap-2 cursor-pointer transition-all ${
+                              newPaymentForm.disbursementStage === 'Disbursement 2' ||
+                              newPaymentForm.paymentType === 'Loan - Disbursement 2'
+                                ? 'bg-indigo-600 text-white border-indigo-600 shadow-md ring-2 ring-indigo-300'
+                                : 'bg-white text-indigo-800 border-indigo-200 hover:bg-indigo-100/50'
+                            }`}
+                          >
+                            <span className="text-base">2️⃣</span>
+                            <div className="text-left">
+                              <div className="font-black">Disbursement 2</div>
+                              <div className="text-[10px] font-normal opacity-90">2nd किश्त (मीटरिंग / कमिशनिंग)</div>
+                            </div>
+                          </button>
+                        </div>
+
+                        {targetSite && (
+                          <div className="grid grid-cols-3 gap-2 pt-2 border-t border-blue-200/80 text-[10px]">
+                            <div className="bg-white p-2 rounded-lg border border-blue-100">
+                              <span className="text-slate-500 block font-semibold">Sanctioned Loan</span>
+                              <strong className="text-blue-900 font-mono text-xs">{formatINR(loan)}</strong>
+                            </div>
+                            <div className="bg-white p-2 rounded-lg border border-blue-100">
+                              <span className="text-slate-500 block font-semibold">Disb. 1 Received</span>
+                              <strong className="text-blue-700 font-mono text-xs">
+                                {formatINR(
+                                  payments
+                                    .filter(p => normSiteId(p.siteId) === normSiteId(newPaymentForm.siteId) && normCategory(p.paymentType).includes('loan') && (p.disbursementStage === 'Disbursement 1' || (!p.disbursementStage && !String(p.paymentType).includes('2'))))
+                                    .reduce((a, c) => a + (Number(c.amount) || 0), 0)
+                                )}
+                              </strong>
+                            </div>
+                            <div className="bg-white p-2 rounded-lg border border-blue-100">
+                              <span className="text-slate-500 block font-semibold">Disb. 2 Received</span>
+                              <strong className="text-indigo-700 font-mono text-xs">
+                                {formatINR(
+                                  payments
+                                    .filter(p => normSiteId(p.siteId) === normSiteId(newPaymentForm.siteId) && normCategory(p.paymentType).includes('loan') && (p.disbursementStage === 'Disbursement 2' || String(p.paymentType).includes('2')))
+                                    .reduce((a, c) => a + (Number(c.amount) || 0), 0)
+                                )}
+                              </strong>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
 
                   {/* 2. Amount & Bank Details */}
@@ -4850,7 +4954,7 @@ const ProjectManagement = ({ onShowToast }) => {
                         <input
                           type="number"
                           required
-                          placeholder="e.g. 200000"
+                          placeholder="Enter amount (₹)"
                           value={newPaymentForm.amount}
                           onChange={(e) => setNewPaymentForm({ ...newPaymentForm, amount: e.target.value })}
                           className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-emerald-300 text-emerald-900 font-mono font-black text-sm focus:outline-none focus:border-emerald-500"
@@ -5041,7 +5145,8 @@ const ProjectManagement = ({ onShowToast }) => {
                     <input
                       type="text"
                       required
-                      value={editingPayment.date || '25.09.2026'}
+                      placeholder="DD.MM.YYYY"
+                      value={editingPayment.date || ''}
                       onChange={(e) => setEditingPayment({ ...editingPayment, date: e.target.value })}
                       className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-900 font-mono focus:outline-none focus:border-emerald-500"
                     />
@@ -5051,19 +5156,86 @@ const ProjectManagement = ({ onShowToast }) => {
                     <label className="text-slate-700 font-bold block mb-1">Payment Type *</label>
                     <select
                       value={editingPayment.paymentType}
-                      onChange={(e) => setEditingPayment({ ...editingPayment, paymentType: e.target.value })}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        const isLoanType = normCategory(val).includes('loan');
+                        const stage = val === 'Loan - Disbursement 2' ? 'Disbursement 2' : 'Disbursement 1';
+                        setEditingPayment({
+                          ...editingPayment,
+                          paymentType: val,
+                          disbursementStage: isLoanType ? (editingPayment.disbursementStage || stage) : '',
+                        });
+                      }}
                       className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-900 font-bold focus:outline-none focus:border-emerald-500 cursor-pointer"
                     >
-                      <option value="Loan">Loan</option>
-                      <option value="Customer Margin">Customer Margin</option>
-                      <option value="Customer Advance">Customer Advance</option>
-                      <option value="Milestone / Stage">Milestone / Stage</option>
-                      <option value="Subsidy Receipt">Subsidy Receipt</option>
-                      <option value="Final Settlement">Final Settlement</option>
+                      <option value="Loan - Disbursement 1">Loan - Disbursement 1 (1st किश्त)</option>
+                      <option value="Loan - Disbursement 2">Loan - Disbursement 2 (2nd किश्त)</option>
+                      <option value="Customer Margin">Customer Margin (ग्राहक मार्जिन)</option>
+                      <option value="Customer Advance">Customer Advance (एडवांस)</option>
+                      <option value="Milestone / Stage">Milestone / Stage (चरणबद्ध)</option>
+                      <option value="Subsidy Receipt">Subsidy Receipt (सब्सिडी)</option>
+                      <option value="Final Settlement">Final Settlement (अंतिम निपटान)</option>
                       <option value="Other">Other</option>
                     </select>
                   </div>
                 </div>
+
+                {/* Dedicated Bank Loan Tranche Selector for Edit */}
+                {normCategory(editingPayment.paymentType).includes('loan') && (
+                  <div className="p-3.5 bg-blue-50/80 rounded-xl border border-blue-200 mt-2 space-y-2.5">
+                    <span className="font-black text-blue-900 text-xs block">
+                      🏦 Bank Loan Tranche (लोन किश्त चयन):
+                    </span>
+                    <div className="grid grid-cols-2 gap-2.5">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setEditingPayment({
+                            ...editingPayment,
+                            paymentType: 'Loan - Disbursement 1',
+                            disbursementStage: 'Disbursement 1',
+                          })
+                        }
+                        className={`p-2.5 rounded-xl border text-xs font-bold flex items-center gap-2 cursor-pointer transition-all ${
+                          (editingPayment.disbursementStage === 'Disbursement 1' ||
+                            (editingPayment.paymentType === 'Loan - Disbursement 1' &&
+                              editingPayment.disbursementStage !== 'Disbursement 2'))
+                            ? 'bg-blue-600 text-white border-blue-600 shadow-md ring-2 ring-blue-300'
+                            : 'bg-white text-blue-800 border-blue-200 hover:bg-blue-100/50'
+                        }`}
+                      >
+                        <span className="text-base">1️⃣</span>
+                        <div className="text-left">
+                          <div className="font-black">Disbursement 1</div>
+                          <div className="text-[10px] font-normal opacity-90">1st किश्त (Material Tranche)</div>
+                        </div>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setEditingPayment({
+                            ...editingPayment,
+                            paymentType: 'Loan - Disbursement 2',
+                            disbursementStage: 'Disbursement 2',
+                          })
+                        }
+                        className={`p-2.5 rounded-xl border text-xs font-bold flex items-center gap-2 cursor-pointer transition-all ${
+                          editingPayment.disbursementStage === 'Disbursement 2' ||
+                          editingPayment.paymentType === 'Loan - Disbursement 2'
+                            ? 'bg-indigo-600 text-white border-indigo-600 shadow-md ring-2 ring-indigo-300'
+                            : 'bg-white text-indigo-800 border-indigo-200 hover:bg-indigo-100/50'
+                        }`}
+                      >
+                        <span className="text-base">2️⃣</span>
+                        <div className="text-left">
+                          <div className="font-black">Disbursement 2</div>
+                          <div className="text-[10px] font-normal opacity-90">2nd किश्त (Commissioning Tranche)</div>
+                        </div>
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="p-4 bg-emerald-50/70 rounded-2xl border border-emerald-200 space-y-3">
@@ -5233,7 +5405,7 @@ const ProjectManagement = ({ onShowToast }) => {
                         <input
                           type="text"
                           required
-                          placeholder="e.g. SOLAR SYSTEM / PV Panels"
+                          placeholder="e.g. Solar PV Panels / Inverter"
                           value={newBudgetItemForm.material}
                           onChange={(e) => setNewBudgetItemForm({ ...newBudgetItemForm, material: e.target.value })}
                           className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-900 font-bold focus:outline-none focus:border-indigo-500"
@@ -5263,7 +5435,7 @@ const ProjectManagement = ({ onShowToast }) => {
                         <input
                           type="text"
                           required
-                          placeholder="e.g. WAREE / TATA / ADANI / LUMINOUS"
+                          placeholder="e.g. Tata / Adani / Waree / Luminous"
                           value={newBudgetItemForm.brand}
                           onChange={(e) => setNewBudgetItemForm({ ...newBudgetItemForm, brand: e.target.value })}
                           className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-900 font-bold uppercase focus:outline-none focus:border-indigo-500"
@@ -5334,7 +5506,7 @@ const ProjectManagement = ({ onShowToast }) => {
                         <input
                           type="number"
                           required
-                          placeholder="150000"
+                          placeholder="Enter rate (₹)"
                           value={newBudgetItemForm.budgetRate}
                           onChange={(e) => {
                             const r = Number(e.target.value) || 0;
@@ -5378,7 +5550,7 @@ const ProjectManagement = ({ onShowToast }) => {
                         <label className="text-slate-700 font-bold block mb-1">Actual Rate (₹)</label>
                         <input
                           type="number"
-                          placeholder="150000"
+                          placeholder="Enter actual rate (₹)"
                           value={newBudgetItemForm.actualRate}
                           onChange={(e) => {
                             const ar = Number(e.target.value) || 0;
@@ -5826,7 +5998,7 @@ const ProjectManagement = ({ onShowToast }) => {
                         </span>
                         <div>
                           <h1 className="text-base sm:text-lg font-black tracking-tight text-slate-900 uppercase font-mono leading-none">
-                            POWER24 AND SOLAR SERVICES PRIVATE LIMITED
+                            POWER24Solar Services Pvt Ltd
                           </h1>
                           <p className="text-[10px] text-slate-600 font-medium">
                             Corporate Office: Gorakhpur HQ, Uttar Pradesh | Helpline: +91 94508 81224 | Web: www.power24.in
@@ -5849,15 +6021,15 @@ const ProjectManagement = ({ onShowToast }) => {
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-slate-50 p-4 rounded-xl border border-slate-200 text-xs">
                     <div>
                       <span className="text-[10px] font-bold text-slate-400 uppercase block">Customer Name</span>
-                      <span className="font-bold text-slate-900 font-sans">{st.customerName || st.clientName || 'Customer'}</span>
+                      <span className="font-bold text-slate-900 font-sans">{st.customerName || st.clientName || '-'}</span>
                     </div>
                     <div>
                       <span className="text-[10px] font-bold text-slate-400 uppercase block">Site Location / District</span>
-                      <span className="font-bold text-slate-900">{st.siteAddress || st.district || 'Gorakhpur, UP'}</span>
+                      <span className="font-bold text-slate-900">{st.siteAddress || st.district || '-'}</span>
                     </div>
                     <div>
                       <span className="text-[10px] font-bold text-slate-400 uppercase block">Solar Capacity (kW)</span>
-                      <span className="font-bold text-blue-800 font-mono">{st.capacity || '3kW'}</span>
+                      <span className="font-bold text-blue-800 font-mono">{st.capacity || '-'}</span>
                     </div>
                     <div>
                       <span className="text-[10px] font-bold text-slate-400 uppercase block">Site Status</span>
@@ -5865,15 +6037,15 @@ const ProjectManagement = ({ onShowToast }) => {
                     </div>
                     <div>
                       <span className="text-[10px] font-bold text-slate-400 uppercase block">Project Start Date</span>
-                      <span className="font-mono text-slate-700">{st.startDate || '26.03.2026'}</span>
+                      <span className="font-mono text-slate-700">{st.startDate || '-'}</span>
                     </div>
                     <div>
                       <span className="text-[10px] font-bold text-slate-400 uppercase block">Completion Date</span>
-                      <span className="font-mono text-slate-700">{st.completionDate || 'In Progress'}</span>
+                      <span className="font-mono text-slate-700">{st.completionDate || '-'}</span>
                     </div>
                     <div className="col-span-2">
                       <span className="text-[10px] font-bold text-slate-400 uppercase block">Remarks / Notes</span>
-                      <span className="text-slate-600 text-[11px]">{st.remarks || st.notes || 'Rooftop on-grid installation verified.'}</span>
+                      <span className="text-slate-600 text-[11px]">{st.remarks || st.notes || '-'}</span>
                     </div>
                   </div>
 
@@ -5893,6 +6065,22 @@ const ProjectManagement = ({ onShowToast }) => {
                           <span className="text-slate-600">Bank Loan Component:</span>
                           <span className="font-mono font-bold text-slate-900">{formatINR(loan)}</span>
                         </div>
+                        {loan > 0 && (
+                          <div className="pl-3 text-[10px] space-y-0.5 text-slate-500 font-mono bg-blue-50/50 p-1.5 rounded-lg border border-blue-100">
+                            <div className="flex justify-between">
+                              <span className="text-slate-700">• Tranche 1 (Disb. 1):</span>
+                              <span className="text-blue-800 font-bold">{formatINR(
+                                sitePayments.filter(p => normCategory(p.paymentType).includes('loan') && (p.disbursementStage === 'Disbursement 1' || (!p.disbursementStage && !String(p.paymentType).includes('2')))).reduce((a, c) => a + (Number(c.amount) || 0), 0)
+                              )}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-slate-700">• Tranche 2 (Disb. 2):</span>
+                              <span className="text-indigo-800 font-bold">{formatINR(
+                                sitePayments.filter(p => normCategory(p.paymentType).includes('loan') && (p.disbursementStage === 'Disbursement 2' || String(p.paymentType).includes('2'))).reduce((a, c) => a + (Number(c.amount) || 0), 0)
+                              )}</span>
+                            </div>
+                          </div>
+                        )}
                         <div className="flex justify-between pt-1">
                           <span className="text-slate-600">Customer Margin Amount:</span>
                           <span className="font-mono font-bold text-slate-900">{formatINR(margin)}</span>
@@ -6025,7 +6213,9 @@ const ProjectManagement = ({ onShowToast }) => {
                               {sitePayments.slice(0, 5).map((p, i) => (
                                 <tr key={i}>
                                   <td className="py-1 text-slate-600">{p.date || '-'}</td>
-                                  <td className="py-1 font-bold text-slate-900 font-sans">{p.paymentType}</td>
+                                  <td className="py-1 font-bold text-slate-900 font-sans">
+                                    {p.disbursementStage ? `Loan (${p.disbursementStage === 'Disbursement 2' ? 'Disb 2' : 'Disb 1'})` : (p.paymentType || 'Receipt')}
+                                  </td>
                                   <td className="py-1 text-slate-600">{p.paymentMode}</td>
                                   <td className="py-1 text-right font-bold text-emerald-600">{formatINR(p.amount)}</td>
                                 </tr>
@@ -6117,7 +6307,7 @@ const ProjectManagement = ({ onShowToast }) => {
                   <div className="border-b-2 border-slate-900 pb-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                     <div>
                       <h1 className="text-base font-black text-slate-900 uppercase font-mono leading-none">
-                        POWER24 AND SOLAR SERVICES PRIVATE LIMITED
+                        POWER24Solar Services Pvt Ltd
                       </h1>
                       <p className="text-[10px] text-slate-600 font-medium mt-1">
                         Gorakhpur HQ, Uttar Pradesh | Helpline: +91 94508 81224 | Web: www.power24.in
@@ -6125,7 +6315,7 @@ const ProjectManagement = ({ onShowToast }) => {
                     </div>
                     <div className="text-right font-mono text-xs">
                       <p className="font-bold text-slate-900">DATE: {exp.date || new Date().toLocaleDateString('en-IN')}</p>
-                      <p className="text-[10px] text-rose-600 font-bold">VOUCHER NO: #{exp.id || 'EXP-001'}</p>
+                      <p className="text-[10px] text-rose-600 font-bold">VOUCHER NO: #{exp.id || '-'}</p>
                     </div>
                   </div>
 
@@ -6138,11 +6328,11 @@ const ProjectManagement = ({ onShowToast }) => {
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 bg-slate-50 p-4 rounded-xl border border-slate-200 text-xs">
                     <div>
                       <span className="text-[10px] font-bold text-slate-400 uppercase block">Site ID</span>
-                      <span className="font-bold text-blue-900 font-mono text-sm">{exp.siteId || 'P24-001'}</span>
+                      <span className="font-bold text-blue-900 font-mono text-sm">{exp.siteId || '-'}</span>
                     </div>
                     <div>
                       <span className="text-[10px] font-bold text-slate-400 uppercase block">Site / Project Name</span>
-                      <span className="font-bold text-slate-900">{targetSite ? (targetSite.customerName || targetSite.name) : 'Solar Site'}</span>
+                      <span className="font-bold text-slate-900">{targetSite ? (targetSite.customerName || targetSite.name) : '-'}</span>
                     </div>
                     <div>
                       <span className="text-[10px] font-bold text-slate-400 uppercase block">Expense Category</span>
@@ -6152,7 +6342,7 @@ const ProjectManagement = ({ onShowToast }) => {
                     </div>
                     <div>
                       <span className="text-[10px] font-bold text-slate-400 uppercase block">Paid To (Vendor / Person)</span>
-                      <span className="font-bold text-slate-900 uppercase">{exp.vendor || exp.vendorPerson || 'AMIT'}</span>
+                      <span className="font-bold text-slate-900 uppercase">{exp.vendor || exp.vendorPerson || '-'}</span>
                     </div>
                     <div>
                       <span className="text-[10px] font-bold text-slate-400 uppercase block">Payment Mode</span>
@@ -6164,7 +6354,7 @@ const ProjectManagement = ({ onShowToast }) => {
                     </div>
                     <div className="col-span-2 sm:col-span-3">
                       <span className="text-[10px] font-bold text-slate-400 uppercase block">Nature / Description of Expense</span>
-                      <p className="text-slate-800 font-medium text-xs mt-0.5">{exp.description || 'Solar project site expense.'}</p>
+                      <p className="text-slate-800 font-medium text-xs mt-0.5">{exp.description || '-'}</p>
                     </div>
                   </div>
 
@@ -6198,7 +6388,7 @@ const ProjectManagement = ({ onShowToast }) => {
 
                     <div className="space-y-8">
                       <div className="border-b border-dashed border-slate-400 pb-1 font-bold text-slate-700">
-                        {exp.vendor || 'Payee'}
+                        {exp.vendor || 'Receiver'}
                       </div>
                       <span className="text-[10px] text-slate-500 uppercase font-bold">Receiver's Signature</span>
                     </div>
@@ -6260,7 +6450,7 @@ const ProjectManagement = ({ onShowToast }) => {
                   <div className="border-b-2 border-slate-900 pb-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                     <div>
                       <h1 className="text-base font-black text-slate-900 uppercase font-mono leading-none">
-                        POWER24 AND SOLAR SERVICES PRIVATE LIMITED
+                        POWER24Solar Services Pvt Ltd
                       </h1>
                       <p className="text-[10px] text-slate-600 font-medium mt-1">
                         Gorakhpur HQ, Uttar Pradesh | Helpline: +91 94508 81224 | Web: www.power24.in
@@ -6268,7 +6458,7 @@ const ProjectManagement = ({ onShowToast }) => {
                     </div>
                     <div className="text-right font-mono text-xs">
                       <p className="font-bold text-slate-900">DATE: {pay.date || new Date().toLocaleDateString('en-IN')}</p>
-                      <p className="text-[10px] text-emerald-700 font-bold">RECEIPT NO: #{pay.id || 'PAY-001'}</p>
+                      <p className="text-[10px] text-emerald-700 font-bold">RECEIPT NO: #{pay.id || '-'}</p>
                     </div>
                   </div>
 
@@ -6281,17 +6471,37 @@ const ProjectManagement = ({ onShowToast }) => {
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 bg-slate-50 p-4 rounded-xl border border-slate-200 text-xs">
                     <div>
                       <span className="text-[10px] font-bold text-slate-400 uppercase block">Site ID</span>
-                      <span className="font-bold text-blue-900 font-mono text-sm">{pay.siteId || 'P24-001'}</span>
+                      <span className="font-bold text-blue-900 font-mono text-sm">{pay.siteId || '-'}</span>
                     </div>
                     <div>
                       <span className="text-[10px] font-bold text-slate-400 uppercase block">Received With Thanks From</span>
-                      <span className="font-bold text-slate-900">{targetSite ? (targetSite.customerName || targetSite.name) : 'Customer / Bank'}</span>
+                      <span className="font-bold text-slate-900">{targetSite ? (targetSite.customerName || targetSite.name) : (pay.customerName || '-')}</span>
                     </div>
                     <div>
-                      <span className="text-[10px] font-bold text-slate-400 uppercase block">Payment Type</span>
-                      <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase bg-emerald-100 text-emerald-800 border border-emerald-300">
-                        {pay.paymentType || 'Loan'}
-                      </span>
+                      <span className="text-[10px] font-bold text-slate-400 uppercase block">Payment Type / Tranche</span>
+                      {(() => {
+                        const isLoan = normCategory(pay.paymentType).includes('loan');
+                        const isDisb2 = pay.disbursementStage === 'Disbursement 2' || String(pay.paymentType || '').toLowerCase().includes('disbursement 2') || String(pay.paymentType || '').toLowerCase().includes('disb 2');
+                        if (isLoan) {
+                          if (isDisb2) {
+                            return (
+                              <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-indigo-100 text-indigo-900 border border-indigo-300">
+                                Bank Loan (Disbursement 2 - 2nd किश्त)
+                              </span>
+                            );
+                          }
+                          return (
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-blue-100 text-blue-900 border border-blue-300">
+                              Bank Loan (Disbursement 1 - 1st किश्त)
+                            </span>
+                          );
+                        }
+                        return (
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase bg-emerald-100 text-emerald-800 border border-emerald-300">
+                            {pay.paymentType || 'Receipt'}
+                          </span>
+                        );
+                      })()}
                     </div>
                     <div>
                       <span className="text-[10px] font-bold text-slate-400 uppercase block">Payment Mode</span>
@@ -6307,7 +6517,7 @@ const ProjectManagement = ({ onShowToast }) => {
                     </div>
                     <div className="col-span-2 sm:col-span-3">
                       <span className="text-[10px] font-bold text-slate-400 uppercase block">Remarks / Notes</span>
-                      <p className="text-slate-800 font-medium text-xs mt-0.5">{pay.remarks || pay.notes || 'Payment credited towards rooftop solar project.'}</p>
+                      <p className="text-slate-800 font-medium text-xs mt-0.5">{pay.remarks || pay.notes || '-'}</p>
                     </div>
                   </div>
 

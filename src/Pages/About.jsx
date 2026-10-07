@@ -26,6 +26,7 @@ import {
   BarChart3
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import SEO from '../components/common/SEO.jsx';
 
 const About = () => {
   const [openFaq, setOpenFaq] = useState(null);
@@ -121,6 +122,12 @@ const About = () => {
 
   return (
     <div className="bg-[#f8fafc] min-h-screen text-slate-900 font-['Outfit',sans-serif] py-10 sm:py-16">
+      <SEO
+        title="About Us - Leading Solar EPC Company"
+        description="Learn about POWER24Solar Services Pvt Ltd - UP's leading solar rooftop company headquartered in Gorakhpur. Authorized PM Surya Ghar EPC vendor."
+        canonical="https://power24.in/about"
+        keywords="About Power24, About Power 24 Solar, POWER24Solar Services Pvt Ltd, Solar EPC Gorakhpur, Power 24 UP"
+      />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12 sm:space-y-16">
 
         {/* 1. Hero / Header Section */}

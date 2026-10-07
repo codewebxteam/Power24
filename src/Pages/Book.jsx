@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { saveBooking, getCurrentUser, getProducts } from '../utils/storage';
 import { subscribeProducts } from '../firebase/firestoreService';
+import SEO from '../components/common/SEO.jsx';
 
 const Book = () => {
   const [searchParams] = useSearchParams();
@@ -54,7 +55,9 @@ const Book = () => {
       }
       if (found) {
         setSelectedProduct(found);
-        if (kwParam) setSelectedKw(kwParam);
+      }
+      if (kwParam) {
+        setSelectedKw(kwParam);
       }
     };
 
@@ -86,7 +89,14 @@ const Book = () => {
 
   const getCapacityGross = (kw) => {
     if (selectedProduct?.capacityPricing && selectedProduct.capacityPricing[kw]) {
-      return selectedProduct.capacityPricing[kw];
+      return Number(selectedProduct.capacityPricing[kw]);
+    }
+    const kwNum = parseInt(kw, 10) || 1;
+    if (selectedProduct?.ratePerWatt) {
+      return kwNum * 1000 * Number(selectedProduct.ratePerWatt);
+    }
+    if (kw === '1kW' && selectedProduct?.manualGross) {
+      return Number(selectedProduct.manualGross);
     }
     const defaults = {
       '1kW': 65000,
@@ -111,11 +121,13 @@ const Book = () => {
   const currentGross = selectedProduct
     ? (isKit
       ? getCapacityGross(selectedKw)
-      : (parseInt(String(selectedProduct.price || '').replace(/\D/g, ''), 10) || 25000))
+      : (Number(selectedProduct.originalPrice || selectedProduct.manualGross) || parseInt(String(selectedProduct.price || '').replace(/\D/g, ''), 10) || 0))
     : 0;
 
   const currentSubsidy = isKit ? getSubsidy(selectedKw) : 0;
-  const currentNet = Math.max(0, currentGross - currentSubsidy);
+  const currentNet = isKit
+    ? Math.max(0, currentGross - currentSubsidy)
+    : (Number(selectedProduct?.offerPrice || selectedProduct?.manualPrice) || currentGross);
 
   const handleBooking = (e) => {
     e.preventDefault();
@@ -150,6 +162,12 @@ const Book = () => {
 
   return (
     <div className="bg-slate-50 min-h-screen text-slate-950 py-6 sm:py-16 font-['Outfit',sans-serif]">
+      <SEO
+        title="Book Free Solar Site Survey & Consultation"
+        description="Book your free rooftop solar site survey with Power24 Solar (Power 24). Check rooftop shade feasibility, PM Surya Ghar subsidy eligibility, and custom solar kit quotes."
+        canonical="https://power24.in/book"
+        keywords="Book solar survey Power24, Power 24 site visit, PM Surya Ghar survey Gorakhpur, Solar rooftop booking UP"
+      />
       <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
         
         {/* Header */}
@@ -316,11 +334,16 @@ const Book = () => {
               {/* Selected Product / Kit Live Price Banner (If chosen) */}
               {selectedProduct && (
                 <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-pink-50 via-white to-emerald-50 border-2 border-[#d91478]/30 space-y-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-black uppercase text-[#d91478] flex items-center gap-1.5">
-                      <Sparkles className="w-4 h-4 text-[#d91478]" />
-                      <span>Selected Solar Product / Kit</span>
-                    </span>
+                  <div className="flex items-center justify-between flex-wrap gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-gradient-to-r from-amber-400 to-yellow-400 text-slate-950 shadow-xs border border-amber-300">
+                        <Sparkles className="w-3 h-3 text-slate-950 fill-slate-950" />
+                        Special Offer
+                      </span>
+                      <span className="text-xs font-black uppercase text-[#d91478] flex items-center gap-1">
+                        <span>Selected Solar Product / Kit</span>
+                      </span>
+                    </div>
                     <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">
                       {isKit ? 'Govt Subsidy Eligible' : 'Direct Hardware'}
                     </span>

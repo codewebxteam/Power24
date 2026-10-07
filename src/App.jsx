@@ -25,7 +25,7 @@ const AppLayout = () => {
   const location = useLocation();
   const isAdminRoute = location.pathname.startsWith('/admin');
   const isStaffRoute = location.pathname.startsWith('/staff');
-  const isPortalView = isAdminRoute || location.pathname === '/staff/dashboard';
+  const isPortalView = isAdminRoute || isStaffRoute;
   const [isCustomKitOpen, setIsCustomKitOpen] = useState(false);
 
   useEffect(() => {

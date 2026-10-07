@@ -136,7 +136,7 @@ const StaffDashboard = () => {
       <footer className="bg-white border-t border-slate-200/90 py-4 px-4 sm:px-8 text-center text-xs text-slate-500 no-print">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
           <p className="font-mono">
-            POWER24 AND SOLAR SERVICES PRIVATE LIMITED — Staff Project Portal v2.4
+            POWER24Solar Services Pvt Ltd — Staff Project Portal v2.4
           </p>
           <p className="text-slate-400 font-medium">
             Real-time synchronization with Admin HQ active

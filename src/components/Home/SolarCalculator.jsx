@@ -11,7 +11,7 @@ const SolarCalculator = ({ onOpenCustomKit }) => {
   // Required kW = (Units per month / 30) / 4 (since 1 kW produces ~4 units/day)
   const approxUnits = Math.round(monthlyBill / 7.5);
   const rawKw = Math.max(1, Math.min(20, Math.round((approxUnits / 120) * 10) / 10));
-  const recommendedKw = rawKw < 2 ? 2 : Math.round(rawKw);
+  const recommendedKw = Math.max(1, Math.min(20, Math.round(rawKw)));
 
   // Subsidy calculation based on PM Surya Ghar guidelines
   let subsidy = 0;
@@ -84,7 +84,7 @@ const SolarCalculator = ({ onOpenCustomKit }) => {
               {/* Quick Presets */}
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="text-xs text-slate-400 font-bold">Quick Pick:</span>
-                {[2500, 4500, 7500, 12000, 20000].map((val) => (
+                {[1200, 2500, 4500, 7500, 12000, 20000].map((val) => (
                   <button
                     key={val}
                     type="button"
@@ -185,10 +185,10 @@ const SolarCalculator = ({ onOpenCustomKit }) => {
                 )}
 
                 <Link
-                  to="/book"
+                  to={`/book?kw=${recommendedKw}kW`}
                   className="w-full sm:w-1/2 py-3.5 rounded-full bg-[#16a34a] hover:bg-emerald-500 text-white font-black text-xs sm:text-sm uppercase tracking-wider shadow-lg flex items-center justify-center gap-2 hover:scale-105 active:scale-95 transition-all cursor-pointer text-center"
                 >
-                  <span>फ्री साइट सर्वे बुक करें</span>
+                  <span>फ्री साइट सर्वे बुक करें ({recommendedKw} kW)</span>
                   <ArrowRight className="w-4 h-4" />
                 </Link>
               </div>

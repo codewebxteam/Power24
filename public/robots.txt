@@ -1,0 +1,12 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /admin/
+Disallow: /staff
+Disallow: /staff/
+
+# Host
+Host: https://power24.in
+
+# Sitemaps
+Sitemap: https://power24.in/sitemap.xml

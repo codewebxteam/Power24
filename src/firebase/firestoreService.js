@@ -28,7 +28,8 @@ export const COLLECTIONS = {
   MGMT_SITES: 'mgmt_sites',
   MGMT_EXPENSES: 'mgmt_expenses',
   MGMT_PAYMENTS: 'mgmt_payments',
-  MGMT_BUDGETS: 'mgmt_budgets'
+  MGMT_BUDGETS: 'mgmt_budgets',
+  SYSTEM_CONFIG: 'system_config'
 };
 
 // Helper to remove any undefined or invalid fields before writing to Firestore
@@ -36,15 +37,25 @@ export const sanitizeForFirestore = (data) => {
   if (data === null || data === undefined) {
     return null;
   }
+  // Handle Date objects cleanly
+  if (data instanceof Date) {
+    return data.toISOString();
+  }
+  // FieldValue sentinels (serverTimestamp, deleteField, etc) or Firestore Timestamp objects
+  if (
+    data &&
+    (data._methodName ||
+      (data.constructor && data.constructor.name && (data.constructor.name.includes('FieldValue') || data.constructor.name.includes('Timestamp'))) ||
+      typeof data.toMillis === 'function')
+  ) {
+    return data;
+  }
   if (Array.isArray(data)) {
     return data
       .filter((item) => item !== undefined)
       .map((item) => sanitizeForFirestore(item));
   }
   if (typeof data === 'object') {
-    if (data.constructor && data.constructor.name === 'FieldValue') {
-      return data;
-    }
     const cleanObj = {};
     for (const [key, value] of Object.entries(data)) {
       if (value !== undefined) {
@@ -102,22 +113,9 @@ export const subscribeProducts = (callback, onError) => {
   }
 };
 
-export const seedInitialProducts = async (initialProducts) => {
-  if (!db || !Array.isArray(initialProducts) || initialProducts.length === 0) return;
-  try {
-    const productsRef = collection(db, COLLECTIONS.PRODUCTS);
-    const snapshot = await getDocs(productsRef);
-    if (snapshot.empty) {
-      for (const prod of initialProducts) {
-        const docRef = doc(db, COLLECTIONS.PRODUCTS, String(prod.id));
-        const cleanProd = sanitizeForFirestore({ ...prod, updatedAt: serverTimestamp() });
-        await setDoc(docRef, cleanProd, { merge: true });
-      }
-      console.log('✅ [Power24 Firebase] Products initial seed completed directly in Firestore.');
-    }
-  } catch (err) {
-    console.warn('[Power24 Firebase] Seed products note:', err);
-  }
+export const seedInitialProducts = async () => {
+  // Production safe: Do not auto-reseed mock products when deleted by admin
+  return;
 };
 
 export const saveProductToDB = async (product) => {
@@ -204,21 +202,9 @@ export const subscribeOrders = (callback, onError) => {
   }
 };
 
-export const seedInitialOrders = async (initialOrders) => {
-  if (!db || !Array.isArray(initialOrders) || initialOrders.length === 0) return;
-  try {
-    const ordersRef = collection(db, COLLECTIONS.ORDERS);
-    const snapshot = await getDocs(ordersRef);
-    if (snapshot.empty) {
-      for (const ord of initialOrders) {
-        const docRef = doc(db, COLLECTIONS.ORDERS, String(ord.id));
-        await setDoc(docRef, sanitizeForFirestore({ ...ord, syncedAt: serverTimestamp() }), { merge: true });
-      }
-      console.log('✅ [Power24 Firebase] Orders initial seed completed directly in Firestore.');
-    }
-  } catch (err) {
-    console.warn('[Power24 Firebase] Seed orders note:', err);
-  }
+export const seedInitialOrders = async () => {
+  // Production safe: Do not auto-reseed mock orders into real orders collection
+  return;
 };
 
 export const saveOrderToDB = async (orderData) => {
@@ -321,21 +307,9 @@ export const subscribeBookings = (callback, onError) => {
   }
 };
 
-export const seedInitialBookings = async (initialBookings) => {
-  if (!db || !Array.isArray(initialBookings) || initialBookings.length === 0) return;
-  try {
-    const bookingsRef = collection(db, COLLECTIONS.BOOKINGS);
-    const snapshot = await getDocs(bookingsRef);
-    if (snapshot.empty) {
-      for (const bkg of initialBookings) {
-        const docRef = doc(db, COLLECTIONS.BOOKINGS, String(bkg.id));
-        await setDoc(docRef, sanitizeForFirestore({ ...bkg, syncedAt: serverTimestamp() }), { merge: true });
-      }
-      console.log('✅ [Power24 Firebase] Bookings initial seed completed directly in Firestore.');
-    }
-  } catch (err) {
-    console.warn('[Power24 Firebase] Seed bookings note:', err);
-  }
+export const seedInitialBookings = async () => {
+  // Production safe: Do not auto-reseed mock leads into real bookings collection
+  return;
 };
 
 export const saveBookingToDB = async (bookingData) => {
@@ -434,21 +408,9 @@ export const subscribeGallery = (callback, onError) => {
   }
 };
 
-export const seedInitialGallery = async (initialGallery) => {
-  if (!db || !Array.isArray(initialGallery) || initialGallery.length === 0) return;
-  try {
-    const galleryRef = collection(db, COLLECTIONS.GALLERY);
-    const snapshot = await getDocs(galleryRef);
-    if (snapshot.empty) {
-      for (const item of initialGallery) {
-        const docRef = doc(db, COLLECTIONS.GALLERY, String(item.id));
-        await setDoc(docRef, sanitizeForFirestore({ ...item, syncedAt: serverTimestamp() }), { merge: true });
-      }
-      console.log('✅ [Power24 Firebase] Gallery initial seed completed directly in Firestore.');
-    }
-  } catch (err) {
-    console.warn('[Power24 Firebase] Seed gallery note:', err);
-  }
+export const seedInitialGallery = async () => {
+  // Production safe: Do not auto-reseed mock gallery when deleted by admin
+  return;
 };
 
 export const saveGalleryItemToDB = async (item) => {
@@ -531,21 +493,9 @@ export const subscribeStaffUsers = (callback, onError) => {
   }
 };
 
-export const seedInitialStaff = async (initialStaffMembers) => {
-  if (!db || !Array.isArray(initialStaffMembers) || initialStaffMembers.length === 0) return;
-  try {
-    const staffRef = collection(db, COLLECTIONS.STAFF_USERS);
-    const snapshot = await getDocs(staffRef);
-    if (snapshot.empty) {
-      for (const staff of initialStaffMembers) {
-        const docRef = doc(db, COLLECTIONS.STAFF_USERS, String(staff.id));
-        await setDoc(docRef, sanitizeForFirestore({ ...staff, syncedAt: serverTimestamp() }), { merge: true });
-      }
-      console.log('✅ [Power24 Firebase] Staff initial seed completed directly in Firestore.');
-    }
-  } catch (err) {
-    console.warn('[Power24 Firebase] Seed staff note:', err);
-  }
+export const seedInitialStaff = async () => {
+  // Production safe: Do not auto-reseed mock staff members
+  return;
 };
 
 export const saveStaffToDB = async (staffData) => {
@@ -625,21 +575,9 @@ export const subscribeSites = (callback, onError) => {
   }
 };
 
-export const seedInitialSites = async (initialManagementSites) => {
-  if (!db || !Array.isArray(initialManagementSites) || initialManagementSites.length === 0) return;
-  try {
-    const sitesRef = collection(db, COLLECTIONS.MGMT_SITES);
-    const snapshot = await getDocs(sitesRef);
-    if (snapshot.empty) {
-      for (const site of initialManagementSites) {
-        const docRef = doc(db, COLLECTIONS.MGMT_SITES, String(site.id));
-        await setDoc(docRef, sanitizeForFirestore({ ...site, syncedAt: serverTimestamp() }), { merge: true });
-      }
-      console.log('✅ [Power24 Firebase] Sites initial seed completed directly in Firestore.');
-    }
-  } catch (err) {
-    console.warn('[Power24 Firebase] Seed sites note:', err);
-  }
+export const seedInitialSites = async () => {
+  // Production safe: Do not auto-reseed mock sites when collection is empty
+  return;
 };
 
 export const saveSiteToDB = async (siteData) => {
@@ -719,21 +657,9 @@ export const subscribeExpenses = (callback, onError) => {
   }
 };
 
-export const seedInitialExpenses = async (initialManagementExpenses) => {
-  if (!db || !Array.isArray(initialManagementExpenses) || initialManagementExpenses.length === 0) return;
-  try {
-    const expensesRef = collection(db, COLLECTIONS.MGMT_EXPENSES);
-    const snapshot = await getDocs(expensesRef);
-    if (snapshot.empty) {
-      for (const exp of initialManagementExpenses) {
-        const docRef = doc(db, COLLECTIONS.MGMT_EXPENSES, String(exp.id));
-        await setDoc(docRef, sanitizeForFirestore({ ...exp, syncedAt: serverTimestamp() }), { merge: true });
-      }
-      console.log('✅ [Power24 Firebase] Expenses initial seed completed directly in Firestore.');
-    }
-  } catch (err) {
-    console.warn('[Power24 Firebase] Seed expenses note:', err);
-  }
+export const seedInitialExpenses = async () => {
+  // Production safe: Do not auto-reseed mock expenses when collection is empty
+  return;
 };
 
 export const saveExpenseToDB = async (expenseData) => {
@@ -813,21 +739,9 @@ export const subscribePayments = (callback, onError) => {
   }
 };
 
-export const seedInitialPayments = async (initialManagementPayments) => {
-  if (!db || !Array.isArray(initialManagementPayments) || initialManagementPayments.length === 0) return;
-  try {
-    const paymentsRef = collection(db, COLLECTIONS.MGMT_PAYMENTS);
-    const snapshot = await getDocs(paymentsRef);
-    if (snapshot.empty) {
-      for (const pay of initialManagementPayments) {
-        const docRef = doc(db, COLLECTIONS.MGMT_PAYMENTS, String(pay.id));
-        await setDoc(docRef, sanitizeForFirestore({ ...pay, syncedAt: serverTimestamp() }), { merge: true });
-      }
-      console.log('✅ [Power24 Firebase] Payments initial seed completed directly in Firestore.');
-    }
-  } catch (err) {
-    console.warn('[Power24 Firebase] Seed payments note:', err);
-  }
+export const seedInitialPayments = async () => {
+  // Production safe: Do not auto-reseed mock payments when collection is empty
+  return;
 };
 
 export const savePaymentToDB = async (paymentData) => {
@@ -907,21 +821,9 @@ export const subscribeBudgets = (callback, onError) => {
   }
 };
 
-export const seedInitialBudgets = async (initialMaterialBudgets) => {
-  if (!db || !Array.isArray(initialMaterialBudgets) || initialMaterialBudgets.length === 0) return;
-  try {
-    const budgetsRef = collection(db, COLLECTIONS.MGMT_BUDGETS);
-    const snapshot = await getDocs(budgetsRef);
-    if (snapshot.empty) {
-      for (const mat of initialMaterialBudgets) {
-        const docRef = doc(db, COLLECTIONS.MGMT_BUDGETS, String(mat.id));
-        await setDoc(docRef, sanitizeForFirestore({ ...mat, syncedAt: serverTimestamp() }), { merge: true });
-      }
-      console.log('✅ [Power24 Firebase] Budgets initial seed completed directly in Firestore.');
-    }
-  } catch (err) {
-    console.warn('[Power24 Firebase] Seed budgets note:', err);
-  }
+export const seedInitialBudgets = async () => {
+  // Production safe: Do not auto-reseed mock budgets when collection is empty
+  return;
 };
 
 export const saveBudgetToDB = async (budgetData) => {
@@ -1097,3 +999,55 @@ export const saveUserToDB = async (userData) => {
     return payload;
   }
 };
+
+// ==========================================
+// 12. ADMIN CREDENTIALS & SYSTEM CONFIG
+// ==========================================
+
+export const fetchAdminAuthFromDB = async () => {
+  if (!db) return null;
+  try {
+    // 1. Check system_config/admin_auth
+    const adminDocRef = doc(db, COLLECTIONS.SYSTEM_CONFIG, 'admin_auth');
+    const docSnap = await getDoc(adminDocRef);
+    if (docSnap.exists() && docSnap.data()?.email) {
+      return docSnap.data();
+    }
+
+    // 2. Check users/admin-naarishakti
+    const userDocRef = doc(db, 'users', 'admin-naarishakti');
+    const userSnap = await getDoc(userDocRef);
+    if (userSnap.exists() && userSnap.data()?.email) {
+      return userSnap.data();
+    }
+
+    // 3. Check admins/naarishakti
+    const adminsDocRef = doc(db, 'admins', 'naarishakti');
+    const adminsSnap = await getDoc(adminsDocRef);
+    if (adminsSnap.exists() && adminsSnap.data()?.email) {
+      return adminsSnap.data();
+    }
+
+    return null;
+  } catch (err) {
+    console.warn('[Power24 Firebase] Error fetching admin auth:', err);
+    return null;
+  }
+};
+
+export const saveAdminAuthToDB = async (authData) => {
+  if (!db) return authData;
+  try {
+    const adminDocRef = doc(db, COLLECTIONS.SYSTEM_CONFIG, 'admin_auth');
+    const payload = sanitizeForFirestore({
+      ...authData,
+      updatedAt: serverTimestamp()
+    });
+    await setDoc(adminDocRef, payload, { merge: true });
+    return authData;
+  } catch (err) {
+    console.error('[Power24 Firebase] Error saving admin auth:', err);
+    return authData;
+  }
+};
+

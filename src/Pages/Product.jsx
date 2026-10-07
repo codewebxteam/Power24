@@ -20,6 +20,7 @@ import {
 const productBannerImg = 'https://ik.imagekit.io/qvztwdsij/product%20solor1.png?updatedAt=1790432410195';
 import { getProducts } from '../utils/storage';
 import { subscribeProducts, fetchProductsFromDB } from '../firebase/firestoreService';
+import SEO from '../components/common/SEO.jsx';
 
 const Product = ({ onOpenCustomKit }) => {
     const [selectedCategory, setSelectedCategory] = useState('all');
@@ -28,15 +29,21 @@ const Product = ({ onOpenCustomKit }) => {
 
     useEffect(() => {
         fetchProductsFromDB().then((items) => {
-            if (items && items.length > 0) setProducts(items);
+            if (Array.isArray(items)) setProducts(items);
         }).catch(() => { });
 
         const unsub = subscribeProducts((liveItems) => {
-            if (liveItems) setProducts(liveItems);
+            if (Array.isArray(liveItems)) setProducts(liveItems);
         });
+
+        const handleSync = () => {
+            setProducts(getProducts());
+        };
+        window.addEventListener('power24_products_updated', handleSync);
 
         return () => {
             if (typeof unsub === 'function') unsub();
+            window.removeEventListener('power24_products_updated', handleSync);
         };
     }, []);
 
@@ -54,20 +61,36 @@ const Product = ({ onOpenCustomKit }) => {
         const isPanel = product.category === 'panels' || (!isKit && String(product.name || '').toLowerCase().includes('panel'));
         const isInverter = product.category === 'inverters' || (!isKit && String(product.name || '').toLowerCase().includes('inverter'));
 
-        // 1. Manual Price override if set by Admin
+        // 1. Individual Product (Panel / Inverter / Battery): Offer Price & Original MRP
+        if (!isKit) {
+            const offer = Number(product.offerPrice || product.manualPrice || 0) ||
+                parseFloat(String(product.price || '').replace(/[^\d.]/g, '')) || 0;
+            const original = Number(product.originalPrice || product.manualGross || 0);
+
+            const displayOffer = offer > 0 ? `₹${Math.round(offer).toLocaleString('en-IN')}` : (product.price || 'Price on Request');
+            const displayOriginal = original > offer ? `₹${Math.round(original).toLocaleString('en-IN')}` : null;
+            const discountBadge = (original > offer && offer > 0)
+                ? `Save ₹${Math.round(original - offer).toLocaleString('en-IN')} (${Math.round(((original - offer) / original) * 100)}% OFF)`
+                : null;
+
+            return {
+                isKit: false,
+                label: product.priceLabel || 'Offer Price',
+                value: displayOffer,
+                sub: displayOriginal ? `MRP: ${displayOriginal}` : (product.tag || 'Tier-1 Certified Hardware'),
+                subsidyBadge: discountBadge,
+                gross: displayOriginal,
+            };
+        }
+
+        // 2. Solar Kit with Manual Price / Rate Per Watt override
         if (product.manualPrice !== undefined && product.manualPrice !== '' && product.manualPrice !== null) {
             const rawVal = String(product.manualPrice).trim();
             const numVal = parseFloat(rawVal.replace(/[^\d.]/g, ''));
 
             let displayValue = rawVal;
             if (!isNaN(numVal) && numVal > 0) {
-                if (isPanel || rawVal.toLowerCase().includes('watt')) {
-                    displayValue = `₹${Math.round(numVal)} / Watt`;
-                } else if (isKit) {
-                    displayValue = `₹${Math.round(numVal).toLocaleString('en-IN')}*`;
-                } else {
-                    displayValue = `₹${Math.round(numVal).toLocaleString('en-IN')}`;
-                }
+                displayValue = `₹${Math.round(numVal).toLocaleString('en-IN')}*`;
             } else if (!displayValue.startsWith('₹')) {
                 displayValue = `₹${displayValue}`;
             }
@@ -76,84 +99,56 @@ const Product = ({ onOpenCustomKit }) => {
             if (product.manualGross !== undefined && product.manualGross !== '' && product.manualGross !== null) {
                 const numGross = parseFloat(String(product.manualGross).replace(/[^\d.]/g, ''));
                 if (!isNaN(numGross) && numGross > 0) {
-                    grossDisplay = isPanel ? `₹${Math.round(numGross)} / Watt` : `₹${Math.round(numGross).toLocaleString('en-IN')}`;
+                    grossDisplay = `₹${Math.round(numGross).toLocaleString('en-IN')}`;
                 } else {
                     grossDisplay = String(product.manualGross);
                 }
-            } else if (isKit && product.capacityPricing?.['1kW']) {
+            } else if (product.capacityPricing?.['1kW']) {
                 grossDisplay = `₹${Number(product.capacityPricing['1kW']).toLocaleString('en-IN')}`;
             }
 
-            let subsidyBadge = null;
+            let subsidyBadge = '-₹30,000 Subsidy';
             if (product.manualSubsidy !== undefined && product.manualSubsidy !== '' && product.manualSubsidy !== null) {
                 const numSub = parseFloat(String(product.manualSubsidy).replace(/[^\d.]/g, ''));
-                if (isKit && !isNaN(numSub) && numSub > 0) {
+                if (!isNaN(numSub) && numSub > 0) {
                     subsidyBadge = `-₹${Math.round(numSub).toLocaleString('en-IN')} Subsidy`;
                 } else if (String(product.manualSubsidy).trim() !== '') {
                     subsidyBadge = String(product.manualSubsidy);
                 }
-            } else if (isKit) {
-                subsidyBadge = '-₹30,000 Subsidy';
             }
 
             return {
-                isKit,
-                label: product.priceLabel || (isKit ? 'Effective 1kW Price (After Subsidy)' : (isPanel ? 'Rate / Watt' : 'Starting Hardware Price')),
+                isKit: true,
+                label: product.priceLabel || 'Effective 1kW Price (After Subsidy)',
                 value: displayValue,
-                sub: grossDisplay ? `MRP: ${grossDisplay}` : (product.tag || 'Tier-1 Certified Hardware'),
+                sub: grossDisplay ? `Gross: ${grossDisplay}` : (product.tag || 'PM Surya Ghar Approved'),
                 subsidyBadge,
                 gross: grossDisplay,
             };
         }
 
-        // 2. Solar Kit Default
-        if (isKit) {
-            const lowestGross = Number(product.capacityPricing?.['1kW']) || 65000;
-            const subsidy1kw = 30000;
-            const lowestNet = Math.max(0, lowestGross - subsidy1kw);
-            return {
-                isKit: true,
-                label: 'Effective 1kW Price (After Subsidy)',
-                value: `₹${lowestNet.toLocaleString('en-IN')}*`,
-                sub: `Gross: ₹${lowestGross.toLocaleString('en-IN')}`,
-                subsidyBadge: `-₹30,000 Subsidy`,
-                gross: `₹${lowestGross.toLocaleString('en-IN')}`,
-            };
-        }
-
-        // 3. Solar Panels Default
-        if (isPanel) {
-            const num = parseFloat(String(product.price || '').replace(/[^\d.]/g, '') || '25');
-            const rate = num < 100 ? Math.round(num) : 25;
-            const mrpRate = rate + 7;
-            return {
-                isKit: false,
-                label: 'Rate / Watt',
-                value: `₹${rate} / Watt`,
-                sub: product.tag || 'Tier-1 Certified Panel',
-                subsidyBadge: '22% OFF',
-                gross: `₹${mrpRate} / Watt`,
-            };
-        }
-
-        // 4. Inverters and Other Hardware Units Default
-        let displayPrice = product.price || (isInverter ? '₹14,500' : '₹25,000');
-        const numPrice = parseFloat(String(displayPrice).replace(/,/g, '').match(/\d+(?:\.\d+)?/)?.[0] || '14500');
-        const formattedPrice = `₹${Math.round(numPrice).toLocaleString('en-IN')}`;
-        const estimatedMRP = `₹${Math.round(numPrice * 1.3).toLocaleString('en-IN')}`;
-
+        // 3. Solar Kit Default
+        const lowestGross = Number(product.capacityPricing?.['1kW']) || (Number(product.ratePerWatt) ? Number(product.ratePerWatt) * 1000 : 65000);
+        const subsidy1kw = 30000;
+        const lowestNet = Math.max(0, lowestGross - subsidy1kw);
         return {
-            isKit: false,
-            label: 'Starting Hardware Price',
-            value: formattedPrice,
-            sub: product.tag || 'Tier-1 Certified Hardware',
-            subsidyBadge: '25% OFF',
-            gross: estimatedMRP,
+            isKit: true,
+            label: 'Effective 1kW Price (After Subsidy)',
+            value: `₹${lowestNet.toLocaleString('en-IN')}*`,
+            sub: `Gross: ₹${lowestGross.toLocaleString('en-IN')}`,
+            subsidyBadge: `-₹30,000 Subsidy`,
+            gross: `₹${lowestGross.toLocaleString('en-IN')}`,
         };
     };
 
     return (
         <div className="bg-slate-50 min-h-screen text-slate-950 font-['Outfit',sans-serif]">
+            <SEO
+                title="Solar Products, Panels & Custom Kits"
+                description="Explore Tier-1 solar panels, inverters, solar batteries, and rooftop kits by Power24 Solar (Power 24). Avail up to ₹1,08,000 PM Surya Ghar subsidy in Gorakhpur and UP."
+                canonical="https://power24.in/product"
+                keywords="Power24 solar products, Power 24 solar panels, Power24 solar kits, Tata Power Solar, Waaree Solar, solar inverter Gorakhpur, solar subsidy UP"
+            />
             {/* 1. Large Image Preview Modal (Only for zoom preview) */}
             {previewImage && (
                 <div
@@ -296,6 +291,35 @@ const Product = ({ onOpenCustomKit }) => {
                 </div>
 
                 {/* Clean, Uncluttered Product & Kit Grid (2 Columns on Mobile) */}
+                {filteredProducts.length === 0 ? (
+                    <div className="text-center py-16 sm:py-24 px-4 bg-white rounded-3xl border-2 border-dashed border-slate-200 shadow-xs max-w-2xl mx-auto space-y-5 my-4">
+                        <div className="w-16 h-16 mx-auto rounded-2xl bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-600">
+                            <Sun className="w-8 h-8" />
+                        </div>
+                        <div className="space-y-2">
+                            <h3 className="text-lg sm:text-xl font-black text-slate-900">Customized Solar Solutions & Engineering</h3>
+                            <p className="text-xs sm:text-sm text-slate-600 max-w-md mx-auto">
+                                Currently customized rooftop solar solutions and on-demand engineered kits are being configured. Book a free site survey or build your own custom solar kit.
+                            </p>
+                        </div>
+                        <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
+                            <Link
+                                to="/book"
+                                className="px-6 py-3 rounded-full bg-gradient-to-r from-[#d91478] to-[#16a34a] text-white font-extrabold text-xs sm:text-sm shadow-md shadow-pink-500/20 hover:opacity-95 transition-all"
+                            >
+                                ☀️ Book Free Site Survey
+                            </Link>
+                            {onOpenCustomKit && (
+                                <button
+                                    onClick={onOpenCustomKit}
+                                    className="px-6 py-3 rounded-full bg-slate-900 text-white font-extrabold text-xs sm:text-sm hover:bg-slate-800 transition-all cursor-pointer"
+                                >
+                                    ⚡ Build Custom Kit
+                                </button>
+                            )}
+                        </div>
+                    </div>
+                ) : (
                 <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-8">
                     {filteredProducts.map(product => {
                         const isKit = product.isKit || product.category === 'kits';
@@ -320,8 +344,12 @@ const Product = ({ onOpenCustomKit }) => {
                                                 className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500"
                                             />
                                             <div className="absolute inset-0 bg-gradient-to-t from-slate-950/60 via-transparent to-transparent" />
-                                            <div className="absolute top-1.5 sm:top-2.5 left-1.5 sm:left-2.5 flex items-center gap-1">
-                                                <span className={`px-2 py-0.5 sm:px-3 sm:py-1 rounded-full text-[8px] sm:text-[10px] font-black uppercase shadow-md ${isKit ? 'bg-[#d91478] text-white' : 'bg-emerald-600 text-white'
+                                            <div className="absolute top-1.5 sm:top-2.5 left-1.5 sm:left-2.5 flex items-center gap-1.5 flex-wrap z-10">
+                                                <span className="inline-flex items-center gap-1 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full text-[8px] sm:text-[10px] font-black uppercase tracking-wider bg-gradient-to-r from-amber-400 to-yellow-400 text-slate-950 shadow-md border border-amber-300">
+                                                    <Sparkles className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-slate-950 fill-slate-950" />
+                                                    Special Offer
+                                                </span>
+                                                <span className={`px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full text-[8px] sm:text-[10px] font-black uppercase shadow-md ${isKit ? 'bg-[#d91478] text-white' : 'bg-emerald-600 text-white'
                                                     }`}>
                                                     {product.tag || (isKit ? 'Solar Kit' : 'Hardware')}
                                                 </span>
@@ -336,13 +364,19 @@ const Product = ({ onOpenCustomKit }) => {
                                             </div>
                                         </div>
                                     ) : (
-                                        <div className="flex items-center justify-between">
-                                            <span className={`px-2 py-0.5 sm:px-3 sm:py-1 rounded-full text-[9px] sm:text-xs font-black border ${isKit
-                                                    ? 'bg-pink-50 text-[#d91478] border-pink-200'
-                                                    : 'bg-emerald-100 text-emerald-950 border-emerald-300'
-                                                }`}>
-                                                {product.tag || (isKit ? 'Solar Kit' : 'Hardware')}
-                                            </span>
+                                        <div className="flex items-center justify-between gap-1 flex-wrap">
+                                            <div className="flex items-center gap-1.5 flex-wrap">
+                                                <span className="inline-flex items-center gap-1 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full text-[8px] sm:text-[10px] font-black uppercase tracking-wider bg-gradient-to-r from-amber-400 to-yellow-400 text-slate-950 shadow-xs border border-amber-300">
+                                                    <Sparkles className="w-2.5 h-2.5 text-slate-950 fill-slate-950" />
+                                                    Special Offer
+                                                </span>
+                                                <span className={`px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full text-[9px] sm:text-xs font-black border ${isKit
+                                                        ? 'bg-pink-50 text-[#d91478] border-pink-200'
+                                                        : 'bg-emerald-100 text-emerald-950 border-emerald-300'
+                                                    }`}>
+                                                    {product.tag || (isKit ? 'Solar Kit' : 'Hardware')}
+                                                </span>
+                                            </div>
                                             <span className="text-[9px] sm:text-xs font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 sm:px-2.5 rounded-full border border-emerald-200">
                                                 {product.efficiency}
                                             </span>
@@ -413,6 +447,7 @@ const Product = ({ onOpenCustomKit }) => {
                         );
                     })}
                 </div>
+                )}
 
             </div>
         </div>

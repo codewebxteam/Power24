@@ -13,7 +13,6 @@ import {
   CheckCircle2,
   AlertCircle,
   MapPin,
-  Zap,
 } from 'lucide-react';
 import { loginUser, registerUser, getCurrentUser } from '../../utils/storage';
 import p24Logo from '../../assets/P24logo.webp';
@@ -75,21 +74,6 @@ const UserAuth = () => {
     } catch (err) {
       setLoading(false);
       setError(err.message || 'Authentication failed. Please try again.');
-    }
-  };
-
-  const handleDemoLogin = () => {
-    setEmail('amitabh.verma@example.com');
-    setPassword('password123');
-    try {
-      const res = loginUser('amitabh.verma@example.com', 'password123');
-      if (res.success) {
-        navigate('/dashboard', { replace: true });
-      } else {
-        setError(res.message || 'Demo user login failed');
-      }
-    } catch {
-      setError('Demo user login failed');
     }
   };
 
@@ -296,20 +280,6 @@ const UserAuth = () => {
               <ArrowRight className="w-4 h-4" />
             </button>
           </form>
-
-          {/* Quick Demo Login Option */}
-          {mode === 'login' && (
-            <div className="pt-2 border-t border-slate-100">
-              <button
-                type="button"
-                onClick={handleDemoLogin}
-                className="w-full py-2 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
-              >
-                <Zap className="w-3.5 h-3.5 text-amber-500" />
-                <span>Instant Demo Login (Auto-fill Sample User)</span>
-              </button>
-            </div>
-          )}
 
           {/* Trust points */}
           <div className="pt-2 flex items-center justify-center gap-4 text-[11px] text-slate-500 font-bold">

@@ -89,7 +89,10 @@ import {
   subscribeExpenses,
   subscribePayments
 } from '../../firebase/firestoreService';
+import { uploadImageToCDN } from '../../utils/imagekit';
 import ProjectManagement from '../../components/Admin/Management/ProjectManagement.jsx';
+import { auth } from '../../firebase/firebase';
+import { signOut } from 'firebase/auth';
 const solarHeroImg = 'https://ik.imagekit.io/qvztwdsij/solar%20hero%20-%20Copy.png?updatedAt=1790432262362';
 
 const getAdminStatusMeta = (status) => {
@@ -134,6 +137,17 @@ const getAdminStatusMeta = (status) => {
   };
 };
 
+export const CAPACITY_CONFIG = [
+  { kw: '1kW', label: '1 kW', watts: 1000, centralSubsidy: 30000, stateSubsidy: 0, totalSubsidy: 30000 },
+  { kw: '2kW', label: '2 kW', watts: 2000, centralSubsidy: 60000, stateSubsidy: 30000, totalSubsidy: 90000 },
+  { kw: '3kW', label: '3 kW', watts: 3000, centralSubsidy: 78000, stateSubsidy: 30000, totalSubsidy: 108000 },
+  { kw: '4kW', label: '4 kW', watts: 4000, centralSubsidy: 78000, stateSubsidy: 30000, totalSubsidy: 108000 },
+  { kw: '5kW', label: '5 kW', watts: 5000, centralSubsidy: 78000, stateSubsidy: 30000, totalSubsidy: 108000 },
+  { kw: '6kW', label: '6 kW', watts: 6000, centralSubsidy: 78000, stateSubsidy: 30000, totalSubsidy: 108000 },
+  { kw: '8kW', label: '8 kW', watts: 8000, centralSubsidy: 78000, stateSubsidy: 30000, totalSubsidy: 108000 },
+  { kw: '10kW', label: '10 kW', watts: 10000, centralSubsidy: 78000, stateSubsidy: 30000, totalSubsidy: 108000 },
+];
+
 const AdminDashboard = () => {
   const navigate = useNavigate();
 
@@ -174,44 +188,102 @@ const AdminDashboard = () => {
   const [showQuickPriceModal, setShowQuickPriceModal] = useState(false);
   const [quickPriceProduct, setQuickPriceProduct] = useState(null);
   const [quickPriceForm, setQuickPriceForm] = useState({
-    manualPrice: 35000,
-    manualGross: 65000,
-    manualSubsidy: 30000,
+    ratePerWatt: '',
+    manualPrice: '',
+    manualGross: '',
+    manualSubsidy: '',
     priceLabel: 'Effective 1kW Price (After Subsidy)',
     price: '',
     capacityPricing: {},
+    subsidyMode: 'central',
   });
 
-  // New Product / Kit Form State
-  const [newProduct, setNewProduct] = useState({
+  // Empty initial state for new products (100% clean - Zero dummy data)
+  const getEmptyNewProduct = () => ({
     name: '',
     category: 'kits',
     isKit: true,
-    efficiency: 'Tier-1 High Yield',
-    warranty: '25-Year Tata / Tier-1 Linear Warranty',
+    ratePerWatt: '',
+    efficiency: '',
+    warranty: '',
     description: '',
-    features: 'High Efficiency Solar Modules, Smart Dual MPPT Inverter, GI Structure & DC Cabling, Net Metering Approval',
-    tag: 'Solar Kit',
+    features: '',
+    tag: '',
     image: '',
     images: [],
-    price: '₹24 / Watt',
-    manualPrice: 35000,
-    manualGross: 65000,
-    manualSubsidy: 30000,
-    priceLabel: 'Effective 1kW Price (After Subsidy)',
-    capacityPricing: {
-      '1kW': 65000,
-      '2kW': 125000,
-      '3kW': 185000,
-      '4kW': 240000,
-      '5kW': 295000,
-      '6kW': 350000,
-      '8kW': 450000,
-      '10kW': 550000,
-    },
+    originalPrice: '',
+    offerPrice: '',
+    price: '',
+    manualPrice: '',
+    manualGross: '',
+    manualSubsidy: '',
+    priceLabel: '',
+    capacityPricing: {},
+    subsidyMode: 'central', // 'central' (₹30k/₹60k/₹78k) or 'total' (₹30k/₹90k/₹108k)
   });
+
+  // New Product / Kit Form State (Clean - Zero dummy data)
+  const [newProduct, setNewProduct] = useState(getEmptyNewProduct());
   const [newProductUrlInput, setNewProductUrlInput] = useState('');
   const [editProductUrlInput, setEditProductUrlInput] = useState('');
+  const [showManualTweak, setShowManualTweak] = useState(false);
+  const [showEditManualTweak, setShowEditManualTweak] = useState(false);
+
+  const resetNewProductForm = () => {
+    setNewProduct(getEmptyNewProduct());
+    setNewProductUrlInput('');
+    setShowManualTweak(false);
+  };
+
+  // Auto-calculate 1kW to 10kW gross prices and subsidies from Rate Per Watt
+  const handleRatePerWattChange = (val, target = 'new') => {
+    const rawVal = val === '' ? '' : val;
+    const rate = Number(val);
+    const validRate = !isNaN(rate) && rate > 0;
+
+    const newCapPricing = {};
+    if (validRate) {
+      CAPACITY_CONFIG.forEach((tier) => {
+        newCapPricing[tier.kw] = Math.round(tier.watts * rate);
+      });
+    }
+
+    const gross1kW = validRate ? Math.round(1000 * rate) : '';
+    const subsidy1kW = validRate ? 30000 : '';
+    const net1kW = gross1kW !== '' ? Math.max(0, gross1kW - 30000) : '';
+
+    if (target === 'new') {
+      setNewProduct((prev) => ({
+        ...prev,
+        ratePerWatt: rawVal,
+        manualGross: gross1kW,
+        manualSubsidy: subsidy1kW,
+        manualPrice: net1kW,
+        price: validRate ? `₹${rate} / Watt` : '',
+        capacityPricing: newCapPricing,
+      }));
+    } else if (target === 'edit') {
+      setEditingProduct((prev) => ({
+        ...prev,
+        ratePerWatt: rawVal,
+        manualGross: gross1kW,
+        manualSubsidy: subsidy1kW,
+        manualPrice: net1kW,
+        price: validRate ? `₹${rate} / Watt` : '',
+        capacityPricing: newCapPricing,
+      }));
+    } else if (target === 'quick') {
+      setQuickPriceForm((prev) => ({
+        ...prev,
+        ratePerWatt: rawVal,
+        manualGross: gross1kW,
+        manualSubsidy: subsidy1kW,
+        manualPrice: net1kW,
+        price: validRate ? `₹${rate} / Watt` : '',
+        capacityPricing: newCapPricing,
+      }));
+    }
+  };
 
   // New Gallery Form State
   const [newGallery, setNewGallery] = useState({
@@ -312,14 +384,27 @@ const AdminDashboard = () => {
   }, []);
 
   const handleLogout = () => {
+    if (auth) {
+      signOut(auth).catch(() => {});
+    }
     setAdminAuth(false);
     navigate('/admin/login');
   };
 
-  // Image Upload helper with automatic compression (~30KB-50KB)
+  // Image Upload helper with direct ImageKit CDN upload + automatic compression fallback
   const handleImageFileChange = async (e, callback) => {
     const file = e.target.files?.[0];
     if (file) {
+      try {
+        const cdnRes = await uploadImageToCDN(file, `p24_${Date.now()}_${file.name.replace(/\s+/g, '_')}`);
+        if (cdnRes?.success && cdnRes?.url) {
+          callback(cdnRes.url);
+          showToast('Image uploaded to ImageKit CDN successfully!');
+          return;
+        }
+      } catch (cdnErr) {
+        console.warn('ImageKit direct upload fallback to local compression:', cdnErr);
+      }
       try {
         const compressed = await compressImageFile(file, 900, 900, 0.72);
         if (compressed) callback(compressed);
@@ -329,18 +414,27 @@ const AdminDashboard = () => {
     }
   };
 
-  // Multiple Images Upload helper with compression
+  // Multiple Images Upload helper with ImageKit CDN upload + compression fallback
   const handleMultiImageUpload = async (e, currentImages, setImages) => {
     const files = Array.from(e.target.files || []);
     if (!files.length) return;
     try {
-      const compressedList = await Promise.all(
-        files.map((file) => compressImageFile(file, 900, 900, 0.72))
+      const uploadedUrls = await Promise.all(
+        files.map(async (file) => {
+          try {
+            const cdnRes = await uploadImageToCDN(file, `prod_${Date.now()}_${file.name.replace(/\s+/g, '_')}`);
+            if (cdnRes?.success && cdnRes?.url) return cdnRes.url;
+          } catch {
+            // fallback
+          }
+          return compressImageFile(file, 900, 900, 0.72);
+        })
       );
-      const validImages = compressedList.filter(Boolean);
+      const validImages = uploadedUrls.filter(Boolean);
       setImages([...(currentImages || []), ...validImages]);
+      showToast(`${validImages.length} images processed successfully!`);
     } catch (err) {
-      console.error('Multi-image upload compression error:', err);
+      console.error('Multi-image upload error:', err);
     }
   };
 
@@ -376,13 +470,16 @@ const AdminDashboard = () => {
 
   const handleCreateProduct = async (e) => {
     e.preventDefault();
-    if (!newProduct.name) return;
-
-    const feats = typeof newProduct.features === 'string'
-      ? newProduct.features.split(',').map(f => f.trim()).filter(Boolean)
-      : newProduct.features;
+    if (!newProduct.name || !newProduct.name.trim()) {
+      showToast('⚠️ Please enter a title for the product/kit');
+      return;
+    }
 
     const isKit = productType === 'kit';
+    const feats = typeof newProduct.features === 'string'
+      ? newProduct.features.split(',').map((f) => f.trim()).filter(Boolean)
+      : (Array.isArray(newProduct.features) ? newProduct.features : []);
+
     const rawImages = (newProduct.images && newProduct.images.length > 0)
       ? newProduct.images
       : (newProduct.image ? [newProduct.image] : [solarHeroImg]);
@@ -392,62 +489,93 @@ const AdminDashboard = () => {
     );
     const validImages = allImages.filter(Boolean);
 
-    const itemToSave = {
-      ...newProduct,
-      isKit,
-      category: isKit ? 'kits' : newProduct.category,
-      tag: newProduct.tag || (isKit ? 'Solar Kit' : 'Solar Hardware'),
-      features: feats.length > 0 ? feats : ['Tier-1 High Quality', 'MNRE Approved'],
-      image: validImages[0] || solarHeroImg,
-      images: validImages,
-      manualPrice: newProduct.manualPrice !== undefined && newProduct.manualPrice !== '' ? newProduct.manualPrice : (isKit ? 35000 : undefined),
-      manualGross: newProduct.manualGross !== undefined && newProduct.manualGross !== '' ? newProduct.manualGross : (isKit ? 65000 : undefined),
-      manualSubsidy: newProduct.manualSubsidy !== undefined && newProduct.manualSubsidy !== '' ? newProduct.manualSubsidy : (isKit ? 30000 : undefined),
-      priceLabel: newProduct.priceLabel || (isKit ? 'Effective 1kW Price (After Subsidy)' : 'Effective Offer Price'),
-    };
+    let itemToSave;
 
-    if (isKit && newProduct.capacityPricing) {
-      itemToSave.capacityPricing = {
-        ...newProduct.capacityPricing,
-        '1kW': Number(newProduct.manualGross) || Number(newProduct.capacityPricing['1kW']) || 65000,
-      };
-    }
     if (!isKit) {
-      itemToSave.price = newProduct.price || (newProduct.manualPrice ? `₹${newProduct.manualPrice}` : '₹25,000');
+      // Individual Product: Only Original Price (MRP) and Offer Price - NO 1kW-10kW or Subsidy
+      const offer = newProduct.offerPrice !== '' && newProduct.offerPrice !== undefined
+        ? Number(newProduct.offerPrice)
+        : (newProduct.manualPrice !== '' && newProduct.manualPrice !== undefined ? Number(newProduct.manualPrice) : 0);
+
+      const orig = newProduct.originalPrice !== '' && newProduct.originalPrice !== undefined
+        ? Number(newProduct.originalPrice)
+        : (newProduct.manualGross !== '' && newProduct.manualGross !== undefined ? Number(newProduct.manualGross) : offer);
+
+      itemToSave = {
+        name: newProduct.name.trim(),
+        isKit: false,
+        category: newProduct.category || 'panels',
+        tag: newProduct.tag?.trim() || 'Solar Hardware',
+        ratePerWatt: '',
+        efficiency: newProduct.efficiency?.trim() || '',
+        warranty: newProduct.warranty?.trim() || '',
+        description: newProduct.description?.trim() || '',
+        features: feats.length > 0 ? feats : [],
+        image: validImages[0] || solarHeroImg,
+        images: validImages,
+        originalPrice: orig,
+        offerPrice: offer,
+        manualPrice: offer,
+        manualGross: orig,
+        manualSubsidy: 0,
+        priceLabel: 'Offer Price',
+        price: offer > 0 ? `₹${offer.toLocaleString('en-IN')}` : '',
+        capacityPricing: {},
+        subsidyMode: 'central',
+      };
+    } else {
+      // Solar Kit: Auto-calculated capacity tiers and PM Surya Ghar subsidy
+      const rate = Number(newProduct.ratePerWatt) || 0;
+      const finalCapacityPricing = { ...(newProduct.capacityPricing || {}) };
+      if (Object.keys(finalCapacityPricing).length === 0 && rate > 0) {
+        CAPACITY_CONFIG.forEach((tier) => {
+          finalCapacityPricing[tier.kw] = tier.watts * rate;
+        });
+      }
+
+      const gross1kW = newProduct.manualGross !== '' && newProduct.manualGross !== undefined
+        ? Number(newProduct.manualGross)
+        : (rate ? rate * 1000 : Number(finalCapacityPricing['1kW']) || '');
+
+      const subsidy1kW = newProduct.manualSubsidy !== '' && newProduct.manualSubsidy !== undefined
+        ? Number(newProduct.manualSubsidy)
+        : 30000;
+
+      const net1kW = newProduct.manualPrice !== '' && newProduct.manualPrice !== undefined
+        ? Number(newProduct.manualPrice)
+        : (gross1kW && subsidy1kW !== '' ? Math.max(0, gross1kW - Number(subsidy1kW)) : '');
+
+      if (gross1kW) {
+        finalCapacityPricing['1kW'] = gross1kW;
+      }
+
+      itemToSave = {
+        name: newProduct.name.trim(),
+        isKit: true,
+        category: 'kits',
+        tag: newProduct.tag?.trim() || 'Solar Kit',
+        ratePerWatt: rate || '',
+        efficiency: newProduct.efficiency?.trim() || '',
+        warranty: newProduct.warranty?.trim() || '',
+        description: newProduct.description?.trim() || '',
+        features: feats.length > 0 ? feats : [],
+        image: validImages[0] || solarHeroImg,
+        images: validImages,
+        manualPrice: net1kW !== '' ? net1kW : '',
+        manualGross: gross1kW !== '' ? gross1kW : '',
+        manualSubsidy: subsidy1kW !== '' ? subsidy1kW : '',
+        priceLabel: newProduct.priceLabel?.trim() || 'Effective 1kW Price (After Subsidy)',
+        price: rate ? `₹${rate} / Watt` : '',
+        capacityPricing: finalCapacityPricing,
+        subsidyMode: newProduct.subsidyMode || 'central',
+      };
     }
 
     const updated = addProduct(itemToSave);
     setProducts(updated);
     setShowAddProductModal(false);
-    setNewProduct({
-      name: '',
-      category: 'kits',
-      isKit: true,
-      efficiency: 'Tier-1 High Yield',
-      warranty: '25-Year Linear Warranty',
-      description: '',
-      features: 'High Efficiency Solar Modules, Smart Inverter, Structure & Wires, Net Metering Approval',
-      tag: 'Solar Kit',
-      image: '',
-      images: [],
-      price: '₹24 / Watt',
-      manualPrice: 35000,
-      manualGross: 65000,
-      manualSubsidy: 30000,
-      priceLabel: 'Effective 1kW Price (After Subsidy)',
-      capacityPricing: {
-        '1kW': 65000,
-        '2kW': 125000,
-        '3kW': 185000,
-        '4kW': 240000,
-        '5kW': 295000,
-        '6kW': 350000,
-        '8kW': 450000,
-        '10kW': 550000,
-      },
-    });
-    setNewProductUrlInput('');
-    showToast(isKit ? 'Solar Kit added successfully!' : 'Solar Product added successfully!');
+    resetNewProductForm();
+    showToast(isKit ? '☀️ Solar Kit added successfully!' : '⚡ Solar Product added successfully!');
   };
 
   const handleDeleteProduct = (id) => {
@@ -464,35 +592,41 @@ const AdminDashboard = () => {
       ? [...prod.images]
       : (prod.image ? [prod.image] : []);
 
+    const detectedRate = prod.ratePerWatt || (prod.capacityPricing?.['1kW'] ? Math.round(Number(prod.capacityPricing['1kW']) / 1000) : '');
+
+    const offerPrice = prod.offerPrice !== undefined && prod.offerPrice !== ''
+      ? prod.offerPrice
+      : (prod.manualPrice !== undefined && prod.manualPrice !== '' ? prod.manualPrice : '');
+
+    const originalPrice = prod.originalPrice !== undefined && prod.originalPrice !== ''
+      ? prod.originalPrice
+      : (prod.manualGross !== undefined && prod.manualGross !== '' ? prod.manualGross : '');
+
     setEditingProduct({
       id: prod.id,
       name: prod.name || '',
       category: prod.category || (isKit ? 'kits' : 'panels'),
       isKit,
-      efficiency: prod.efficiency || 'Tier-1 High Yield',
-      warranty: prod.warranty || '25-Year Linear Warranty',
+      ratePerWatt: detectedRate || '',
+      efficiency: prod.efficiency || '',
+      warranty: prod.warranty || '',
       description: prod.description || '',
       features: Array.isArray(prod.features) ? prod.features.join(', ') : (prod.features || ''),
       tag: prod.tag || '',
       image: prod.image || (imgs[0] || ''),
       images: imgs,
-      price: prod.price || '₹24 / Watt',
-      manualPrice: prod.manualPrice !== undefined ? prod.manualPrice : (isKit ? 35000 : ''),
-      manualGross: prod.manualGross !== undefined ? prod.manualGross : (isKit ? (Number(prod.capacityPricing?.['1kW']) || 65000) : ''),
-      manualSubsidy: prod.manualSubsidy !== undefined ? prod.manualSubsidy : (isKit ? 30000 : ''),
-      priceLabel: prod.priceLabel || (isKit ? 'Effective 1kW Price (After Subsidy)' : 'Effective Offer Price'),
-      capacityPricing: prod.capacityPricing ? { ...prod.capacityPricing } : {
-        '1kW': 65000,
-        '2kW': 125000,
-        '3kW': 185000,
-        '4kW': 240000,
-        '5kW': 295000,
-        '6kW': 350000,
-        '8kW': 450000,
-        '10kW': 550000,
-      },
+      originalPrice,
+      offerPrice,
+      price: prod.price || (offerPrice ? `₹${Number(offerPrice).toLocaleString('en-IN')}` : (detectedRate ? `₹${detectedRate} / Watt` : '')),
+      manualPrice: offerPrice,
+      manualGross: originalPrice,
+      manualSubsidy: isKit ? (prod.manualSubsidy !== undefined && prod.manualSubsidy !== '' ? prod.manualSubsidy : 30000) : 0,
+      priceLabel: prod.priceLabel || (isKit ? 'Effective 1kW Price (After Subsidy)' : 'Offer Price'),
+      capacityPricing: prod.capacityPricing ? { ...prod.capacityPricing } : {},
+      subsidyMode: prod.subsidyMode || 'central',
     });
     setEditProductUrlInput('');
+    setShowEditManualTweak(false);
     setShowEditProductModal(true);
   };
 
@@ -501,8 +635,8 @@ const AdminDashboard = () => {
     if (!editingProduct || !editingProduct.name) return;
 
     const feats = typeof editingProduct.features === 'string'
-      ? editingProduct.features.split(',').map(f => f.trim()).filter(Boolean)
-      : editingProduct.features;
+      ? editingProduct.features.split(',').map((f) => f.trim()).filter(Boolean)
+      : (Array.isArray(editingProduct.features) ? editingProduct.features : []);
 
     const isKit = editingProduct.isKit || editingProduct.category === 'kits';
     const rawImages = (editingProduct.images && editingProduct.images.length > 0)
@@ -514,31 +648,86 @@ const AdminDashboard = () => {
     );
     const validImages = allImages.filter(Boolean);
 
-    const itemToSave = {
-      name: editingProduct.name,
-      isKit,
-      category: isKit ? 'kits' : editingProduct.category,
-      tag: editingProduct.tag || (isKit ? 'Solar Kit' : 'Solar Hardware'),
-      features: feats && feats.length > 0 ? feats : ['Tier-1 High Quality', 'MNRE Approved'],
-      efficiency: editingProduct.efficiency || '',
-      warranty: editingProduct.warranty || '',
-      description: editingProduct.description || '',
-      image: validImages[0] || solarHeroImg,
-      images: validImages,
-      manualPrice: editingProduct.manualPrice !== undefined ? editingProduct.manualPrice : '',
-      manualGross: editingProduct.manualGross !== undefined ? editingProduct.manualGross : '',
-      manualSubsidy: editingProduct.manualSubsidy !== undefined ? editingProduct.manualSubsidy : '',
-      priceLabel: editingProduct.priceLabel || '',
-    };
+    let itemToSave;
 
-    if (isKit && editingProduct.capacityPricing) {
-      itemToSave.capacityPricing = {
-        ...editingProduct.capacityPricing,
-        '1kW': Number(editingProduct.manualGross) || Number(editingProduct.capacityPricing['1kW']) || 65000,
-      };
-    }
     if (!isKit) {
-      itemToSave.price = editingProduct.price || (editingProduct.manualPrice ? `₹${editingProduct.manualPrice}` : '₹25,000');
+      // Individual Product
+      const offer = editingProduct.offerPrice !== '' && editingProduct.offerPrice !== undefined
+        ? Number(editingProduct.offerPrice)
+        : (editingProduct.manualPrice !== '' && editingProduct.manualPrice !== undefined ? Number(editingProduct.manualPrice) : 0);
+
+      const orig = editingProduct.originalPrice !== '' && editingProduct.originalPrice !== undefined
+        ? Number(editingProduct.originalPrice)
+        : (editingProduct.manualGross !== '' && editingProduct.manualGross !== undefined ? Number(editingProduct.manualGross) : offer);
+
+      itemToSave = {
+        name: editingProduct.name.trim(),
+        isKit: false,
+        category: editingProduct.category || 'panels',
+        tag: editingProduct.tag || 'Solar Hardware',
+        ratePerWatt: '',
+        features: feats.length > 0 ? feats : [],
+        efficiency: editingProduct.efficiency || '',
+        warranty: editingProduct.warranty || '',
+        description: editingProduct.description || '',
+        image: validImages[0] || solarHeroImg,
+        images: validImages,
+        originalPrice: orig,
+        offerPrice: offer,
+        manualPrice: offer,
+        manualGross: orig,
+        manualSubsidy: 0,
+        priceLabel: 'Offer Price',
+        price: offer > 0 ? `₹${offer.toLocaleString('en-IN')}` : '',
+        capacityPricing: {},
+        subsidyMode: 'central',
+      };
+    } else {
+      // Solar Kit
+      const rate = Number(editingProduct.ratePerWatt) || 0;
+      const finalCapacityPricing = { ...(editingProduct.capacityPricing || {}) };
+      if (Object.keys(finalCapacityPricing).length === 0 && rate > 0) {
+        CAPACITY_CONFIG.forEach((tier) => {
+          finalCapacityPricing[tier.kw] = tier.watts * rate;
+        });
+      }
+
+      const gross1kW = editingProduct.manualGross !== '' && editingProduct.manualGross !== undefined
+        ? Number(editingProduct.manualGross)
+        : (rate ? rate * 1000 : Number(finalCapacityPricing['1kW']) || '');
+
+      const subsidy1kW = editingProduct.manualSubsidy !== '' && editingProduct.manualSubsidy !== undefined
+        ? Number(editingProduct.manualSubsidy)
+        : 30000;
+
+      const net1kW = editingProduct.manualPrice !== '' && editingProduct.manualPrice !== undefined
+        ? Number(editingProduct.manualPrice)
+        : (gross1kW && subsidy1kW !== '' ? Math.max(0, gross1kW - Number(subsidy1kW)) : '');
+
+      if (gross1kW) {
+        finalCapacityPricing['1kW'] = gross1kW;
+      }
+
+      itemToSave = {
+        name: editingProduct.name.trim(),
+        isKit: true,
+        category: 'kits',
+        tag: editingProduct.tag || 'Solar Kit',
+        ratePerWatt: rate || '',
+        features: feats.length > 0 ? feats : [],
+        efficiency: editingProduct.efficiency || '',
+        warranty: editingProduct.warranty || '',
+        description: editingProduct.description || '',
+        image: validImages[0] || solarHeroImg,
+        images: validImages,
+        manualPrice: net1kW !== '' ? net1kW : '',
+        manualGross: gross1kW !== '' ? gross1kW : '',
+        manualSubsidy: subsidy1kW !== '' ? subsidy1kW : '',
+        priceLabel: editingProduct.priceLabel || 'Effective 1kW Price (After Subsidy)',
+        price: rate ? `₹${rate} / Watt` : '',
+        capacityPricing: finalCapacityPricing,
+        subsidyMode: editingProduct.subsidyMode || 'central',
+      };
     }
 
     const updated = updateProduct(editingProduct.id, itemToSave);
@@ -551,23 +740,22 @@ const AdminDashboard = () => {
   // Quick 1-Click Manual Price Editor Handlers
   const handleOpenQuickPrice = (prod) => {
     const isKit = prod.isKit || prod.category === 'kits';
+    const detectedRate = prod.ratePerWatt || (prod.capacityPricing?.['1kW'] ? Math.round(Number(prod.capacityPricing['1kW']) / 1000) : '');
+    const offerPrice = prod.offerPrice !== undefined && prod.offerPrice !== '' ? prod.offerPrice : (prod.manualPrice !== undefined && prod.manualPrice !== '' ? prod.manualPrice : '');
+    const originalPrice = prod.originalPrice !== undefined && prod.originalPrice !== '' ? prod.originalPrice : (prod.manualGross !== undefined && prod.manualGross !== '' ? prod.manualGross : '');
+
     setQuickPriceProduct(prod);
     setQuickPriceForm({
-      manualPrice: prod.manualPrice !== undefined ? prod.manualPrice : (isKit ? 35000 : 25000),
-      manualGross: prod.manualGross !== undefined ? prod.manualGross : (isKit ? (Number(prod.capacityPricing?.['1kW']) || 65000) : ''),
-      manualSubsidy: prod.manualSubsidy !== undefined ? prod.manualSubsidy : (isKit ? 30000 : ''),
-      priceLabel: prod.priceLabel || (isKit ? 'Effective 1kW Price (After Subsidy)' : 'Effective Offer Price'),
-      price: prod.price || '₹24 / Watt',
-      capacityPricing: prod.capacityPricing ? { ...prod.capacityPricing } : {
-        '1kW': 65000,
-        '2kW': 125000,
-        '3kW': 185000,
-        '4kW': 240000,
-        '5kW': 295000,
-        '6kW': 350000,
-        '8kW': 450000,
-        '10kW': 550000,
-      },
+      ratePerWatt: detectedRate || '',
+      originalPrice,
+      offerPrice,
+      manualPrice: offerPrice,
+      manualGross: originalPrice,
+      manualSubsidy: isKit ? (prod.manualSubsidy !== undefined && prod.manualSubsidy !== '' ? prod.manualSubsidy : 30000) : 0,
+      priceLabel: prod.priceLabel || (isKit ? 'Effective 1kW Price (After Subsidy)' : 'Offer Price'),
+      price: prod.price || (offerPrice ? `₹${Number(offerPrice).toLocaleString('en-IN')}` : (detectedRate ? `₹${detectedRate} / Watt` : '')),
+      capacityPricing: prod.capacityPricing ? { ...prod.capacityPricing } : {},
+      subsidyMode: prod.subsidyMode || 'central',
     });
     setShowQuickPriceModal(true);
   };
@@ -577,28 +765,78 @@ const AdminDashboard = () => {
     if (!quickPriceProduct) return;
 
     const isKit = quickPriceProduct.isKit || quickPriceProduct.category === 'kits';
-    const payload = {
-      manualPrice: quickPriceForm.manualPrice,
-      manualGross: quickPriceForm.manualGross,
-      manualSubsidy: quickPriceForm.manualSubsidy,
-      priceLabel: quickPriceForm.priceLabel,
-    };
 
-    if (isKit) {
-      payload.capacityPricing = {
-        ...(quickPriceProduct.capacityPricing || {}),
-        ...(quickPriceForm.capacityPricing || {}),
-        '1kW': Number(quickPriceForm.manualGross) || Number(quickPriceProduct.capacityPricing?.['1kW']) || 65000,
+    if (!isKit) {
+      const offer = quickPriceForm.offerPrice !== '' && quickPriceForm.offerPrice !== undefined
+        ? Number(quickPriceForm.offerPrice)
+        : (quickPriceForm.manualPrice !== '' && quickPriceForm.manualPrice !== undefined ? Number(quickPriceForm.manualPrice) : 0);
+
+      const orig = quickPriceForm.originalPrice !== '' && quickPriceForm.originalPrice !== undefined
+        ? Number(quickPriceForm.originalPrice)
+        : (quickPriceForm.manualGross !== '' && quickPriceForm.manualGross !== undefined ? Number(quickPriceForm.manualGross) : offer);
+
+      const payload = {
+        originalPrice: orig,
+        offerPrice: offer,
+        manualPrice: offer,
+        manualGross: orig,
+        manualSubsidy: 0,
+        priceLabel: 'Offer Price',
+        price: offer > 0 ? `₹${offer.toLocaleString('en-IN')}` : '',
+        capacityPricing: {},
+        ratePerWatt: '',
       };
-    } else {
-      payload.price = quickPriceForm.price || (quickPriceForm.manualPrice ? `₹${quickPriceForm.manualPrice}` : '₹25,000');
+
+      const updated = updateProduct(quickPriceProduct.id, payload);
+      setProducts(updated);
+      setShowQuickPriceModal(false);
+      setQuickPriceProduct(null);
+      showToast(`💰 Product price updated successfully!`);
+      return;
     }
+
+    const rate = Number(quickPriceForm.ratePerWatt) || 0;
+    const finalCapacityPricing = { ...(quickPriceProduct.capacityPricing || {}), ...(quickPriceForm.capacityPricing || {}) };
+    if (isKit && rate > 0) {
+      CAPACITY_CONFIG.forEach((tier) => {
+        if (!quickPriceForm.capacityPricing?.[tier.kw]) {
+          finalCapacityPricing[tier.kw] = tier.watts * rate;
+        }
+      });
+    }
+
+    const gross1kW = quickPriceForm.manualGross !== '' && quickPriceForm.manualGross !== undefined
+      ? Number(quickPriceForm.manualGross)
+      : (rate ? rate * 1000 : Number(finalCapacityPricing['1kW']) || '');
+
+    const subsidy1kW = quickPriceForm.manualSubsidy !== '' && quickPriceForm.manualSubsidy !== undefined
+      ? Number(quickPriceForm.manualSubsidy)
+      : 30000;
+
+    const net1kW = quickPriceForm.manualPrice !== '' && quickPriceForm.manualPrice !== undefined
+      ? Number(quickPriceForm.manualPrice)
+      : (gross1kW && subsidy1kW !== '' ? Math.max(0, gross1kW - Number(subsidy1kW)) : '');
+
+    if (gross1kW) {
+      finalCapacityPricing['1kW'] = gross1kW;
+    }
+
+    const payload = {
+      ratePerWatt: rate || quickPriceProduct.ratePerWatt || '',
+      manualPrice: net1kW !== '' ? net1kW : '',
+      manualGross: gross1kW !== '' ? gross1kW : '',
+      manualSubsidy: subsidy1kW !== '' ? subsidy1kW : '',
+      priceLabel: quickPriceForm.priceLabel || '',
+      price: rate ? `₹${rate} / Watt` : (quickPriceProduct.price || ''),
+      capacityPricing: finalCapacityPricing,
+      subsidyMode: quickPriceForm.subsidyMode || 'central',
+    };
 
     const updated = updateProduct(quickPriceProduct.id, payload);
     setProducts(updated);
     setShowQuickPriceModal(false);
     setQuickPriceProduct(null);
-    showToast(`💰 Manual Rate updated successfully to ₹${Number(quickPriceForm.manualPrice).toLocaleString('en-IN')}*!`);
+    showToast(`💰 Rate updated successfully!`);
   };
 
   const handleCreateGallery = async (e) => {
@@ -1100,12 +1338,12 @@ const AdminDashboard = () => {
           <div className="flex items-center justify-between p-2 rounded-xl bg-slate-900/80 border border-slate-800">
             <div className="flex items-center gap-2.5 truncate">
               <div className="w-8 h-8 rounded-full bg-emerald-500 text-slate-950 font-black flex items-center justify-center text-xs shrink-0 shadow-sm">
-                A
+                N
               </div>
               {(sidebarOpen || mobileSidebarOpen) && (
                 <div className="truncate">
-                  <p className="text-xs font-bold text-white truncate">Abhishek (Admin)</p>
-                  <p className="text-[10px] text-slate-400 truncate">Gorakhpur HQ</p>
+                  <p className="text-xs font-bold text-white truncate">Naari Shakti (Admin)</p>
+                  <p className="text-[10px] text-slate-400 truncate">naarishakti2026@gmail.com</p>
                 </div>
               )}
             </div>
@@ -2234,7 +2472,31 @@ const AdminDashboard = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {filteredAdminProducts.length === 0 ? (
+                <div className="text-center py-16 px-4 bg-white border-2 border-dashed border-slate-200 rounded-3xl space-y-4">
+                  <div className="w-16 h-16 mx-auto rounded-2xl bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-600">
+                    <Sun className="w-8 h-8" />
+                  </div>
+                  <div className="max-w-md mx-auto space-y-1">
+                    <p className="font-extrabold text-base text-slate-900">Catalog is Completely Clean (0 Products)</p>
+                    <p className="text-xs text-slate-500">
+                      Aapne saare dummy products delete kar diye hain aur wo cloud database se bhi permanently hat chuke hain. Ab page refresh karne par koi puraana product wapas nahi aayega. Naya product ya solar kit add karne ke liye upar ya neeche button use karein:
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      resetNewProductForm();
+                      setShowAddProductModal(true);
+                    }}
+                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#d91478] to-[#16a34a] text-white text-xs font-bold hover:opacity-95 shadow-md shadow-pink-500/20 cursor-pointer"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>+ Add First Solar Kit / Product</span>
+                  </button>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {filteredAdminProducts.map((prod) => {
                   const isKit = prod.isKit || prod.category === 'kits';
                   return (
@@ -2244,7 +2506,11 @@ const AdminDashboard = () => {
                     >
                       <div className="space-y-2.5">
                         <div className="flex items-center justify-between gap-2 flex-wrap">
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-gradient-to-r from-amber-400 to-yellow-400 text-slate-950 shadow-xs border border-amber-300">
+                              <Sparkles className="w-3 h-3 text-slate-950 fill-slate-950" />
+                              Special Offer
+                            </span>
                             <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase ${isKit
                               ? 'bg-gradient-to-r from-[#d91478] to-[#16a34a] text-white'
                               : 'bg-slate-900 text-white'
@@ -2263,57 +2529,136 @@ const AdminDashboard = () => {
                         <h4 className="text-lg font-black text-slate-900 leading-snug">{prod.name}</h4>
                         <p className="text-xs text-slate-600 leading-relaxed">{prod.description}</p>
 
-                        {/* Highlighted Manual Pricing Card (Matching Front-End Display) */}
-                        <div className="bg-gradient-to-r from-pink-50/90 via-slate-50 to-emerald-50/70 p-3 sm:p-3.5 rounded-2xl border-2 border-pink-200/80 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                          <div className="space-y-0.5">
-                            <span className="text-[9px] sm:text-[10px] font-black uppercase text-slate-500 block">
-                              {prod.priceLabel || (isKit ? 'Effective 1kW Price (After Subsidy)' : 'Effective Offer Price')}
-                            </span>
-                            <div className="flex items-baseline gap-2 flex-wrap">
-                              <span className="text-base sm:text-lg font-black text-[#d91478] font-mono">
-                                ₹{Number(prod.manualPrice !== undefined && prod.manualPrice !== '' ? prod.manualPrice : (isKit ? 35000 : 25000)).toLocaleString('en-IN')}*
-                              </span>
-                              {(prod.manualGross || isKit) && (
-                                <span className="text-xs text-slate-400 line-through font-bold font-mono">
-                                  ₹{Number(prod.manualGross || prod.capacityPricing?.['1kW'] || 65000).toLocaleString('en-IN')}
+                        {/* Highlighted Pricing Card */}
+                        {isKit ? (
+                          <>
+                            {/* Solar Kit Pricing Card */}
+                            <div className="bg-gradient-to-r from-pink-50/90 via-slate-50 to-emerald-50/70 p-3 sm:p-3.5 rounded-2xl border-2 border-pink-200/80 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                              <div className="space-y-0.5">
+                                <span className="text-[9px] sm:text-[10px] font-black uppercase text-slate-500 block">
+                                  {prod.priceLabel || 'Effective 1kW Price (After Subsidy)'}
                                 </span>
-                              )}
-                            </div>
-                          </div>
-                          <div className="text-left sm:text-right flex items-center sm:flex-col gap-1.5">
-                            {(prod.manualSubsidy || isKit) && (
-                              <span className="inline-block bg-emerald-100 text-emerald-800 text-[9px] sm:text-[10px] font-black px-2.5 py-1 rounded-full border border-emerald-300 shadow-2xs">
-                                -₹{Number(prod.manualSubsidy || 30000).toLocaleString('en-IN')} Subsidy
-                              </span>
-                            )}
-                          </div>
-                        </div>
-
-                        {/* If it is a kit, show Capacity Pricing Grid */}
-                        {isKit && prod.capacityPricing && (
-                          <div className="pt-1">
-                            <p className="text-[11px] font-black text-slate-700 uppercase tracking-wider mb-1.5 flex items-center justify-between">
-                              <span>Capacity Pricing (1kW - 10kW):</span>
-                              <span className="text-[10px] text-slate-500 font-normal">Gross Rates</span>
-                            </p>
-                            <div className="grid grid-cols-4 gap-1.5 bg-slate-50 p-2.5 rounded-2xl border border-slate-200 text-center">
-                              {['1kW', '2kW', '3kW', '4kW', '5kW', '6kW', '8kW', '10kW'].map((kw) => (
-                                <div key={kw} className="bg-white p-1.5 rounded-xl border border-slate-100 shadow-2xs">
-                                  <span className="block text-[10px] font-black text-[#d91478]">{kw}</span>
-                                  <span className="block text-[11px] font-bold text-slate-900">
-                                    {prod.capacityPricing[kw] ? `₹${Number(prod.capacityPricing[kw]).toLocaleString('en-IN')}` : 'N/A'}
-                                  </span>
+                                <div className="flex items-baseline gap-2 flex-wrap">
+                                  {(() => {
+                                    const rate = Number(prod.ratePerWatt) || 0;
+                                    const gross = prod.manualGross !== undefined && prod.manualGross !== ''
+                                      ? Number(prod.manualGross)
+                                      : (Number(prod.capacityPricing?.['1kW']) || (rate ? rate * 1000 : 0));
+                                    const sub = prod.manualSubsidy !== undefined && prod.manualSubsidy !== ''
+                                      ? Number(prod.manualSubsidy)
+                                      : 30000;
+                                    const net = prod.manualPrice !== undefined && prod.manualPrice !== ''
+                                      ? Number(prod.manualPrice)
+                                      : (gross ? Math.max(0, gross - sub) : 0);
+                                    return (
+                                      <>
+                                        <span className="text-base sm:text-lg font-black text-[#d91478] font-mono">
+                                          ₹{net.toLocaleString('en-IN')}*
+                                        </span>
+                                        {gross > 0 && (
+                                          <span className="text-xs text-slate-400 line-through font-bold font-mono">
+                                            ₹{gross.toLocaleString('en-IN')}
+                                          </span>
+                                        )}
+                                        {rate > 0 && (
+                                          <span className="text-[10px] font-bold text-slate-600 bg-white px-2 py-0.5 rounded border border-slate-200">
+                                            ₹{rate} / Watt
+                                          </span>
+                                        )}
+                                      </>
+                                    );
+                                  })()}
                                 </div>
-                              ))}
+                              </div>
+                              <div className="text-left sm:text-right flex items-center sm:flex-col gap-1.5">
+                                {(() => {
+                                  const sub = prod.manualSubsidy !== undefined && prod.manualSubsidy !== ''
+                                    ? Number(prod.manualSubsidy)
+                                    : 30000;
+                                  if (sub > 0) {
+                                    return (
+                                      <span className="inline-block bg-emerald-100 text-emerald-800 text-[9px] sm:text-[10px] font-black px-2.5 py-1 rounded-full border border-emerald-300 shadow-2xs">
+                                        -₹{sub.toLocaleString('en-IN')} Subsidy
+                                      </span>
+                                    );
+                                  }
+                                  return null;
+                                })()}
+                              </div>
                             </div>
-                          </div>
-                        )}
 
-                        {/* If single product, show single price */}
-                        {!isKit && prod.price && (
-                          <div className="inline-block px-3 py-1 rounded-xl bg-emerald-50 border border-emerald-200 text-xs font-black text-emerald-800">
-                            Base Hardware Rate: {prod.price}
-                          </div>
+                            {/* Capacity Pricing (1kW - 10kW) Grid for Kits */}
+                            <div className="pt-1">
+                              <p className="text-[11px] font-black text-slate-700 uppercase tracking-wider mb-1.5 flex items-center justify-between">
+                                <span>Capacity Pricing (1kW - 10kW):</span>
+                                <span className="text-[10px] text-slate-500 font-normal">Gross Rates</span>
+                              </p>
+                              <div className="grid grid-cols-4 gap-1.5 bg-slate-50 p-2.5 rounded-2xl border border-slate-200 text-center">
+                                {['1kW', '2kW', '3kW', '4kW', '5kW', '6kW', '8kW', '10kW'].map((kw) => {
+                                  const kwNum = parseInt(kw, 10) || 1;
+                                  const rate = Number(prod.ratePerWatt) || 0;
+                                  const priceVal = prod.capacityPricing?.[kw] || (rate ? rate * kwNum * 1000 : (kw === '1kW' ? prod.manualGross : null));
+                                  return (
+                                    <div key={kw} className="bg-white p-1.5 rounded-xl border border-slate-100 shadow-2xs">
+                                      <span className="block text-[10px] font-black text-[#d91478]">{kw}</span>
+                                      <span className="block text-[11px] font-bold text-slate-900">
+                                        {priceVal ? `₹${Number(priceVal).toLocaleString('en-IN')}` : 'N/A'}
+                                      </span>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          </>
+                        ) : (
+                          <>
+                            {/* Individual Product Pricing Card: Offer Price + MRP Struck Out */}
+                            <div className="bg-gradient-to-r from-pink-50/90 via-slate-50 to-emerald-50/70 p-3 sm:p-3.5 rounded-2xl border-2 border-pink-200/80 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                              <div className="space-y-0.5">
+                                <span className="text-[9px] sm:text-[10px] font-black uppercase text-slate-500 block">
+                                  Offer Price (ऑफर कीमत)
+                                </span>
+                                <div className="flex items-baseline gap-2 flex-wrap">
+                                  {(() => {
+                                    const offer = Number(prod.offerPrice || prod.manualPrice || 0);
+                                    const orig = Number(prod.originalPrice || prod.manualGross || 0);
+                                    return (
+                                      <>
+                                        <span className="text-base sm:text-lg font-black text-[#d91478] font-mono">
+                                          ₹{offer > 0 ? offer.toLocaleString('en-IN') : (prod.price || 'N/A')}
+                                        </span>
+                                        {orig > offer && (
+                                          <span className="text-xs text-slate-400 line-through font-bold font-mono">
+                                            MRP: ₹{orig.toLocaleString('en-IN')}
+                                          </span>
+                                        )}
+                                      </>
+                                    );
+                                  })()}
+                                </div>
+                              </div>
+                              <div className="text-left sm:text-right flex items-center sm:flex-col gap-1.5">
+                                {(() => {
+                                  const offer = Number(prod.offerPrice || prod.manualPrice || 0);
+                                  const orig = Number(prod.originalPrice || prod.manualGross || 0);
+                                  if (orig > offer && offer > 0) {
+                                    return (
+                                      <span className="inline-block bg-emerald-100 text-emerald-800 text-[9px] sm:text-[10px] font-black px-2.5 py-1 rounded-full border border-emerald-300 shadow-2xs">
+                                        Save ₹{(orig - offer).toLocaleString('en-IN')} ({Math.round(((orig - offer) / orig) * 100)}% OFF)
+                                      </span>
+                                    );
+                                  }
+                                  return null;
+                                })()}
+                              </div>
+                            </div>
+
+                            {/* Linked to Custom Kit notice */}
+                            <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-600 bg-slate-50 px-2.5 py-1.5 rounded-xl border border-slate-200">
+                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                              <span>Custom Kit Builder में <strong>{prod.category}</strong> विकल्प के रूप में सक्रिय</span>
+                            </div>
+                          </>
                         )}
 
                         <div className="space-y-1 pt-1 text-xs text-slate-700">
@@ -2360,6 +2705,7 @@ const AdminDashboard = () => {
                   );
                 })}
               </div>
+              )}
             </div>
           )}
 
@@ -2383,7 +2729,28 @@ const AdminDashboard = () => {
                 </button>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+              {gallery.length === 0 ? (
+                <div className="text-center py-16 px-4 bg-white border-2 border-dashed border-slate-200 rounded-3xl space-y-4">
+                  <div className="w-16 h-16 mx-auto rounded-2xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-600">
+                    <Image className="w-8 h-8" />
+                  </div>
+                  <div className="max-w-md mx-auto space-y-1">
+                    <p className="font-extrabold text-base text-slate-900">No Project Photos in Gallery</p>
+                    <p className="text-xs text-slate-500">
+                      Sare dummy photos delete kar diye gaye hain. Apne real completed rooftop solar installations ki photos add karne ke liye button use karein:
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowAddGalleryModal(true)}
+                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-md cursor-pointer"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>+ Add First Project Photo</span>
+                  </button>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
                 {gallery.map((item) => (
                   <div
                     key={item.id}
@@ -2432,6 +2799,7 @@ const AdminDashboard = () => {
                   </div>
                 ))}
               </div>
+              )}
             </div>
           )}
 
@@ -2976,156 +3344,306 @@ const AdminDashboard = () => {
                 </div>
               </div>
 
-              {/* Manual Pricing & Subsidy Override (मैनुअल रेट और सब्सिडी सेट करें) */}
-              <div className="bg-gradient-to-br from-pink-50/70 via-slate-50 to-emerald-50/50 p-4 rounded-2xl border-2 border-pink-200/90 space-y-3.5 shadow-2xs">
-                <div className="flex items-center justify-between">
-                  <label className="font-black uppercase text-slate-900 text-xs flex items-center gap-1.5">
-                    <DollarSign className="w-4 h-4 text-[#d91478]" />
-                    <span>Manual Price & Subsidy Customization (मैनुअल रेट/सब्सिडी)</span>
-                  </label>
-                  <span className="text-[10px] text-[#d91478] font-bold">Direct Front Display Controls</span>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  {/* Effective Display Price */}
-                  <div>
-                    <label className="block text-[11px] font-black text-slate-800 mb-1">
-                      1. Effective Price (₹) *
-                    </label>
-                    <input
-                      type="number"
-                      required
-                      placeholder="e.g. 35000"
-                      value={newProduct.manualPrice ?? ''}
-                      onChange={(e) => setNewProduct({ ...newProduct, manualPrice: e.target.value === '' ? '' : Number(e.target.value) })}
-                      className="w-full px-3 py-2 rounded-xl bg-white border-2 border-pink-300 text-slate-900 font-black text-sm font-mono focus:outline-none focus:border-[#d91478]"
-                    />
-                    <span className="text-[10px] text-slate-500 block mt-0.5">मुख्य बड़ा रेट (जैसे ₹35,000*)</span>
-                  </div>
-
-                  {/* Gross / MRP Price */}
-                  <div>
-                    <label className="block text-[11px] font-black text-slate-800 mb-1">
-                      2. Gross / MRP Price (₹)
-                    </label>
-                    <input
-                      type="number"
-                      placeholder="e.g. 65000"
-                      value={newProduct.manualGross ?? ''}
-                      onChange={(e) => setNewProduct({ ...newProduct, manualGross: e.target.value === '' ? '' : Number(e.target.value) })}
-                      className="w-full px-3 py-2 rounded-xl bg-white border border-slate-300 text-slate-900 font-bold text-sm font-mono focus:outline-none focus:border-blue-500"
-                    />
-                    <span className="text-[10px] text-slate-500 block mt-0.5">कटने वाला कुल रेट (जैसे ₹65,000)</span>
-                  </div>
-
-                  {/* Subsidy Discount Amount */}
-                  <div>
-                    <label className="block text-[11px] font-black text-slate-800 mb-1">
-                      3. Subsidy Discount (₹)
-                    </label>
-                    <input
-                      type="number"
-                      placeholder="e.g. 30000"
-                      value={newProduct.manualSubsidy ?? ''}
-                      onChange={(e) => setNewProduct({ ...newProduct, manualSubsidy: e.target.value === '' ? '' : Number(e.target.value) })}
-                      className="w-full px-3 py-2 rounded-xl bg-white border border-emerald-300 text-emerald-800 font-bold text-sm font-mono focus:outline-none focus:border-emerald-600"
-                    />
-                    <span className="text-[10px] text-slate-500 block mt-0.5">सब्सिडी छूट (जैसे -₹30,000 Subsidy)</span>
-                  </div>
-                </div>
-
-                {/* Custom Label (Optional) */}
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                    Price Label (वैकल्पिक / Optional)
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="Effective 1kW Price (After Subsidy)"
-                    value={newProduct.priceLabel || ''}
-                    onChange={(e) => setNewProduct({ ...newProduct, priceLabel: e.target.value })}
-                    className="w-full px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-slate-900 font-medium text-xs focus:outline-none focus:border-[#d91478]"
-                  />
-                </div>
-
-                {/* Live Realtime Preview matching user's screenshot */}
-                <div className="p-3 rounded-2xl bg-white border border-pink-200 shadow-2xs space-y-1">
-                  <span className="text-[9px] font-black uppercase tracking-wider text-slate-400 block">
-                    🔴 Live Customer Preview on Website (/product):
-                  </span>
-                  <div className="p-2.5 rounded-xl bg-gradient-to-r from-pink-50/90 via-slate-50 to-emerald-50/70 border border-pink-200/80 flex items-center justify-between gap-2">
-                    <div className="space-y-0.5">
-                      <span className="text-[9px] font-black uppercase text-slate-500 block">
-                        {newProduct.priceLabel || (productType === 'kit' ? 'Effective 1kW Price (After Subsidy)' : 'Effective Offer Price')}
+              {/* Solar Kit: Rate Per Watt input & PM Surya Ghar Subsidy Breakdown */}
+              {productType === 'kit' && (
+                <div className="space-y-4">
+                  {/* Step 1: Rate Per Watt Input Box */}
+                  <div className="bg-gradient-to-r from-emerald-500/10 via-teal-500/10 to-pink-500/10 p-4 sm:p-5 rounded-2xl border-2 border-emerald-400 shadow-xs space-y-3">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
+                      <div>
+                        <label className="font-black text-slate-900 text-sm sm:text-base flex items-center gap-2">
+                          <Zap className="w-5 h-5 text-emerald-600 animate-pulse" />
+                          <span>Rate Per Watt (प्रति वॉट रेट - ₹ / Watt) *</span>
+                        </label>
+                        <p className="text-[11px] text-slate-600 mt-0.5">
+                          यहाँ प्रति वॉट रेट डालें (उदा. ₹55 या ₹60)। 1kW से 10kW का ग्रॉस रेट, सरकारी सब्सिडी और फाइनल रेट अपने आप निकल जाएगा।
+                        </p>
+                      </div>
+                      <span className="text-[11px] font-black text-emerald-800 bg-emerald-100 px-3 py-1 rounded-full border border-emerald-300 self-start sm:self-center">
+                        ⚡ 1kW–10kW Auto Calculator
                       </span>
-                      <div className="flex items-baseline gap-2">
-                        <span className="text-base font-black text-[#d91478] font-mono">
-                          ₹{Number(newProduct.manualPrice || 35000).toLocaleString('en-IN')}*
-                        </span>
-                        {newProduct.manualGross && (
-                          <span className="text-xs text-slate-400 line-through font-bold font-mono">
-                            ₹{Number(newProduct.manualGross).toLocaleString('en-IN')}
-                          </span>
-                        )}
+                    </div>
+
+                    <div className="flex items-center gap-2 sm:gap-3">
+                      <div className="relative flex-1">
+                        <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 font-black text-base">₹</span>
+                        <input
+                          type="number"
+                          required
+                          min="1"
+                          step="0.5"
+                          placeholder="उदा. 55 या 60 दर्ज करें"
+                          value={newProduct.ratePerWatt ?? ''}
+                          onChange={(e) => handleRatePerWattChange(e.target.value, 'new')}
+                          className="w-full pl-8 pr-4 py-3 rounded-xl bg-white border-2 border-emerald-500 text-slate-900 font-black text-lg font-mono focus:outline-none focus:border-emerald-600 shadow-xs"
+                        />
+                      </div>
+                      <div className="bg-emerald-600 text-white font-black text-xs sm:text-sm px-4 py-3 rounded-xl shrink-0 shadow-sm">
+                        ₹ / Watt
                       </div>
                     </div>
-                    {newProduct.manualSubsidy && (
-                      <span className="bg-emerald-100 text-emerald-800 text-[10px] font-black px-2.5 py-1 rounded-full border border-emerald-300">
-                        -₹{Number(newProduct.manualSubsidy).toLocaleString('en-IN')} Subsidy
-                      </span>
-                    )}
                   </div>
-                </div>
-              </div>
 
-              {/* If Single Product: Ask for single unit price string */}
-              {productType === 'product' && (
-                <div>
-                  <label className="font-bold uppercase block mb-1">Hardware Rate String (₹ / Watt)</label>
-                  <input
-                    type="text"
-                    placeholder="e.g. ₹24 / Watt or ₹26 / Watt"
-                    value={newProduct.price || ''}
-                    onChange={(e) => setNewProduct({ ...newProduct, price: e.target.value })}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 focus:outline-none focus:border-emerald-500 font-medium"
-                  />
+                  {/* Step 2: PM Surya Ghar Subsidy & Capacity Breakdown Table */}
+                  <div className="bg-slate-50 p-4 sm:p-5 rounded-2xl border-2 border-slate-200 space-y-3.5 shadow-2xs">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200 pb-2.5">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <ShieldCheck className="w-4 h-4 text-[#d91478]" />
+                          <h4 className="font-black text-slate-900 text-xs sm:text-sm uppercase tracking-wide">
+                            PM Surya Ghar Subsidy Breakdown (1kW to 10kW)
+                          </h4>
+                        </div>
+                        <p className="text-[11px] text-slate-500 mt-0.5">
+                          सरकारी सब्सिडी माइनस करके ग्राहक के लिए फाइनल देय राशि (Net Payable):
+                        </p>
+                      </div>
+
+                      {/* Subsidy Mode Switcher: Central vs With State */}
+                      <div className="flex items-center gap-1 bg-white p-1 rounded-xl border border-slate-200 self-start sm:self-center">
+                        <button
+                          type="button"
+                          onClick={() => setNewProduct({ ...newProduct, subsidyMode: 'central' })}
+                          className={`px-2.5 py-1 rounded-lg text-[10px] font-black uppercase transition-all cursor-pointer ${
+                            (newProduct.subsidyMode || 'central') === 'central'
+                              ? 'bg-emerald-600 text-white shadow-xs'
+                              : 'text-slate-600 hover:text-slate-900'
+                          }`}
+                        >
+                          Central Subsidy (₹30k/₹60k/₹78k)
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setNewProduct({ ...newProduct, subsidyMode: 'total' })}
+                          className={`px-2.5 py-1 rounded-lg text-[10px] font-black uppercase transition-all cursor-pointer ${
+                            newProduct.subsidyMode === 'total'
+                              ? 'bg-[#d91478] text-white shadow-xs'
+                              : 'text-slate-600 hover:text-slate-900'
+                          }`}
+                        >
+                          + State Top-Up (₹30k/₹90k/₹108k)
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Breakdown Table */}
+                    <div className="overflow-x-auto bg-white rounded-xl border border-slate-200 shadow-2xs">
+                      <table className="w-full text-left border-collapse">
+                        <thead>
+                          <tr className="bg-slate-100 text-[10px] sm:text-[11px] font-black text-slate-700 uppercase border-b border-slate-200">
+                            <th className="py-2.5 px-3">Capacity (kW)</th>
+                            <th className="py-2.5 px-3">Gross Kit Price (कुल रेट)</th>
+                            <th className="py-2.5 px-3 text-emerald-700">Govt Subsidy (सरकारी सब्सिडी)</th>
+                            <th className="py-2.5 px-3 text-[#d91478]">Net Payable by Customer (फाइनल रेट)</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100 text-xs font-medium">
+                          {CAPACITY_CONFIG.map((tier) => {
+                            const rate = Number(newProduct.ratePerWatt) || 0;
+                            const gross = rate > 0
+                              ? (tier.kw === '1kW' && newProduct.manualGross ? Number(newProduct.manualGross) : (newProduct.capacityPricing?.[tier.kw] || (tier.watts * rate)))
+                              : (newProduct.capacityPricing?.[tier.kw] || 0);
+                            const sub = newProduct.subsidyMode === 'total' ? tier.totalSubsidy : tier.centralSubsidy;
+                            const net = gross > 0 ? Math.max(0, gross - sub) : 0;
+
+                            return (
+                              <tr key={tier.kw} className="hover:bg-slate-50/80 transition-colors">
+                                <td className="py-2.5 px-3 font-black text-slate-900">
+                                  <span className="inline-flex items-center gap-1">
+                                    <span className="text-[#d91478] font-mono font-black">{tier.kw}</span>
+                                    <span className="text-[10px] text-slate-400 font-normal">({tier.watts.toLocaleString('en-IN')}W)</span>
+                                  </span>
+                                </td>
+                                <td className="py-2.5 px-3 font-mono font-bold text-slate-700">
+                                  {gross > 0 ? `₹${gross.toLocaleString('en-IN')}` : <span className="text-slate-300">Rate दर्ज करें</span>}
+                                </td>
+                                <td className="py-2.5 px-3">
+                                  <span className="inline-block bg-emerald-50 text-emerald-700 font-black text-[11px] px-2 py-0.5 rounded-lg border border-emerald-200 font-mono">
+                                    -₹{sub.toLocaleString('en-IN')} Subsidy
+                                  </span>
+                                </td>
+                                <td className="py-2.5 px-3 font-mono font-black text-[#d91478]">
+                                  {gross > 0 ? (
+                                    <span className="text-sm">₹{net.toLocaleString('en-IN')}*</span>
+                                  ) : (
+                                    <span className="text-slate-300">₹0*</span>
+                                  )}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {/* Customer Display Preview (1kW Hero Card) */}
+                    <div className="p-3 sm:p-3.5 rounded-xl bg-gradient-to-r from-pink-50/90 via-slate-50 to-emerald-50/80 border border-pink-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
+                      <div className="space-y-0.5">
+                        <span className="text-[9px] font-black uppercase text-slate-500 tracking-wider block">
+                          🌐 Customer Display Preview (/product):
+                        </span>
+                        <div className="flex items-baseline gap-2.5 flex-wrap">
+                          <span className="text-lg font-black text-[#d91478] font-mono">
+                            ₹{Number(newProduct.manualPrice || 0).toLocaleString('en-IN')}*
+                          </span>
+                          {newProduct.manualGross && (
+                            <span className="text-xs text-slate-400 line-through font-bold font-mono">
+                              ₹{Number(newProduct.manualGross).toLocaleString('en-IN')}
+                            </span>
+                          )}
+                          {newProduct.ratePerWatt && (
+                            <span className="text-xs font-bold text-slate-600 bg-white px-2 py-0.5 rounded-md border border-slate-200">
+                              ₹{newProduct.ratePerWatt} / Watt
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <div>
+                        <span className="bg-emerald-100 text-emerald-800 text-[11px] font-black px-3 py-1.5 rounded-full border border-emerald-300 inline-block shadow-2xs">
+                          -₹30,000 Govt Subsidy
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Optional Custom Overrides Accordion */}
+                    <div className="pt-1">
+                      <button
+                        type="button"
+                        onClick={() => setShowManualTweak(!showManualTweak)}
+                        className="text-[11px] text-slate-600 hover:text-slate-900 font-bold flex items-center gap-1.5 cursor-pointer underline"
+                      >
+                        <span>{showManualTweak ? '▲ Hide manual capacity overrides' : '▼ किसी विशेष kW का रेट अलग रखना हो तो यहाँ क्लिक करें (Optional Overrides)'}</span>
+                      </button>
+
+                      {showManualTweak && (
+                        <div className="mt-2.5 grid grid-cols-2 sm:grid-cols-4 gap-2 bg-white p-3 rounded-xl border border-slate-200">
+                          {CAPACITY_CONFIG.map((tier) => (
+                            <div key={tier.kw} className="bg-slate-50 p-2 rounded-lg border border-slate-200">
+                              <label className="block text-[10px] font-black text-slate-700 mb-1">{tier.kw} Gross (₹)</label>
+                              <input
+                                type="number"
+                                placeholder={`e.g. ${Number(newProduct.ratePerWatt || 0) * tier.watts}`}
+                                value={tier.kw === '1kW' ? (newProduct.manualGross || newProduct.capacityPricing?.[tier.kw] || '') : (newProduct.capacityPricing?.[tier.kw] || '')}
+                                onChange={(e) => {
+                                  const val = e.target.value === '' ? '' : Number(e.target.value);
+                                  const updatedCap = { ...newProduct.capacityPricing, [tier.kw]: val };
+                                  const sub = newProduct.subsidyMode === 'total' ? tier.totalSubsidy : tier.centralSubsidy;
+                                  setNewProduct({
+                                    ...newProduct,
+                                    manualGross: tier.kw === '1kW' ? val : newProduct.manualGross,
+                                    manualPrice: tier.kw === '1kW' ? (val !== '' ? Math.max(0, val - sub) : '') : newProduct.manualPrice,
+                                    capacityPricing: updatedCap,
+                                  });
+                                }}
+                                className="w-full px-2 py-1 rounded bg-white border border-slate-200 text-slate-900 font-bold text-xs focus:outline-none focus:border-[#d91478]"
+                              />
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 </div>
               )}
 
-              {/* If Kit: Capacity-based Pricing inputs for 1kW to 10kW */}
-              {productType === 'kit' && (
-                <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-3">
+              {/* If Single Product: Original Price & Offer Price (NO 1kW-10kW or Subsidy) */}
+              {productType === 'product' && (
+                <div className="bg-gradient-to-br from-pink-50/70 via-white to-emerald-50/60 p-4 sm:p-5 rounded-2xl border-2 border-pink-200 space-y-3.5 shadow-2xs">
                   <div className="flex items-center justify-between">
-                    <label className="font-black uppercase text-slate-900 text-xs flex items-center gap-1.5">
-                      <Zap className="w-4 h-4 text-[#d91478]" />
-                      <span>Capacity-Wise Kit Pricing (1kW to 10kW in ₹)</span>
-                    </label>
-                    <span className="text-[11px] text-slate-500">Gross kit price before subsidy</span>
+                    <div>
+                      <label className="font-black uppercase block text-slate-900 text-xs sm:text-sm flex items-center gap-1.5">
+                        <DollarSign className="w-4 h-4 text-[#d91478]" />
+                        <span>Product Pricing (Original MRP & Offer Price) *</span>
+                      </label>
+                      <p className="text-[11px] text-slate-500 font-medium mt-0.5">
+                        यहाँ 1kW–10kW या सब्सिडी की ज़रूरत नहीं है। केवल मूल कीमत (MRP) और ग्राहक को दिखने वाली ऑफर कीमत भरें।
+                      </p>
+                    </div>
+                    <span className="text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full bg-slate-900 text-white shadow-2xs">
+                      Single Hardware Unit
+                    </span>
                   </div>
 
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-                    {['1kW', '2kW', '3kW', '4kW', '5kW', '6kW', '8kW', '10kW'].map((kw) => (
-                      <div key={kw} className="bg-white p-2.5 rounded-xl border border-slate-200">
-                        <label className="block text-[11px] font-black text-slate-700 mb-1">{kw} Kit Price (₹)</label>
-                        <input
-                          type="number"
-                          placeholder="e.g. 68000"
-                          value={kw === '1kW' ? (newProduct.manualGross || newProduct.capacityPricing?.[kw] || '') : (newProduct.capacityPricing?.[kw] || '')}
-                          onChange={(e) => {
-                            const val = Number(e.target.value) || 0;
-                            setNewProduct({
-                              ...newProduct,
-                              manualGross: kw === '1kW' ? val : newProduct.manualGross,
-                              capacityPricing: {
-                                ...newProduct.capacityPricing,
-                                [kw]: val,
-                              }
-                            });
-                          }}
-                          className="w-full px-2.5 py-1.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-900 font-bold text-xs focus:outline-none focus:border-[#d91478]"
-                        />
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="bg-white p-3 rounded-xl border border-slate-200">
+                      <label className="block text-[11px] font-black text-slate-700 mb-1">
+                        Original Price (MRP / मूल कीमत - ₹) *
+                      </label>
+                      <input
+                        type="number"
+                        required
+                        placeholder="e.g. 18000"
+                        value={newProduct.originalPrice ?? ''}
+                        onChange={(e) => {
+                          const orig = e.target.value === '' ? '' : Number(e.target.value);
+                          setNewProduct({
+                            ...newProduct,
+                            originalPrice: orig,
+                            manualGross: orig,
+                          });
+                        }}
+                        className="w-full px-3 py-2 rounded-lg bg-slate-50 border border-slate-300 text-slate-900 font-black text-sm font-mono focus:outline-none focus:border-[#d91478]"
+                      />
+                      <span className="text-[10px] text-slate-400 block mt-1">यह कीमत MRP के रूप में कटी हुई (line-through) दिखेगी</span>
+                    </div>
+
+                    <div className="bg-white p-3 rounded-xl border-2 border-[#d91478]/40 shadow-2xs">
+                      <label className="block text-[11px] font-black text-[#d91478] mb-1">
+                        Offer Price (ऑफर कीमत / Final Price - ₹) *
+                      </label>
+                      <input
+                        type="number"
+                        required
+                        placeholder="e.g. 13500"
+                        value={newProduct.offerPrice ?? ''}
+                        onChange={(e) => {
+                          const off = e.target.value === '' ? '' : Number(e.target.value);
+                          setNewProduct({
+                            ...newProduct,
+                            offerPrice: off,
+                            manualPrice: off,
+                            price: off !== '' ? `₹${Number(off).toLocaleString('en-IN')}` : '',
+                          });
+                        }}
+                        className="w-full px-3 py-2 rounded-lg bg-white border border-[#d91478] text-slate-900 font-black text-sm font-mono focus:outline-none focus:ring-2 focus:ring-[#d91478]/30"
+                      />
+                      <span className="text-[10px] text-emerald-700 font-bold block mt-1">यही मुख्य कीमत ग्राहक को खरीदारी के लिए दिखेगी</span>
+                    </div>
+                  </div>
+
+                  {/* Live Card Preview for Individual Product */}
+                  {(newProduct.originalPrice || newProduct.offerPrice) && (
+                    <div className="p-3 bg-white rounded-xl border border-pink-200 flex items-center justify-between gap-2">
+                      <div className="space-y-0.5">
+                        <div className="flex items-center gap-1.5 mb-1">
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-gradient-to-r from-amber-400 to-yellow-400 text-slate-950 shadow-xs border border-amber-300">
+                            <Sparkles className="w-2.5 h-2.5 text-slate-950 fill-slate-950" />
+                            Special Offer
+                          </span>
+                          <span className="text-[10px] font-bold text-slate-500 uppercase">Live Preview:</span>
+                        </div>
+                        <div className="flex items-baseline gap-2">
+                          <span className="text-base sm:text-lg font-black text-[#d91478] font-mono">
+                            ₹{Number(newProduct.offerPrice || 0).toLocaleString('en-IN')}
+                          </span>
+                          {Number(newProduct.originalPrice || 0) > Number(newProduct.offerPrice || 0) && (
+                            <span className="text-xs text-slate-400 line-through font-bold font-mono">
+                              MRP: ₹{Number(newProduct.originalPrice).toLocaleString('en-IN')}
+                            </span>
+                          )}
+                        </div>
                       </div>
-                    ))}
+                      {Number(newProduct.originalPrice || 0) > Number(newProduct.offerPrice || 0) && (
+                        <span className="bg-emerald-100 text-emerald-800 text-[10px] font-black px-2.5 py-1 rounded-full border border-emerald-300">
+                          Save ₹{(Number(newProduct.originalPrice) - Number(newProduct.offerPrice)).toLocaleString('en-IN')} ({Math.round(((Number(newProduct.originalPrice) - Number(newProduct.offerPrice)) / Number(newProduct.originalPrice)) * 100)}% OFF)
+                        </span>
+                      )}
+                    </div>
+                  )}
+
+                  <div className="text-[10px] text-slate-600 bg-white/80 p-2.5 rounded-xl border border-slate-200 flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <span><strong>Make Your Own Kit (Custom Kit) Integration:</strong> यह प्रोडक्ट कस्टम किट बिल्डर के स्टेप्स में अपनी इसी ऑफर कीमत के साथ स्वतः जुड़ जाएगा।</span>
                   </div>
                 </div>
               )}
@@ -3351,156 +3869,306 @@ const AdminDashboard = () => {
                 </div>
               </div>
 
-              {/* Manual Pricing & Subsidy Override (मैनुअल रेट और सब्सिडी बदलें) */}
-              <div className="bg-gradient-to-br from-pink-50/70 via-slate-50 to-emerald-50/50 p-4 rounded-2xl border-2 border-pink-200/90 space-y-3.5 shadow-2xs">
-                <div className="flex items-center justify-between">
-                  <label className="font-black uppercase text-slate-900 text-xs flex items-center gap-1.5">
-                    <DollarSign className="w-4 h-4 text-[#d91478]" />
-                    <span>Manual Price & Subsidy Customization (मैनुअल रेट/सब्सिडी)</span>
-                  </label>
-                  <span className="text-[10px] text-[#d91478] font-bold">Direct Front Display Controls</span>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  {/* Effective Display Price */}
-                  <div>
-                    <label className="block text-[11px] font-black text-slate-800 mb-1">
-                      1. Effective Price (₹) *
-                    </label>
-                    <input
-                      type="number"
-                      required
-                      placeholder="e.g. 35000"
-                      value={editingProduct.manualPrice ?? ''}
-                      onChange={(e) => setEditingProduct({ ...editingProduct, manualPrice: e.target.value === '' ? '' : Number(e.target.value) })}
-                      className="w-full px-3 py-2 rounded-xl bg-white border-2 border-pink-300 text-slate-900 font-black text-sm font-mono focus:outline-none focus:border-[#d91478]"
-                    />
-                    <span className="text-[10px] text-slate-500 block mt-0.5">मुख्य बड़ा रेट (जैसे ₹35,000*)</span>
-                  </div>
-
-                  {/* Gross / MRP Price */}
-                  <div>
-                    <label className="block text-[11px] font-black text-slate-800 mb-1">
-                      2. Gross / MRP Price (₹)
-                    </label>
-                    <input
-                      type="number"
-                      placeholder="e.g. 65000"
-                      value={editingProduct.manualGross ?? ''}
-                      onChange={(e) => setEditingProduct({ ...editingProduct, manualGross: e.target.value === '' ? '' : Number(e.target.value) })}
-                      className="w-full px-3 py-2 rounded-xl bg-white border border-slate-300 text-slate-900 font-bold text-sm font-mono focus:outline-none focus:border-blue-500"
-                    />
-                    <span className="text-[10px] text-slate-500 block mt-0.5">कटने वाला कुल रेट (जैसे ₹65,000)</span>
-                  </div>
-
-                  {/* Subsidy Discount Amount */}
-                  <div>
-                    <label className="block text-[11px] font-black text-slate-800 mb-1">
-                      3. Subsidy Discount (₹)
-                    </label>
-                    <input
-                      type="number"
-                      placeholder="e.g. 30000"
-                      value={editingProduct.manualSubsidy ?? ''}
-                      onChange={(e) => setEditingProduct({ ...editingProduct, manualSubsidy: e.target.value === '' ? '' : Number(e.target.value) })}
-                      className="w-full px-3 py-2 rounded-xl bg-white border border-emerald-300 text-emerald-800 font-bold text-sm font-mono focus:outline-none focus:border-emerald-600"
-                    />
-                    <span className="text-[10px] text-slate-500 block mt-0.5">सब्सिडी छूट (जैसे -₹30,000 Subsidy)</span>
-                  </div>
-                </div>
-
-                {/* Custom Label (Optional) */}
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                    Price Label (वैकल्पिक / Optional)
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="Effective 1kW Price (After Subsidy)"
-                    value={editingProduct.priceLabel || ''}
-                    onChange={(e) => setEditingProduct({ ...editingProduct, priceLabel: e.target.value })}
-                    className="w-full px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-slate-900 font-medium text-xs focus:outline-none focus:border-[#d91478]"
-                  />
-                </div>
-
-                {/* Live Realtime Preview matching user's screenshot */}
-                <div className="p-3 rounded-2xl bg-white border border-pink-200 shadow-2xs space-y-1">
-                  <span className="text-[9px] font-black uppercase tracking-wider text-slate-400 block">
-                    🔴 Live Customer Preview on Website (/product):
-                  </span>
-                  <div className="p-2.5 rounded-xl bg-gradient-to-r from-pink-50/90 via-slate-50 to-emerald-50/70 border border-pink-200/80 flex items-center justify-between gap-2">
-                    <div className="space-y-0.5">
-                      <span className="text-[9px] font-black uppercase text-slate-500 block">
-                        {editingProduct.priceLabel || (editingProduct.isKit ? 'Effective 1kW Price (After Subsidy)' : 'Effective Offer Price')}
+              {/* If Kit: Rate Per Watt input & PM Surya Ghar Subsidy Breakdown */}
+              {editingProduct.isKit && (
+                <div className="space-y-4">
+                  {/* Rate Per Watt Box */}
+                  <div className="bg-gradient-to-r from-blue-500/10 via-teal-500/10 to-indigo-500/10 p-4 sm:p-5 rounded-2xl border-2 border-blue-400 shadow-xs space-y-3">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
+                      <div>
+                        <label className="font-black text-slate-900 text-sm sm:text-base flex items-center gap-2">
+                          <Zap className="w-5 h-5 text-blue-600 animate-pulse" />
+                          <span>Rate Per Watt (प्रति वॉट रेट - ₹ / Watt) *</span>
+                        </label>
+                        <p className="text-[11px] text-slate-600 mt-0.5">
+                          यहाँ प्रति वॉट रेट बदलें (उदा. ₹55 या ₹60)। 1kW से 10kW का ग्रॉस रेट, सरकारी सब्सिडी और फाइनल रेट अपने आप अपडेट हो जाएगा।
+                        </p>
+                      </div>
+                      <span className="text-[11px] font-black text-blue-800 bg-blue-100 px-3 py-1 rounded-full border border-blue-300 self-start sm:self-center">
+                        ⚡ 1kW–10kW Auto Calculator
                       </span>
-                      <div className="flex items-baseline gap-2">
-                        <span className="text-base font-black text-[#d91478] font-mono">
-                          ₹{Number(editingProduct.manualPrice || 35000).toLocaleString('en-IN')}*
-                        </span>
-                        {editingProduct.manualGross && (
-                          <span className="text-xs text-slate-400 line-through font-bold font-mono">
-                            ₹{Number(editingProduct.manualGross).toLocaleString('en-IN')}
-                          </span>
-                        )}
+                    </div>
+
+                    <div className="flex items-center gap-2 sm:gap-3">
+                      <div className="relative flex-1">
+                        <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 font-black text-base">₹</span>
+                        <input
+                          type="number"
+                          required
+                          min="1"
+                          step="0.5"
+                          placeholder="उदा. 55 या 60 दर्ज करें"
+                          value={editingProduct.ratePerWatt ?? ''}
+                          onChange={(e) => handleRatePerWattChange(e.target.value, 'edit')}
+                          className="w-full pl-8 pr-4 py-3 rounded-xl bg-white border-2 border-blue-500 text-slate-900 font-black text-lg font-mono focus:outline-none focus:border-blue-600 shadow-xs"
+                        />
+                      </div>
+                      <div className="bg-blue-600 text-white font-black text-xs sm:text-sm px-4 py-3 rounded-xl shrink-0 shadow-sm">
+                        ₹ / Watt
                       </div>
                     </div>
-                    {editingProduct.manualSubsidy && (
-                      <span className="bg-emerald-100 text-emerald-800 text-[10px] font-black px-2.5 py-1 rounded-full border border-emerald-300">
-                        -₹{Number(editingProduct.manualSubsidy).toLocaleString('en-IN')} Subsidy
-                      </span>
-                    )}
                   </div>
-                </div>
-              </div>
 
-              {/* Single Product Price (if not a solar kit) */}
-              {!editingProduct.isKit && (
-                <div>
-                  <label className="font-bold uppercase block mb-1">Hardware Rate String (₹ / Watt)</label>
-                  <input
-                    type="text"
-                    placeholder="e.g. ₹24 / Watt or ₹26 / Watt"
-                    value={editingProduct.price || ''}
-                    onChange={(e) => setEditingProduct({ ...editingProduct, price: e.target.value })}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 focus:outline-none focus:border-blue-500 font-medium"
-                  />
+                  {/* Subsidy Breakdown Table */}
+                  <div className="bg-slate-50 p-4 sm:p-5 rounded-2xl border-2 border-slate-200 space-y-3.5 shadow-2xs">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200 pb-2.5">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <ShieldCheck className="w-4 h-4 text-blue-600" />
+                          <h4 className="font-black text-slate-900 text-xs sm:text-sm uppercase tracking-wide">
+                            PM Surya Ghar Subsidy Breakdown (1kW to 10kW)
+                          </h4>
+                        </div>
+                        <p className="text-[11px] text-slate-500 mt-0.5">
+                          सरकारी सब्सिडी माइनस करके ग्राहक के लिए फाइनल देय राशि (Net Payable):
+                        </p>
+                      </div>
+
+                      {/* Subsidy Mode Switcher */}
+                      <div className="flex items-center gap-1 bg-white p-1 rounded-xl border border-slate-200 self-start sm:self-center">
+                        <button
+                          type="button"
+                          onClick={() => setEditingProduct({ ...editingProduct, subsidyMode: 'central' })}
+                          className={`px-2.5 py-1 rounded-lg text-[10px] font-black uppercase transition-all cursor-pointer ${
+                            (editingProduct.subsidyMode || 'central') === 'central'
+                              ? 'bg-blue-600 text-white shadow-xs'
+                              : 'text-slate-600 hover:text-slate-900'
+                          }`}
+                        >
+                          Central Subsidy (₹30k/₹60k/₹78k)
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setEditingProduct({ ...editingProduct, subsidyMode: 'total' })}
+                          className={`px-2.5 py-1 rounded-lg text-[10px] font-black uppercase transition-all cursor-pointer ${
+                            editingProduct.subsidyMode === 'total'
+                              ? 'bg-[#d91478] text-white shadow-xs'
+                              : 'text-slate-600 hover:text-slate-900'
+                          }`}
+                        >
+                          + State Top-Up (₹30k/₹90k/₹108k)
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Breakdown Table */}
+                    <div className="overflow-x-auto bg-white rounded-xl border border-slate-200 shadow-2xs">
+                      <table className="w-full text-left border-collapse">
+                        <thead>
+                          <tr className="bg-slate-100 text-[10px] sm:text-[11px] font-black text-slate-700 uppercase border-b border-slate-200">
+                            <th className="py-2.5 px-3">Capacity (kW)</th>
+                            <th className="py-2.5 px-3">Gross Kit Price (कुल रेट)</th>
+                            <th className="py-2.5 px-3 text-emerald-700">Govt Subsidy (सरकारी सब्सिडी)</th>
+                            <th className="py-2.5 px-3 text-blue-700">Net Payable by Customer (फाइनल रेट)</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100 text-xs font-medium">
+                          {CAPACITY_CONFIG.map((tier) => {
+                            const rate = Number(editingProduct.ratePerWatt) || 0;
+                            const gross = rate > 0
+                              ? (tier.kw === '1kW' && editingProduct.manualGross ? Number(editingProduct.manualGross) : (editingProduct.capacityPricing?.[tier.kw] || (tier.watts * rate)))
+                              : (editingProduct.capacityPricing?.[tier.kw] || 0);
+                            const sub = editingProduct.subsidyMode === 'total' ? tier.totalSubsidy : tier.centralSubsidy;
+                            const net = gross > 0 ? Math.max(0, gross - sub) : 0;
+
+                            return (
+                              <tr key={tier.kw} className="hover:bg-slate-50/80 transition-colors">
+                                <td className="py-2.5 px-3 font-black text-slate-900">
+                                  <span className="inline-flex items-center gap-1">
+                                    <span className="text-blue-600 font-mono font-black">{tier.kw}</span>
+                                    <span className="text-[10px] text-slate-400 font-normal">({tier.watts.toLocaleString('en-IN')}W)</span>
+                                  </span>
+                                </td>
+                                <td className="py-2.5 px-3 font-mono font-bold text-slate-700">
+                                  {gross > 0 ? `₹${gross.toLocaleString('en-IN')}` : <span className="text-slate-300">Rate दर्ज करें</span>}
+                                </td>
+                                <td className="py-2.5 px-3">
+                                  <span className="inline-block bg-emerald-50 text-emerald-700 font-black text-[11px] px-2 py-0.5 rounded-lg border border-emerald-200 font-mono">
+                                    -₹{sub.toLocaleString('en-IN')} Subsidy
+                                  </span>
+                                </td>
+                                <td className="py-2.5 px-3 font-mono font-black text-blue-700">
+                                  {gross > 0 ? (
+                                    <span className="text-sm">₹{net.toLocaleString('en-IN')}*</span>
+                                  ) : (
+                                    <span className="text-slate-300">₹0*</span>
+                                  )}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {/* Customer Display Preview */}
+                    <div className="p-3 sm:p-3.5 rounded-xl bg-gradient-to-r from-blue-50/90 via-slate-50 to-emerald-50/80 border border-blue-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
+                      <div className="space-y-0.5">
+                        <span className="text-[9px] font-black uppercase text-slate-500 tracking-wider block">
+                          🌐 Customer Display Preview (/product):
+                        </span>
+                        <div className="flex items-baseline gap-2.5 flex-wrap">
+                          <span className="text-lg font-black text-blue-700 font-mono">
+                            ₹{Number(editingProduct.manualPrice || 0).toLocaleString('en-IN')}*
+                          </span>
+                          {editingProduct.manualGross && (
+                            <span className="text-xs text-slate-400 line-through font-bold font-mono">
+                              ₹{Number(editingProduct.manualGross).toLocaleString('en-IN')}
+                            </span>
+                          )}
+                          {editingProduct.ratePerWatt && (
+                            <span className="text-xs font-bold text-slate-600 bg-white px-2 py-0.5 rounded-md border border-slate-200">
+                              ₹{editingProduct.ratePerWatt} / Watt
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <div>
+                        <span className="bg-emerald-100 text-emerald-800 text-[11px] font-black px-3 py-1.5 rounded-full border border-emerald-300 inline-block shadow-2xs">
+                          -₹30,000 Govt Subsidy
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Optional Custom Overrides Accordion */}
+                    <div className="pt-1">
+                      <button
+                        type="button"
+                        onClick={() => setShowEditManualTweak(!showEditManualTweak)}
+                        className="text-[11px] text-slate-600 hover:text-slate-900 font-bold flex items-center gap-1.5 cursor-pointer underline"
+                      >
+                        <span>{showEditManualTweak ? '▲ Hide manual capacity overrides' : '▼ किसी विशेष kW का रेट अलग रखना हो तो यहाँ क्लिक करें (Optional Overrides)'}</span>
+                      </button>
+
+                      {showEditManualTweak && (
+                        <div className="mt-2.5 grid grid-cols-2 sm:grid-cols-4 gap-2 bg-white p-3 rounded-xl border border-slate-200">
+                          {CAPACITY_CONFIG.map((tier) => (
+                            <div key={tier.kw} className="bg-slate-50 p-2 rounded-lg border border-slate-200">
+                              <label className="block text-[10px] font-black text-slate-700 mb-1">{tier.kw} Gross (₹)</label>
+                              <input
+                                type="number"
+                                placeholder={`e.g. ${Number(editingProduct.ratePerWatt || 0) * tier.watts}`}
+                                value={tier.kw === '1kW' ? (editingProduct.manualGross || editingProduct.capacityPricing?.[tier.kw] || '') : (editingProduct.capacityPricing?.[tier.kw] || '')}
+                                onChange={(e) => {
+                                  const val = e.target.value === '' ? '' : Number(e.target.value);
+                                  const updatedCap = { ...editingProduct.capacityPricing, [tier.kw]: val };
+                                  const sub = editingProduct.subsidyMode === 'total' ? tier.totalSubsidy : tier.centralSubsidy;
+                                  setEditingProduct({
+                                    ...editingProduct,
+                                    manualGross: tier.kw === '1kW' ? val : editingProduct.manualGross,
+                                    manualPrice: tier.kw === '1kW' ? (val !== '' ? Math.max(0, val - sub) : '') : editingProduct.manualPrice,
+                                    capacityPricing: updatedCap,
+                                  });
+                                }}
+                                className="w-full px-2 py-1 rounded bg-white border border-slate-200 text-slate-900 font-bold text-xs focus:outline-none focus:border-blue-500"
+                              />
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 </div>
               )}
 
-              {/* Solar Kit ONLY: Capacity-based Pricing inputs for 1kW to 10kW */}
-              {editingProduct.isKit && (
-                <div className="bg-blue-50/50 p-4 rounded-2xl border border-blue-200 space-y-3">
+              {/* Single Product: Original Price & Offer Price (NO 1kW-10kW or Subsidy) */}
+              {!editingProduct.isKit && (
+                <div className="bg-gradient-to-br from-pink-50/70 via-white to-emerald-50/60 p-4 sm:p-5 rounded-2xl border-2 border-pink-200 space-y-3.5 shadow-2xs">
                   <div className="flex items-center justify-between">
-                    <label className="font-black uppercase text-slate-900 text-xs flex items-center gap-1.5">
-                      <Zap className="w-4 h-4 text-blue-600" />
-                      <span>Edit Kit Capacity Rates (1kW to 10kW in ₹)</span>
-                    </label>
-                    <span className="text-[10px] text-blue-600 font-bold">Live pricing on /product and /product/:id</span>
+                    <div>
+                      <label className="font-black uppercase block text-slate-900 text-xs sm:text-sm flex items-center gap-1.5">
+                        <DollarSign className="w-4 h-4 text-[#d91478]" />
+                        <span>Product Pricing (Original MRP & Offer Price) *</span>
+                      </label>
+                      <p className="text-[11px] text-slate-500 font-medium mt-0.5">
+                        यहाँ 1kW–10kW या सब्सिडी की ज़रूरत नहीं है। केवल मूल कीमत (MRP) और ग्राहक को दिखने वाली ऑफर कीमत भरें।
+                      </p>
+                    </div>
+                    <span className="text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full bg-slate-900 text-white shadow-2xs">
+                      Single Hardware Unit
+                    </span>
                   </div>
 
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-                    {['1kW', '2kW', '3kW', '4kW', '5kW', '6kW', '8kW', '10kW'].map((kw) => (
-                      <div key={kw} className="bg-white p-2.5 rounded-xl border border-slate-200 shadow-2xs">
-                        <label className="block text-[11px] font-black text-slate-800 mb-1">{kw} Kit Price (₹)</label>
-                        <input
-                          type="number"
-                          placeholder="e.g. 65000"
-                          value={kw === '1kW' ? (editingProduct.manualGross || editingProduct.capacityPricing?.[kw] || '') : (editingProduct.capacityPricing?.[kw] ?? '')}
-                          onChange={(e) => {
-                            const val = Number(e.target.value) || 0;
-                            setEditingProduct({
-                              ...editingProduct,
-                              manualGross: kw === '1kW' ? val : editingProduct.manualGross,
-                              capacityPricing: {
-                                ...editingProduct.capacityPricing,
-                                [kw]: val,
-                              }
-                            });
-                          }}
-                          className="w-full px-2.5 py-1.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-900 font-bold text-xs focus:outline-none focus:border-blue-500"
-                        />
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="bg-white p-3 rounded-xl border border-slate-200">
+                      <label className="block text-[11px] font-black text-slate-700 mb-1">
+                        Original Price (MRP / मूल कीमत - ₹) *
+                      </label>
+                      <input
+                        type="number"
+                        required
+                        placeholder="e.g. 18000"
+                        value={editingProduct.originalPrice ?? ''}
+                        onChange={(e) => {
+                          const orig = e.target.value === '' ? '' : Number(e.target.value);
+                          setEditingProduct({
+                            ...editingProduct,
+                            originalPrice: orig,
+                            manualGross: orig,
+                          });
+                        }}
+                        className="w-full px-3 py-2 rounded-lg bg-slate-50 border border-slate-300 text-slate-900 font-black text-sm font-mono focus:outline-none focus:border-[#d91478]"
+                      />
+                      <span className="text-[10px] text-slate-400 block mt-1">यह कीमत MRP के रूप में कटी हुई (line-through) दिखेगी</span>
+                    </div>
+
+                    <div className="bg-white p-3 rounded-xl border-2 border-[#d91478]/40 shadow-2xs">
+                      <label className="block text-[11px] font-black text-[#d91478] mb-1">
+                        Offer Price (ऑफर कीमत / Final Price - ₹) *
+                      </label>
+                      <input
+                        type="number"
+                        required
+                        placeholder="e.g. 13500"
+                        value={editingProduct.offerPrice ?? ''}
+                        onChange={(e) => {
+                          const off = e.target.value === '' ? '' : Number(e.target.value);
+                          setEditingProduct({
+                            ...editingProduct,
+                            offerPrice: off,
+                            manualPrice: off,
+                            price: off !== '' ? `₹${Number(off).toLocaleString('en-IN')}` : '',
+                          });
+                        }}
+                        className="w-full px-3 py-2 rounded-lg bg-white border border-[#d91478] text-slate-900 font-black text-sm font-mono focus:outline-none focus:ring-2 focus:ring-[#d91478]/30"
+                      />
+                      <span className="text-[10px] text-emerald-700 font-bold block mt-1">यही मुख्य कीमत ग्राहक को खरीदारी के लिए दिखेगी</span>
+                    </div>
+                  </div>
+
+                  {/* Live Card Preview for Individual Product */}
+                  {(editingProduct.originalPrice || editingProduct.offerPrice) && (
+                    <div className="p-3 bg-white rounded-xl border border-pink-200 flex items-center justify-between gap-2">
+                      <div className="space-y-0.5">
+                        <div className="flex items-center gap-1.5 mb-1">
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-gradient-to-r from-amber-400 to-yellow-400 text-slate-950 shadow-xs border border-amber-300">
+                            <Sparkles className="w-2.5 h-2.5 text-slate-950 fill-slate-950" />
+                            Special Offer
+                          </span>
+                          <span className="text-[10px] font-bold text-slate-500 uppercase">Live Preview:</span>
+                        </div>
+                        <div className="flex items-baseline gap-2">
+                          <span className="text-base sm:text-lg font-black text-[#d91478] font-mono">
+                            ₹{Number(editingProduct.offerPrice || 0).toLocaleString('en-IN')}
+                          </span>
+                          {Number(editingProduct.originalPrice || 0) > Number(editingProduct.offerPrice || 0) && (
+                            <span className="text-xs text-slate-400 line-through font-bold font-mono">
+                              MRP: ₹{Number(editingProduct.originalPrice).toLocaleString('en-IN')}
+                            </span>
+                          )}
+                        </div>
                       </div>
-                    ))}
+                      {Number(editingProduct.originalPrice || 0) > Number(editingProduct.offerPrice || 0) && (
+                        <span className="bg-emerald-100 text-emerald-800 text-[10px] font-black px-2.5 py-1 rounded-full border border-emerald-300">
+                          Save ₹{(Number(editingProduct.originalPrice) - Number(editingProduct.offerPrice)).toLocaleString('en-IN')} ({Math.round(((Number(editingProduct.originalPrice) - Number(editingProduct.offerPrice)) / Number(editingProduct.originalPrice)) * 100)}% OFF)
+                        </span>
+                      )}
+                    </div>
+                  )}
+
+                  <div className="text-[10px] text-slate-600 bg-white/80 p-2.5 rounded-xl border border-slate-200 flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <span><strong>Make Your Own Kit (Custom Kit) Integration:</strong> यह प्रोडक्ट कस्टम किट बिल्डर के स्टेप्स में अपनी इसी ऑफर कीमत के साथ स्वतः जुड़ जाएगा।</span>
                   </div>
                 </div>
               )}
@@ -4399,69 +5067,118 @@ const AdminDashboard = () => {
                 </div>
               </div>
 
-              {/* 3 Main Pricing Inputs */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-4 bg-gradient-to-br from-pink-50/80 via-white to-emerald-50/60 rounded-2xl border-2 border-pink-200/90 shadow-2xs">
-                {/* 1. Effective Display Price */}
-                <div>
-                  <label className="block text-[11px] font-black text-slate-800 mb-1">
-                    1. Effective Price (₹) *
-                  </label>
-                  <input
-                    type="number"
-                    required
-                    placeholder="e.g. 35000"
-                    value={quickPriceForm.manualPrice ?? ''}
-                    onChange={(e) => setQuickPriceForm({
-                      ...quickPriceForm,
-                      manualPrice: e.target.value === '' ? '' : Number(e.target.value),
-                    })}
-                    className="w-full px-3 py-2.5 rounded-xl bg-white border-2 border-pink-400 text-slate-900 font-black text-base font-mono focus:outline-none focus:border-[#d91478] shadow-2xs"
-                  />
-                  <span className="text-[10px] text-slate-500 block mt-1 font-medium">
-                    ऑफर रेट (₹35,000*)
-                  </span>
-                </div>
+              {/* Pricing Inputs */}
+              {quickPriceProduct.isKit ? (
+                <div className="space-y-3.5">
+                  <div className="bg-gradient-to-r from-emerald-500/10 via-teal-500/10 to-pink-500/10 p-3.5 sm:p-4 rounded-2xl border-2 border-emerald-400 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <label className="font-black text-slate-900 text-xs sm:text-sm flex items-center gap-1.5">
+                        <Zap className="w-4 h-4 text-emerald-600 animate-pulse" />
+                        <span>Rate Per Watt (रेट प्रति वॉट - ₹ / Watt)</span>
+                      </label>
+                      <span className="text-[10px] font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-full border border-emerald-300">
+                        ⚡ 1kW–10kW Auto Math
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="relative flex-1">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 font-black text-sm">₹</span>
+                        <input
+                          type="number"
+                          min="1"
+                          step="0.5"
+                          placeholder="e.g. 55"
+                          value={quickPriceForm.ratePerWatt ?? ''}
+                          onChange={(e) => handleRatePerWattChange(e.target.value, 'quick')}
+                          className="w-full pl-7 pr-3 py-2 rounded-xl bg-white border-2 border-emerald-500 text-slate-900 font-black text-base font-mono focus:outline-none focus:border-emerald-600"
+                        />
+                      </div>
+                      <span className="bg-emerald-600 text-white font-bold text-xs px-3 py-2 rounded-xl shrink-0">
+                        ₹ / Watt
+                      </span>
+                    </div>
+                  </div>
 
-                {/* 2. Gross / MRP Price */}
-                <div>
-                  <label className="block text-[11px] font-black text-slate-800 mb-1">
-                    2. Gross / MRP (₹)
-                  </label>
-                  <input
-                    type="number"
-                    placeholder="e.g. 65000"
-                    value={quickPriceForm.manualGross ?? ''}
-                    onChange={(e) => setQuickPriceForm({
-                      ...quickPriceForm,
-                      manualGross: e.target.value === '' ? '' : Number(e.target.value),
-                    })}
-                    className="w-full px-3 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-900 font-bold text-base font-mono focus:outline-none focus:border-blue-500 shadow-2xs"
-                  />
-                  <span className="text-[10px] text-slate-500 block mt-1 font-medium">
-                    कटने वाला रेट (₹65,000)
-                  </span>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3.5 bg-slate-50 rounded-2xl border border-slate-200">
+                    <div>
+                      <label className="block text-[10px] font-black text-slate-700 mb-1">1kW Net Offer (₹)</label>
+                      <input
+                        type="number"
+                        value={quickPriceForm.manualPrice ?? ''}
+                        onChange={(e) => setQuickPriceForm({ ...quickPriceForm, manualPrice: e.target.value === '' ? '' : Number(e.target.value) })}
+                        className="w-full px-2.5 py-1.5 rounded-lg bg-white border border-pink-300 text-slate-900 font-black text-sm font-mono focus:outline-none focus:border-[#d91478]"
+                      />
+                      <span className="text-[9px] text-slate-400 block mt-0.5">ग्राहकों को दिखने वाला रेट</span>
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-black text-slate-700 mb-1">1kW Gross MRP (₹)</label>
+                      <input
+                        type="number"
+                        value={quickPriceForm.manualGross ?? ''}
+                        onChange={(e) => setQuickPriceForm({ ...quickPriceForm, manualGross: e.target.value === '' ? '' : Number(e.target.value) })}
+                        className="w-full px-2.5 py-1.5 rounded-lg bg-white border border-slate-300 text-slate-900 font-bold text-sm font-mono focus:outline-none focus:border-blue-500"
+                      />
+                      <span className="text-[9px] text-slate-400 block mt-0.5">कुल 1kW रेट (1000W × Rate)</span>
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-black text-slate-700 mb-1">Govt Subsidy (₹)</label>
+                      <input
+                        type="number"
+                        value={quickPriceForm.manualSubsidy ?? ''}
+                        onChange={(e) => setQuickPriceForm({ ...quickPriceForm, manualSubsidy: e.target.value === '' ? '' : Number(e.target.value) })}
+                        className="w-full px-2.5 py-1.5 rounded-lg bg-white border border-emerald-300 text-emerald-800 font-bold text-sm font-mono focus:outline-none focus:border-emerald-600"
+                      />
+                      <span className="text-[9px] text-slate-400 block mt-0.5">सरकारी सब्सिडी छूट (-₹30,000)</span>
+                    </div>
+                  </div>
                 </div>
-
-                {/* 3. Subsidy Discount Amount */}
-                <div>
-                  <label className="block text-[11px] font-black text-slate-800 mb-1">
-                    3. Subsidy (₹)
-                  </label>
-                  <input
-                    type="number"
-                    placeholder="e.g. 30000"
-                    value={quickPriceForm.manualSubsidy ?? ''}
-                    onChange={(e) => setQuickPriceForm({
-                      ...quickPriceForm,
-                      manualSubsidy: e.target.value === '' ? '' : Number(e.target.value),
-                    })}
-                    className="w-full px-3 py-2.5 rounded-xl bg-white border border-emerald-300 text-emerald-800 font-bold text-base font-mono focus:outline-none focus:border-emerald-600 shadow-2xs"
-                  />
-                  <span className="text-[10px] text-slate-500 block mt-1 font-medium">
-                    सब्सिडी (-₹30,000)
-                  </span>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-4 bg-gradient-to-br from-pink-50/80 via-white to-emerald-50/60 rounded-2xl border-2 border-pink-200/90 shadow-2xs">
+                  <div>
+                    <label className="block text-[11px] font-black text-slate-700 mb-1">
+                      Original Price (MRP / मूल कीमत - ₹) *
+                    </label>
+                    <input
+                      type="number"
+                      required
+                      placeholder="e.g. 18000"
+                      value={quickPriceForm.originalPrice ?? quickPriceForm.manualGross ?? ''}
+                      onChange={(e) => {
+                        const val = e.target.value === '' ? '' : Number(e.target.value);
+                        setQuickPriceForm({
+                          ...quickPriceForm,
+                          originalPrice: val,
+                          manualGross: val,
+                        });
+                      }}
+                      className="w-full px-3 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-900 font-bold text-base font-mono focus:outline-none focus:border-[#d91478] shadow-2xs"
+                    />
+                    <span className="text-[9px] text-slate-400 block mt-1">यह कीमत MRP (line-through) दिखेगी</span>
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-black text-[#d91478] mb-1">
+                      Offer Price (ऑफर कीमत - ₹) *
+                    </label>
+                    <input
+                      type="number"
+                      required
+                      placeholder="e.g. 13500"
+                      value={quickPriceForm.offerPrice ?? quickPriceForm.manualPrice ?? ''}
+                      onChange={(e) => {
+                        const val = e.target.value === '' ? '' : Number(e.target.value);
+                        setQuickPriceForm({
+                          ...quickPriceForm,
+                          offerPrice: val,
+                          manualPrice: val,
+                          price: val !== '' ? `₹${Number(val).toLocaleString('en-IN')}` : '',
+                        });
+                      }}
+                      className="w-full px-3 py-2.5 rounded-xl bg-white border-2 border-[#d91478] text-slate-900 font-black text-base font-mono focus:outline-none focus:ring-2 focus:ring-[#d91478]/30 shadow-2xs"
+                    />
+                    <span className="text-[9px] text-emerald-700 font-bold block mt-1">यही मुख्य कीमत ग्राहक को दिखेगी</span>
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* Custom Label (Optional) */}
               <div>
@@ -4470,7 +5187,7 @@ const AdminDashboard = () => {
                 </label>
                 <input
                   type="text"
-                  placeholder="Effective 1kW Price (After Subsidy)"
+                  placeholder={quickPriceProduct.isKit ? "Effective 1kW Price (After Subsidy)" : "Offer Price"}
                   value={quickPriceForm.priceLabel || ''}
                   onChange={(e) => setQuickPriceForm({ ...quickPriceForm, priceLabel: e.target.value })}
                   className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 font-medium text-xs focus:outline-none focus:border-[#d91478]"
@@ -4492,23 +5209,31 @@ const AdminDashboard = () => {
                 <div className="p-3 rounded-2xl bg-gradient-to-r from-pink-50/90 via-slate-50 to-emerald-50/70 border-2 border-pink-200/90 flex items-center justify-between gap-2 shadow-sm">
                   <div className="space-y-0.5">
                     <span className="text-[9px] font-black uppercase text-slate-500 block">
-                      {quickPriceForm.priceLabel || (quickPriceProduct.isKit ? 'Effective 1kW Price (After Subsidy)' : 'Effective Offer Price')}
+                      {quickPriceForm.priceLabel || (quickPriceProduct.isKit ? 'Effective 1kW Price (After Subsidy)' : 'Offer Price')}
                     </span>
                     <div className="flex items-baseline gap-2">
                       <span className="text-lg font-black text-[#d91478] font-mono">
-                        ₹{Number(quickPriceForm.manualPrice || 35000).toLocaleString('en-IN')}*
+                        ₹{Number(quickPriceForm.manualPrice || 0).toLocaleString('en-IN')}{quickPriceProduct.isKit ? '*' : ''}
                       </span>
-                      {quickPriceForm.manualGross && (
+                      {Number(quickPriceForm.manualGross || 0) > Number(quickPriceForm.manualPrice || 0) && (
                         <span className="text-xs text-slate-400 line-through font-bold font-mono">
-                          ₹{Number(quickPriceForm.manualGross).toLocaleString('en-IN')}
+                          MRP: ₹{Number(quickPriceForm.manualGross).toLocaleString('en-IN')}
                         </span>
                       )}
                     </div>
                   </div>
-                  {quickPriceForm.manualSubsidy && (
-                    <span className="bg-emerald-100 text-emerald-800 text-[10px] font-black px-3 py-1 rounded-full border border-emerald-300 shadow-2xs">
-                      -₹{Number(quickPriceForm.manualSubsidy).toLocaleString('en-IN')} Subsidy
-                    </span>
+                  {quickPriceProduct.isKit ? (
+                    quickPriceForm.manualSubsidy && (
+                      <span className="bg-emerald-100 text-emerald-800 text-[10px] font-black px-3 py-1 rounded-full border border-emerald-300 shadow-2xs">
+                        -₹{Number(quickPriceForm.manualSubsidy).toLocaleString('en-IN')} Subsidy
+                      </span>
+                    )
+                  ) : (
+                    Number(quickPriceForm.manualGross || 0) > Number(quickPriceForm.manualPrice || 0) && (
+                      <span className="bg-emerald-100 text-emerald-800 text-[10px] font-black px-2.5 py-1 rounded-full border border-emerald-300">
+                        Save ₹{(Number(quickPriceForm.manualGross) - Number(quickPriceForm.manualPrice)).toLocaleString('en-IN')}
+                      </span>
+                    )
                   )}
                 </div>
               </div>

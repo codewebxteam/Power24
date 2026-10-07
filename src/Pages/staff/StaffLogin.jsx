@@ -9,7 +9,6 @@ import {
   Sun,
   ArrowLeft,
   KeyRound,
-  Sparkles,
   Briefcase,
   Wrench,
   CheckCircle2
@@ -41,16 +40,10 @@ const StaffLogin = () => {
       if (res.success) {
         navigate('/staff/dashboard');
       } else {
-        setError(res.error || 'Invalid Staff Credentials. Default: staff@power24.com / staff123');
+        setError(res.error || 'Invalid Staff Credentials. Please contact your administrator.');
         setLoading(false);
       }
     }, 400);
-  };
-
-  const handleAutoFill = () => {
-    setEmail('staff@power24.com');
-    setPassword('staff123');
-    setError('');
   };
 
   return (
@@ -171,24 +164,6 @@ const StaffLogin = () => {
               )}
             </button>
           </form>
-
-          {/* Demo Auto-Fill Card */}
-          <div className="mt-6 pt-5 border-t-2 border-slate-800 text-center">
-            <div className="bg-slate-950/90 rounded-2xl p-3.5 border-2 border-slate-800 flex items-center justify-between text-xs sm:text-sm">
-              <div className="text-left text-slate-400">
-                <span className="block text-xs uppercase font-black text-emerald-400">Default Staff Demo:</span>
-                <span className="font-mono text-xs sm:text-sm font-bold text-slate-200">staff@power24.com / staff123</span>
-              </div>
-              <button
-                type="button"
-                onClick={handleAutoFill}
-                className="px-3.5 py-2 rounded-xl bg-emerald-400/10 hover:bg-emerald-400/20 text-emerald-400 border border-emerald-400/30 text-xs font-black uppercase transition-colors shrink-0 flex items-center gap-1.5 cursor-pointer"
-              >
-                <Sparkles className="w-4 h-4" />
-                <span>Auto Fill</span>
-              </button>
-            </div>
-          </div>
         </div>
       </div>
     </div>

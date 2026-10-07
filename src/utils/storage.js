@@ -45,579 +45,16 @@ import {
 // INITIAL STATIC DATASETS (Seed templates)
 // ==========================================
 
-export const initialProducts = [
-  // 1. TATA SOLAR COMPLETE KIT
-  {
-    id: 'kit-tata',
-    name: 'Tata Power Solar Complete Rooftop Kit',
-    category: 'kits',
-    isKit: true,
-    efficiency: 'Tier-1 High Yield',
-    warranty: '25-Year Tata Linear Warranty',
-    description: 'Complete all-in-one solar rooftop combo with Tata high-efficiency Mono PERC/TOPCon panels, smart inverter, ACDB/DCDB protection, structure & net metering approval support.',
-    features: [
-      'Tata Tier-1 High Efficiency Solar Modules',
-      'Smart Grid-Tie Inverter with WiFi App Monitoring',
-      'PM Surya Ghar Govt Subsidy (Up to ₹1,08,000) Eligible',
-      'Full Earthing, AC/DC Distribution Box & Cabling Included'
-    ],
-    tag: 'Tata Solar Kit',
-    image: 'https://ik.imagekit.io/qvztwdsij/tata%20kit.png?updatedAt=1790432918231',
-    manualPrice: 35000,
-    manualGross: 65000,
-    manualSubsidy: 30000,
-    priceLabel: 'Effective 1kW Price (After Subsidy)',
-    capacityPricing: {
-      '1kW': 65000,
-      '2kW': 125000,
-      '3kW': 185000,
-      '4kW': 240000,
-      '5kW': 295000,
-      '6kW': 350000,
-      '8kW': 450000,
-      '10kW': 550000,
-    },
-  },
-  // 2. WAAREE SOLAR COMPLETE KIT
-  {
-    id: 'kit-waaree',
-    name: 'Waaree Energies High-Output Solar Combo',
-    category: 'kits',
-    isKit: true,
-    efficiency: '22.8% Cell Efficiency',
-    warranty: '25-Year Waaree Power Output Warranty',
-    description: 'India’s largest solar manufacturer Waaree TOPCon Bi-facial solar kits with high efficiency, robust anodized frame, lightning surge arrestors & complete installation kit.',
-    features: [
-      'Waaree Bi-Facial Dual Glass Solar Modules',
-      'High-Efficiency MPPT Transformerless Inverter',
-      'Pre-galvanized Wind-Resistant Mounting Structure',
-      'Eligible for PM Surya Ghar DBT Bank Subsidy'
-    ],
-    tag: 'Waaree Solar Kit',
-    image: 'https://ik.imagekit.io/qvztwdsij/waaree%20kit.png?updatedAt=1790432917789',
-    manualPrice: 35000,
-    manualGross: 65000,
-    manualSubsidy: 30000,
-    priceLabel: 'Effective 1kW Price (After Subsidy)',
-    capacityPricing: {
-      '1kW': 65000,
-      '2kW': 125000,
-      '3kW': 185000,
-      '4kW': 240000,
-      '5kW': 295000,
-      '6kW': 350000,
-      '8kW': 450000,
-      '10kW': 550000,
-    },
-  },
-  // 3. ADANI SOLAR COMPLETE KIT
-  {
-    id: 'kit-adani',
-    name: 'Adani Solar Eternal Advanced Rooftop Kit',
-    category: 'kits',
-    isKit: true,
-    efficiency: '22.5% High Performance',
-    warranty: '25-Year Linear Performance Warranty',
-    description: 'High-durability Adani Mono PERC solar combo tailored for high heat climates with low temperature coefficient and heavy duty rust-proof structure.',
-    features: [
-      'Adani Tier-1 High Output Solar Panels',
-      'Smart On-Grid Hybrid-Ready PCU/Inverter',
-      'Govt Certified Net Metering Kit & Accessories',
-      'Full Site Installation with PM Surya Ghar Subsidy'
-    ],
-    tag: 'Adani Solar Kit',
-    image: 'https://ik.imagekit.io/qvztwdsij/adani%20kit.png?updatedAt=1790432917897',
-    manualPrice: 35000,
-    manualGross: 65000,
-    manualSubsidy: 30000,
-    priceLabel: 'Effective 1kW Price (After Subsidy)',
-    capacityPricing: {
-      '1kW': 65000,
-      '2kW': 125000,
-      '3kW': 185000,
-      '4kW': 240000,
-      '5kW': 295000,
-      '6kW': 350000,
-      '8kW': 450000,
-      '10kW': 550000,
-    },
-  },
-  // 4. LOOM SOLAR COMPLETE KIT
-  {
-    id: 'kit-loom',
-    name: 'Loom Solar Shark Bi-Facial Complete Kit',
-    category: 'kits',
-    isKit: true,
-    efficiency: 'Shark Super High Efficiency',
-    warranty: '25-Year Comprehensive Warranty',
-    description: 'Loom Solar shark bi-facial solar system producing power from both front and rear sides, ideal for compact rooftops and cloudy conditions.',
-    features: [
-      'Shark Bi-Facial Dual Generation Modules',
-      'Smart Grid-Connected Solar Inverter',
-      'Heavy Duty GI Solar Mounting Hardware',
-      'PM Surya Ghar DBT Subsidy Enabled'
-    ],
-    tag: 'Loom Solar Kit',
-    image: 'https://ik.imagekit.io/qvztwdsij/loom%20kit.png?updatedAt=1790432917961',
-    manualPrice: 35000,
-    manualGross: 65000,
-    manualSubsidy: 30000,
-    priceLabel: 'Effective 1kW Price (After Subsidy)',
-    capacityPricing: {
-      '1kW': 65000,
-      '2kW': 125000,
-      '3kW': 185000,
-      '4kW': 240000,
-      '5kW': 295000,
-      '6kW': 350000,
-      '8kW': 450000,
-      '10kW': 550000,
-    },
-  },
-  // 5. LIVGUARD SOLAR COMPLETE KIT
-  {
-    id: 'kit-livguard',
-    name: 'Livguard Energy Smart Complete Rooftop Kit',
-    category: 'kits',
-    isKit: true,
-    efficiency: 'Smart Energy Optimization',
-    warranty: '25-Year Performance Warranty',
-    description: 'Livguard complete rooftop solar system with smart interactive inverter, heavy duty protection devices and seamless net meter connection support.',
-    features: [
-      'High-Output Solar PV Modules',
-      'Livguard Smart Inverter with Dynamic Load Sharing',
-      'PM Surya Ghar Bank Subsidy Approved',
-      'Complete Installation Hardware & AC/DC Protection'
-    ],
-    tag: 'Livguard Solar Kit',
-    image: 'https://ik.imagekit.io/qvztwdsij/livguard%20kit.png?updatedAt=1790432918116',
-    manualPrice: 35000,
-    manualGross: 65000,
-    manualSubsidy: 30000,
-    priceLabel: 'Effective 1kW Price (After Subsidy)',
-    capacityPricing: {
-      '1kW': 65000,
-      '2kW': 125000,
-      '3kW': 185000,
-      '4kW': 240000,
-      '5kW': 295000,
-      '6kW': 350000,
-      '8kW': 450000,
-      '10kW': 550000,
-    },
-  },
-  // 6. UTL SOLAR COMPLETE KIT
-  {
-    id: 'kit-utl',
-    name: 'UTL Solar Gamma+ / On-Grid Complete Kit',
-    category: 'kits',
-    isKit: true,
-    efficiency: 'rMPPT Smart Solar Kit',
-    warranty: '25-Year Panel Warranty',
-    description: 'UTL Solar complete rooftop package equipped with rMPPT technology for maximum solar harvest in all Indian weather conditions.',
-    features: [
-      'High Yield Mono PERC Solar Panels',
-      'UTL Smart Solar Inverter with rMPPT Technology',
-      'Government DBT Subsidy Claim Support',
-      'Turnkey Delivery with Mounting & Cabling Kit'
-    ],
-    tag: 'UTL Solar Kit',
-    image: 'https://ik.imagekit.io/qvztwdsij/utl%20kit.png?updatedAt=1790432918197',
-    manualPrice: 35000,
-    manualGross: 65000,
-    manualSubsidy: 30000,
-    priceLabel: 'Effective 1kW Price (After Subsidy)',
-    capacityPricing: {
-      '1kW': 65000,
-      '2kW': 125000,
-      '3kW': 185000,
-      '4kW': 240000,
-      '5kW': 295000,
-      '6kW': 350000,
-      '8kW': 450000,
-      '10kW': 550000,
-    },
-  },
-  // 7. STANDALONE SOLAR PANELS
-  {
-    id: 'prod-panels-tata',
-    name: 'Tata Power 550W Mono PERC Half-Cut Module',
-    category: 'panels',
-    isKit: false,
-    efficiency: '21.8% Efficiency',
-    warranty: '25-Year Linear Warranty',
-    description: 'Tier-1 Tata 550 Watt Half-Cut Mono PERC module with high shade tolerance, IP68 junction box and robust 35mm aluminium frame.',
-    features: ['550W Output', 'Mono PERC 144 Half-Cells', 'IP68 Weatherproof', 'Certified for PM Surya Ghar'],
-    tag: 'Tata Solar Panel',
-    image: 'https://ik.imagekit.io/qvztwdsij/Tata-Solar-Panel.png?updatedAt=1790433291583',
-    price: '₹27 / Watt',
-    manualPrice: '₹27 / Watt',
-    manualGross: '₹34 / Watt',
-    manualSubsidy: '21% OFF',
-    priceLabel: 'Rate / Watt',
-  },
-  {
-    id: 'prod-panels-waaree',
-    name: 'Waaree 540W Dual-Glass Bi-Facial Panel',
-    category: 'panels',
-    isKit: false,
-    efficiency: '22.4% Cell Efficiency',
-    warranty: '30-Year Performance Warranty',
-    description: 'Waaree 540W TOPCon Bi-facial solar module with rear-side gain up to 25% for maximum rooftop solar generation.',
-    features: ['540W+ Front Output', 'Up to 25% Extra Rear Gain', 'Anti-PID Technology', 'Tier-1 Certified'],
-    tag: 'Waaree Bi-Facial',
-    image: 'https://ik.imagekit.io/qvztwdsij/Waaree-Solar-Panel.png?updatedAt=1790433291572',
-    price: '₹25 / Watt',
-    manualPrice: '₹25 / Watt',
-    manualGross: '₹32 / Watt',
-    manualSubsidy: '22% OFF',
-    priceLabel: 'Rate / Watt',
-  },
-  {
-    id: 'prod-panels-adani',
-    name: 'Adani Solar 545W Mono PERC Module',
-    category: 'panels',
-    isKit: false,
-    efficiency: '21.5% High Yield',
-    warranty: '25-Year Warranty',
-    description: 'Adani high performance 545W Mono PERC panel with low degradation and superior weak light performance.',
-    features: ['545W Maximum Power', 'Half-Cut Multi-Busbar', 'High Wind & Snow Load Certified', 'BIS Approved'],
-    tag: 'Adani Solar Panel',
-    image: 'https://ik.imagekit.io/qvztwdsij/adani-panel.png?updatedAt=1790433291560',
-    price: '₹26 / Watt',
-    manualPrice: '₹26 / Watt',
-    manualGross: '₹33 / Watt',
-    manualSubsidy: '21% OFF',
-    priceLabel: 'Rate / Watt',
-  },
-  // 8. SMART INVERTERS
-  {
-    id: 'prod-inv-growatt',
-    name: 'Growatt 3.3kW–10kW Smart On-Grid Inverter',
-    category: 'inverters',
-    isKit: false,
-    efficiency: '98.4% Peak Efficiency',
-    warranty: '10-Year Replacement Warranty',
-    description: 'Growatt smart transformerless string inverter with dual MPPT, OLED display, and WiFi mobile app live monitoring.',
-    features: ['Dual MPPT Trackers', 'WiFi / Mobile App Cloud Monitoring', 'IP65 Outdoor Rated', 'Zero Export Capable'],
-    tag: 'Growatt Inverter',
-    image: 'https://ik.imagekit.io/qvztwdsij/growatt-inverter.png?updatedAt=1790433555239',
-    price: '₹14,500',
-    manualPrice: 14500,
-    manualGross: 19500,
-    manualSubsidy: '25% OFF',
-    priceLabel: 'Starting Hardware Price',
-  },
-  {
-    id: 'prod-inv-solis',
-    name: 'Solis 5kW 3-Phase Grid-Tie Inverter',
-    category: 'inverters',
-    isKit: false,
-    efficiency: '98.7% Ultra Efficiency',
-    warranty: '10-Year Warranty',
-    description: 'Solis 5kW Three Phase solar inverter with ultra-wide voltage range, AFCI arc-fault protection and remote firmware upgrade.',
-    features: ['Three Phase 415V Output', 'Integrated AFCI Protection', 'Dual MPPT with 98.7% Yield', 'IP66 Rated'],
-    tag: 'Solis Inverter',
-    image: 'https://ik.imagekit.io/qvztwdsij/solis-inverter.png?updatedAt=1790433555289',
-    price: '₹12,800',
-    manualPrice: 12800,
-    manualGross: 17500,
-    manualSubsidy: '27% OFF',
-    priceLabel: 'Starting Hardware Price',
-  }
-];
-
-export const initialGallery = [
-  {
-    id: 'gal-1',
-    title: '5 kW Tata Rooftop Solar at Medical Road',
-    category: 'Residential Rooftop',
-    location: 'Medical Road, Gorakhpur',
-    capacity: '5 kW On-Grid',
-    image: 'https://ik.imagekit.io/qvztwdsij/medical-road-project.png?updatedAt=1790433767291',
-    description: '5 kW PM Surya Ghar certified on-grid rooftop installation with Tata Mono PERC panels cutting monthly bill by ₹4,800.',
-    date: 'March 2026'
-  },
-  {
-    id: 'gal-2',
-    title: '3 kW Waaree Solar Installation at Singhorwa',
-    category: 'Residential Rooftop',
-    location: 'Singhorwa Bajar, Gorakhpur',
-    capacity: '3 kW On-Grid',
-    image: 'https://ik.imagekit.io/qvztwdsij/singhorwa-site.png?updatedAt=1790433767352',
-    description: '3 kW residential turnkey project with ₹78,000 direct DBT government subsidy credited.',
-    date: 'March 2026'
-  },
-  {
-    id: 'gal-3',
-    title: '10 kW Hybrid Solar & LiFePO4 Storage',
-    category: 'Commercial',
-    location: 'Taramandal, Gorakhpur',
-    capacity: '10 kW Hybrid',
-    image: 'https://ik.imagekit.io/qvztwdsij/taramandal-commercial.png?updatedAt=1790433767412',
-    description: '10 kW heavy commercial installation powering a 3-storey office building with zero grid power interruption.',
-    date: 'February 2026'
-  }
-];
-
-export const initialBookings = [
-  {
-    id: 'lead-101',
-    name: 'Prem Chand',
-    phone: '+91 7398198475',
-    email: 'premchand.gkp@gmail.com',
-    city: 'Gorakhpur',
-    pincode: '273001',
-    address: 'Singhorwa Bajar, Near Power Substation, Gorakhpur',
-    billAmount: '₹3,500 / month',
-    connectionType: 'Residential (Single Phase)',
-    category: 'Residential',
-    capacity: '3 kW',
-    systemType: 'On-Grid Rooftop',
-    status: 'Installation Done',
-    createdAt: '2026-03-24T10:30:00.000Z',
-    notes: 'Site survey done. Net meter approved and 3kW Waaree system fully active.'
-  },
-  {
-    id: 'lead-102',
-    name: 'Dr. Alok Verma',
-    phone: '+91 9839012345',
-    email: 'dr.alokverma@hospital.in',
-    city: 'Gorakhpur',
-    pincode: '273004',
-    address: 'Medical College Road, Basharatpur, Gorakhpur',
-    billAmount: '₹8,500 / month',
-    connectionType: 'Commercial / Clinic (3-Phase)',
-    category: 'Commercial',
-    capacity: '5 kW',
-    systemType: 'Hybrid Solar',
-    status: 'Site Survey Completed',
-    createdAt: '2026-03-26T14:15:00.000Z',
-    notes: 'Structure foundation verified. Awaiting Discom load sanction.'
-  },
-  {
-    id: 'lead-103',
-    name: 'Rajesh Kumar Gupta',
-    phone: '+91 9450098765',
-    email: 'rajesh.gupta.gkp@yahoo.com',
-    city: 'Deoria',
-    pincode: '274001',
-    address: 'Station Road, Near Civil Lines, Deoria',
-    billAmount: '₹2,800 / month',
-    connectionType: 'Residential (1-Phase)',
-    category: 'Residential',
-    capacity: '2 kW',
-    systemType: 'On-Grid Rooftop',
-    status: 'Request Received',
-    createdAt: '2026-03-28T11:00:00.000Z',
-    notes: 'Customer inquired about PM Surya Ghar ₹60,000 subsidy.'
-  }
-];
-
-export const initialOrders = [
-  {
-    id: 'ORD-89421',
-    customerName: 'Suresh Chandra Mishra',
-    phone: '+91 9125436789',
-    email: 'suresh.mishra@gmail.com',
-    address: 'House 42, Rapti Nagar Phase 2, Gorakhpur',
-    city: 'Gorakhpur',
-    pincode: '273013',
-    productId: 'kit-tata',
-    productName: 'Tata Power Solar Complete Rooftop Kit',
-    productImage: 'https://ik.imagekit.io/qvztwdsij/tata%20kit.png?updatedAt=1790432918231',
-    capacity: '3kW',
-    quantity: 1,
-    grossPrice: 185000,
-    subsidy: 78000,
-    netPayable: 107000,
-    paymentMode: 'Cash on Delivery (COD)',
-    status: 'Order Confirmed',
-    notes: 'Call before dispatch. Saturday delivery preferred.',
-    createdAt: '2026-09-29T14:20:00.000Z',
-  },
-  {
-    id: 'ORD-76120',
-    customerName: 'Anil Kumar Jaiswal',
-    phone: '+91 8874123987',
-    email: 'anil.jaiswal@outlook.com',
-    address: 'Shop 14, Singhorwa Market, Gorakhpur',
-    city: 'Gorakhpur',
-    pincode: '273001',
-    productId: 'kit-tata',
-    productName: 'Tata Power Solar Complete Rooftop Kit',
-    productImage: 'https://ik.imagekit.io/qvztwdsij/tata%20kit.png?updatedAt=1790432918231',
-    capacity: '2kW',
-    quantity: 1,
-    grossPrice: 54000,
-    subsidy: 0,
-    netPayable: 54000,
-    paymentMode: 'Cash on Delivery (COD)',
-    status: 'Order Received',
-    notes: 'Deliver directly to commercial shop premises.',
-    createdAt: '2026-09-28T09:10:00.000Z',
-  }
-];
-
-export const initialStaffMembers = [
-  {
-    id: 'staff-1',
-    name: 'Rohan Sharma',
-    email: 'staff@power24.com',
-    phone: '+91 7398198475',
-    role: 'Senior Project Incharge & Site Engineer',
-    department: 'Solar Project Operations',
-    password: 'staff123',
-    badgeId: 'P24-STAFF-01',
-    status: 'Active',
-    createdAt: '2026-03-20T10:00:00.000Z'
-  },
-  {
-    id: 'staff-2',
-    name: 'Pooja Singh',
-    email: 'pooja@power24.com',
-    phone: '+91 9839012345',
-    role: 'Site Accounts & Billing Incharge',
-    department: 'Financial Operations & Billing',
-    password: 'power24staff',
-    badgeId: 'P24-STAFF-02',
-    status: 'Active',
-    createdAt: '2026-03-22T11:30:00.000Z'
-  }
-];
-
-export const initialUsers = [
-  {
-    id: 'user-001',
-    name: 'Prem Chand',
-    email: 'premchand.gkp@gmail.com',
-    phone: '+91 7398198475',
-    password: 'password123',
-    city: 'Gorakhpur',
-    address: 'Singhorwa Bajar, Gorakhpur',
-    registeredAt: '2026-03-20T10:00:00.000Z',
-    role: 'customer'
-  },
-  {
-    id: 'user-002',
-    name: 'Amitabh Verma',
-    email: 'amitabh.verma@example.com',
-    phone: '+91 9839012345',
-    password: 'password123',
-    city: 'Gorakhpur',
-    address: 'Medical College Road, Basharatpur, Gorakhpur',
-    registeredAt: '2026-03-22T10:00:00.000Z',
-    role: 'customer'
-  }
-];
-
-export const initialManagementSites = [
-  {
-    id: 'P24-001',
-    name: 'Prem Chand 3kW Rooftop Solar',
-    customerName: 'Prem Chand',
-    clientName: 'Prem Chand',
-    siteAddress: 'Gorakhpur Singhorwa Bajar, Up, Ind',
-    location: 'Gorakhpur Singhorwa Bajar, Up, Ind',
-    district: 'Gorakhpur',
-    capacity: '3kw',
-    projectValue: 230000,
-    loanAmount: 200000,
-    customerMargin: 0,
-    projectIncome: 200000,
-    startDate: '26.03.2026',
-    completionDate: '',
-    siteStatus: 'Running',
-    status: 'Running',
-    remarks: 'Turnkey on-grid rooftop solar under PM Surya Ghar',
-    notes: 'Turnkey on-grid rooftop solar under PM Surya Ghar',
-    engineer: 'Rohan Sharma (Lead Eng.)',
-    phone: '+91 7398198475'
-  }
-];
-
-export const initialManagementExpenses = [
-  {
-    id: 'EXP-001',
-    siteId: 'P24-001',
-    siteName: 'Prem Chand 3kW Rooftop Solar',
-    date: '26.09.2026',
-    vendor: 'AMIT',
-    description: '',
-    category: 'Misc',
-    amount: 500,
-    paymentMode: 'UPI',
-    billNo: '',
-    remarks: ''
-  },
-  {
-    id: 'EXP-002',
-    siteId: 'P24-001',
-    siteName: 'Prem Chand 3kW Rooftop Solar',
-    date: '26.09.2026',
-    vendor: 'AMIT',
-    description: '',
-    category: 'Material',
-    amount: 150000,
-    paymentMode: 'NEFT/RTGS',
-    billNo: '',
-    remarks: ''
-  },
-  {
-    id: 'EXP-003',
-    siteId: 'P24-001',
-    siteName: 'Prem Chand 3kW Rooftop Solar',
-    date: '26.09.2026',
-    vendor: 'AMIT',
-    description: '',
-    category: 'Material',
-    amount: 36000,
-    paymentMode: 'UPI',
-    billNo: '',
-    remarks: ''
-  }
-];
-
-export const initialManagementPayments = [
-  {
-    id: 'PAY-001',
-    siteId: 'P24-001',
-    siteName: 'Prem Chand 3kW Rooftop Solar',
-    date: '25.09.2026',
-    paymentType: 'Loan',
-    amount: 200000,
-    paymentMode: 'NEFT/RTGS',
-    refNo: '',
-    remarks: ''
-  },
-  {
-    id: 'PAY-002',
-    siteId: 'P24-001',
-    siteName: 'Prem Chand 3kW Rooftop Solar',
-    date: '25.09.2026',
-    paymentType: 'Customer Margin',
-    amount: 5000,
-    paymentMode: 'Cash',
-    refNo: '',
-    remarks: ''
-  }
-];
-
-export const initialMaterialBudgets = [
-  {
-    id: 'MAT-001',
-    siteId: 'P24-001',
-    material: 'SOLAR SYSTEM',
-    brand: 'WAREE',
-    qty: 1,
-    unit: 'NO',
-    budgetRate: 150000,
-    budgetAmount: 150000,
-    actualAmount: 150000,
-    variance: 0,
-    remarks: ''
-  }
-];
+export const initialProducts = [];
+export const initialGallery = [];
+export const initialBookings = [];
+export const initialOrders = [];
+export const initialStaffMembers = [];
+export const initialUsers = [];
+export const initialManagementSites = [];
+export const initialManagementExpenses = [];
+export const initialManagementPayments = [];
+export const initialMaterialBudgets = [];
 
 export const BOOKING_STATUS_STEPS = [
   { id: 1, label: 'Request Received', desc: 'Customer booked survey inquiry' },
@@ -629,100 +66,167 @@ export const BOOKING_STATUS_STEPS = [
 ];
 
 // ==========================================
-// PURE IN-MEMORY REALTIME STATE STORE (NO LOCALSTORAGE)
+// PERSISTENT REALTIME LOCAL & CLOUD STORE
 // ==========================================
 
-let memoryProducts = [...initialProducts];
-let memoryOrders = [...initialOrders];
-let memoryBookings = [...initialBookings];
-let memoryGallery = [...initialGallery];
-let memoryStaff = [...initialStaffMembers];
-let memoryUsers = [...initialUsers];
-let memorySites = [...initialManagementSites];
-let memoryExpenses = [...initialManagementExpenses];
-let memoryPayments = [...initialManagementPayments];
-let memoryBudgets = [...initialMaterialBudgets];
+export const STORAGE_KEYS = {
+  PRODUCTS: 'power24_products',
+  ORDERS: 'power24_orders',
+  BOOKINGS: 'power24_bookings',
+  GALLERY: 'power24_gallery',
+  STAFF: 'power24_staff',
+  USERS: 'power24_users',
+  SITES: 'power24_mgmt_sites',
+  EXPENSES: 'power24_mgmt_expenses',
+  PAYMENTS: 'power24_mgmt_payments',
+  BUDGETS: 'power24_mgmt_budgets',
+};
+
+export const loadFromStorage = (key, fallback) => {
+  if (typeof window === 'undefined') return fallback;
+  try {
+    const raw = localStorage.getItem(key);
+    if (raw !== null) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) return parsed;
+      if (parsed && typeof parsed === 'object') return parsed;
+    }
+    localStorage.setItem(key, JSON.stringify(fallback));
+    return fallback;
+  } catch (err) {
+    console.warn(`[Power24 Storage] Error reading ${key}:`, err);
+    return fallback;
+  }
+};
+
+export const saveToStorage = (key, data) => {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(key, JSON.stringify(data));
+  } catch (err) {
+    console.warn(`[Power24 Storage] Error saving ${key}:`, err);
+  }
+};
+
+let memoryProducts = loadFromStorage(STORAGE_KEYS.PRODUCTS, []);
+let memoryOrders = loadFromStorage(STORAGE_KEYS.ORDERS, []);
+let memoryBookings = loadFromStorage(STORAGE_KEYS.BOOKINGS, []);
+let memoryGallery = loadFromStorage(STORAGE_KEYS.GALLERY, []);
+let memoryStaff = loadFromStorage(STORAGE_KEYS.STAFF, []);
+let memoryUsers = loadFromStorage(STORAGE_KEYS.USERS, []);
+let memorySites = loadFromStorage(STORAGE_KEYS.SITES, []);
+let memoryExpenses = loadFromStorage(STORAGE_KEYS.EXPENSES, []);
+let memoryPayments = loadFromStorage(STORAGE_KEYS.PAYMENTS, []);
+let memoryBudgets = loadFromStorage(STORAGE_KEYS.BUDGETS, []);
 
 // Automatic Firestore Initial Synchronization and Subscriptions
 if (typeof window !== 'undefined') {
-  // 1. Seed initial datasets directly in Firestore if collections are empty
-  seedInitialProducts(initialProducts);
-  seedInitialOrders(initialOrders);
-  seedInitialBookings(initialBookings);
-  seedInitialGallery(initialGallery);
-  seedInitialStaff(initialStaffMembers);
-  seedInitialSites(initialManagementSites);
-  seedInitialExpenses(initialManagementExpenses);
-  seedInitialPayments(initialManagementPayments);
-  seedInitialBudgets(initialMaterialBudgets);
+  // Purge any stale legacy dummy records from browser localStorage
+  const DUMMY_CLEANUP_KEY = 'power24_dummy_cleanup_v4';
+  if (!localStorage.getItem(DUMMY_CLEANUP_KEY)) {
+    const keysToClean = [
+      STORAGE_KEYS.PRODUCTS,
+      STORAGE_KEYS.ORDERS,
+      STORAGE_KEYS.BOOKINGS,
+      STORAGE_KEYS.GALLERY,
+      STORAGE_KEYS.STAFF,
+      STORAGE_KEYS.USERS,
+      STORAGE_KEYS.SITES,
+      STORAGE_KEYS.EXPENSES,
+      STORAGE_KEYS.PAYMENTS,
+      STORAGE_KEYS.BUDGETS,
+      'power24_firestore_seeded_staff'
+    ];
+    keysToClean.forEach((k) => localStorage.removeItem(k));
+    localStorage.setItem(DUMMY_CLEANUP_KEY, 'true');
+    memoryProducts = [];
+    memoryOrders = [];
+    memoryBookings = [];
+    memoryGallery = [];
+    memoryStaff = [];
+    memoryUsers = [];
+    memorySites = [];
+    memoryExpenses = [];
+    memoryPayments = [];
+    memoryBudgets = [];
+  }
 
-  // 2. Realtime Subscriptions directly updating in-memory stores
+  // 2. Realtime Subscriptions directly updating in-memory & local storage stores
   subscribeProducts((items) => {
-    if (Array.isArray(items) && items.length > 0) {
+    if (Array.isArray(items)) {
       memoryProducts = items;
+      saveToStorage(STORAGE_KEYS.PRODUCTS, items);
       window.dispatchEvent(new Event('power24_products_updated'));
     }
   });
 
   subscribeOrders((items) => {
-    if (Array.isArray(items) && items.length > 0) {
+    if (Array.isArray(items)) {
       memoryOrders = items;
+      saveToStorage(STORAGE_KEYS.ORDERS, items);
       window.dispatchEvent(new Event('power24_orders_updated'));
     }
   });
 
   subscribeBookings((items) => {
-    if (Array.isArray(items) && items.length > 0) {
+    if (Array.isArray(items)) {
       memoryBookings = items;
+      saveToStorage(STORAGE_KEYS.BOOKINGS, items);
       window.dispatchEvent(new Event('power24_bookings_updated'));
     }
   });
 
   subscribeGallery((items) => {
-    if (Array.isArray(items) && items.length > 0) {
+    if (Array.isArray(items)) {
       memoryGallery = items;
+      saveToStorage(STORAGE_KEYS.GALLERY, items);
       window.dispatchEvent(new Event('power24_gallery_updated'));
     }
   });
 
   subscribeStaffUsers((items) => {
-    if (Array.isArray(items) && items.length > 0) {
+    if (Array.isArray(items)) {
       memoryStaff = items;
+      saveToStorage(STORAGE_KEYS.STAFF, items);
       window.dispatchEvent(new Event('power24_staff_updated'));
     }
   });
 
   subscribeSites((items) => {
-    if (Array.isArray(items) && items.length > 0) {
+    if (Array.isArray(items)) {
       memorySites = items;
+      saveToStorage(STORAGE_KEYS.SITES, items);
       window.dispatchEvent(new Event('power24_sites_updated'));
     }
   });
 
   subscribeExpenses((items) => {
-    if (Array.isArray(items) && items.length > 0) {
+    if (Array.isArray(items)) {
       memoryExpenses = items;
+      saveToStorage(STORAGE_KEYS.EXPENSES, items);
       window.dispatchEvent(new Event('power24_expenses_updated'));
     }
   });
 
   subscribePayments((items) => {
-    if (Array.isArray(items) && items.length > 0) {
+    if (Array.isArray(items)) {
       memoryPayments = items;
+      saveToStorage(STORAGE_KEYS.PAYMENTS, items);
       window.dispatchEvent(new Event('power24_payments_updated'));
     }
   });
 
   subscribeBudgets((items) => {
-    if (Array.isArray(items) && items.length > 0) {
+    if (Array.isArray(items)) {
       memoryBudgets = items;
+      saveToStorage(STORAGE_KEYS.BUDGETS, items);
       window.dispatchEvent(new Event('power24_budgets_updated'));
     }
   });
 }
 
 // ==========================================
-// 1. PRODUCTS & KITS SERVICES (Direct Memory & Firestore)
+// 1. PRODUCTS & KITS SERVICES (Direct Memory, LocalStorage & Firestore)
 // ==========================================
 
 export const getProducts = () => {
@@ -732,42 +236,39 @@ export const getProducts = () => {
 export const addProduct = (prod) => {
   const isKit = prod.isKit || prod.category === 'kits';
   const autoId = isKit ? `kit-${Date.now()}` : `prod-${Date.now()}`;
+  const rate = Number(prod.ratePerWatt) || 0;
   const newProd = {
     id: prod.id && prod.id.trim() ? prod.id.trim() : autoId,
-    name: prod.name || 'New Solar Product',
-    category: prod.category || 'kits',
+    name: prod.name || (isKit ? 'New Solar Kit' : 'New Solar Product'),
+    category: prod.category || (isKit ? 'kits' : 'panels'),
     isKit: Boolean(isKit),
-    efficiency: prod.efficiency || 'Tier-1 Certified',
-    warranty: prod.warranty || '25-Year Linear Warranty',
+    ratePerWatt: rate || prod.ratePerWatt || '',
+    efficiency: prod.efficiency || '',
+    warranty: prod.warranty || '',
     description: prod.description || '',
-    features: Array.isArray(prod.features) ? prod.features : ['Tier-1 Certified'],
+    features: Array.isArray(prod.features) ? prod.features : (prod.features ? [prod.features] : []),
     tag: prod.tag || (isKit ? 'Solar Kit' : 'Hardware'),
     image: prod.image || solarHeroImg,
-    images: Array.isArray(prod.images) ? prod.images : [prod.image || solarHeroImg],
-    manualPrice: prod.manualPrice !== undefined ? prod.manualPrice : (isKit ? 35000 : 14500),
-    manualGross: prod.manualGross !== undefined ? prod.manualGross : (isKit ? 65000 : 19500),
-    manualSubsidy: prod.manualSubsidy !== undefined ? prod.manualSubsidy : (isKit ? 30000 : '25% OFF'),
+    images: Array.isArray(prod.images) && prod.images.length > 0 ? prod.images : [prod.image || solarHeroImg],
+    manualPrice: prod.manualPrice !== undefined && prod.manualPrice !== '' ? prod.manualPrice : '',
+    manualGross: prod.manualGross !== undefined && prod.manualGross !== '' ? prod.manualGross : '',
+    manualSubsidy: prod.manualSubsidy !== undefined && prod.manualSubsidy !== '' ? prod.manualSubsidy : (isKit ? 30000 : ''),
     priceLabel: prod.priceLabel || (isKit ? 'Effective 1kW Price (After Subsidy)' : 'Effective Offer Price'),
-    price: prod.price || (isKit ? '₹24 / Watt' : '₹14,500'),
-    capacityPricing: prod.capacityPricing || {
-      '1kW': 65000,
-      '2kW': 125000,
-      '3kW': 185000,
-      '4kW': 240000,
-      '5kW': 295000,
-      '6kW': 350000,
-      '8kW': 450000,
-      '10kW': 550000,
-    },
+    price: prod.price || (rate ? `₹${rate} / Watt` : ''),
+    capacityPricing: prod.capacityPricing || {},
     createdAt: new Date().toISOString()
   };
   memoryProducts = [newProd, ...memoryProducts];
+  saveToStorage(STORAGE_KEYS.PRODUCTS, memoryProducts);
+  window.dispatchEvent(new Event('power24_products_updated'));
   saveProductToDB(newProd).catch((err) => console.warn('[Power24] Product Cloud Save Note:', err));
   return memoryProducts;
 };
 
 export const updateProduct = (id, updatedFields) => {
   memoryProducts = memoryProducts.map((p) => (p.id === id ? { ...p, ...updatedFields } : p));
+  saveToStorage(STORAGE_KEYS.PRODUCTS, memoryProducts);
+  window.dispatchEvent(new Event('power24_products_updated'));
   const updatedItem = memoryProducts.find((p) => p.id === id);
   if (updatedItem) {
     saveProductToDB(updatedItem).catch((err) => console.warn('[Power24] Product Update Cloud Note:', err));
@@ -777,6 +278,8 @@ export const updateProduct = (id, updatedFields) => {
 
 export const deleteProduct = (id) => {
   memoryProducts = memoryProducts.filter((p) => p.id !== id);
+  saveToStorage(STORAGE_KEYS.PRODUCTS, memoryProducts);
+  window.dispatchEvent(new Event('power24_products_updated'));
   deleteProductFromDB(id).catch((err) => console.warn('[Power24] Product Delete Cloud Note:', err));
   return memoryProducts;
 };
@@ -790,7 +293,7 @@ export const saveProduct = (product) => {
 };
 
 // ==========================================
-// 2. ORDERS (Direct Memory & Firestore)
+// 2. ORDERS (Direct Memory, LocalStorage & Firestore)
 // ==========================================
 
 export const getOrders = () => {
@@ -809,24 +312,30 @@ export const addOrder = (orderData) => {
     ...orderData,
   };
   memoryOrders = [entry, ...memoryOrders];
+  saveToStorage(STORAGE_KEYS.ORDERS, memoryOrders);
+  window.dispatchEvent(new Event('power24_orders_updated'));
   saveOrderToDB(entry).catch((err) => console.warn('[Power24] Order Cloud Sync Note:', err));
   return entry;
 };
 
 export const updateOrderStatus = (id, status) => {
   memoryOrders = memoryOrders.map((o) => (o.id === id ? { ...o, status } : o));
+  saveToStorage(STORAGE_KEYS.ORDERS, memoryOrders);
+  window.dispatchEvent(new Event('power24_orders_updated'));
   updateOrderStatusInDB(id, status).catch((err) => console.warn('[Power24] Order Status Cloud Sync Note:', err));
   return memoryOrders;
 };
 
 export const deleteOrder = (id) => {
   memoryOrders = memoryOrders.filter((o) => o.id !== id);
+  saveToStorage(STORAGE_KEYS.ORDERS, memoryOrders);
+  window.dispatchEvent(new Event('power24_orders_updated'));
   deleteOrderFromDB(id).catch((err) => console.warn('[Power24] Order Delete Cloud Sync Note:', err));
   return memoryOrders;
 };
 
 // ==========================================
-// 3. BOOKINGS & SITE SURVEY (Direct Memory & Firestore)
+// 3. BOOKINGS & SITE SURVEY (Direct Memory, LocalStorage & Firestore)
 // ==========================================
 
 export const getBookings = () => {
@@ -844,24 +353,30 @@ export const saveBooking = (newBooking) => {
     ...newBooking,
   };
   memoryBookings = [entry, ...memoryBookings];
+  saveToStorage(STORAGE_KEYS.BOOKINGS, memoryBookings);
+  window.dispatchEvent(new Event('power24_bookings_updated'));
   saveBookingToDB(entry).catch((err) => console.warn('[Power24] Booking Cloud Sync Note:', err));
   return entry;
 };
 
 export const updateBookingStatus = (id, status) => {
   memoryBookings = memoryBookings.map((b) => (b.id === id ? { ...b, status } : b));
+  saveToStorage(STORAGE_KEYS.BOOKINGS, memoryBookings);
+  window.dispatchEvent(new Event('power24_bookings_updated'));
   updateBookingStatusInDB(id, status).catch((err) => console.warn('[Power24] Booking Status Cloud Sync Note:', err));
   return memoryBookings;
 };
 
 export const deleteBooking = (id) => {
   memoryBookings = memoryBookings.filter((b) => b.id !== id);
+  saveToStorage(STORAGE_KEYS.BOOKINGS, memoryBookings);
+  window.dispatchEvent(new Event('power24_bookings_updated'));
   deleteBookingFromDB(id).catch((err) => console.warn('[Power24] Booking Delete Cloud Note:', err));
   return memoryBookings;
 };
 
 // ==========================================
-// 4. GALLERY SERVICES (Direct Memory & Firestore)
+// 4. GALLERY SERVICES (Direct Memory, LocalStorage & Firestore)
 // ==========================================
 
 export const getGalleryItems = () => {
@@ -881,12 +396,16 @@ export const addGalleryItem = (item) => {
     createdAt: new Date().toISOString()
   };
   memoryGallery = [newItem, ...memoryGallery];
+  saveToStorage(STORAGE_KEYS.GALLERY, memoryGallery);
+  window.dispatchEvent(new Event('power24_gallery_updated'));
   saveGalleryItemToDB(newItem).catch((err) => console.warn('[Power24] Gallery Cloud Save Note:', err));
   return memoryGallery;
 };
 
 export const updateGalleryItem = (id, updatedFields) => {
   memoryGallery = memoryGallery.map((g) => (g.id === id ? { ...g, ...updatedFields } : g));
+  saveToStorage(STORAGE_KEYS.GALLERY, memoryGallery);
+  window.dispatchEvent(new Event('power24_gallery_updated'));
   const updated = memoryGallery.find((g) => g.id === id);
   if (updated) {
     saveGalleryItemToDB(updated).catch((err) => console.warn('[Power24] Gallery Cloud Update Note:', err));
@@ -896,12 +415,14 @@ export const updateGalleryItem = (id, updatedFields) => {
 
 export const deleteGalleryItem = (id) => {
   memoryGallery = memoryGallery.filter((g) => g.id !== id);
+  saveToStorage(STORAGE_KEYS.GALLERY, memoryGallery);
+  window.dispatchEvent(new Event('power24_gallery_updated'));
   deleteGalleryItemFromDB(id).catch((err) => console.warn('[Power24] Gallery Cloud Delete Note:', err));
   return memoryGallery;
 };
 
 // ==========================================
-// 5. STAFF PORTAL SERVICES (Direct Memory & Firestore)
+// 5. STAFF PORTAL SERVICES (Direct Memory, LocalStorage & Firestore)
 // ==========================================
 
 export const getStaffList = () => {
@@ -924,12 +445,16 @@ export const addStaffMember = (staffData) => {
     createdAt: new Date().toISOString()
   };
   memoryStaff = [newStaff, ...memoryStaff];
+  saveToStorage(STORAGE_KEYS.STAFF, memoryStaff);
+  window.dispatchEvent(new Event('power24_staff_updated'));
   saveStaffToDB(newStaff).catch((err) => console.warn('[Power24] Staff Cloud Save Note:', err));
   return memoryStaff;
 };
 
 export const updateStaffMember = (id, updatedFields) => {
   memoryStaff = memoryStaff.map((s) => (s.id === id ? { ...s, ...updatedFields } : s));
+  saveToStorage(STORAGE_KEYS.STAFF, memoryStaff);
+  window.dispatchEvent(new Event('power24_staff_updated'));
   const updated = memoryStaff.find((s) => s.id === id);
   if (updated) {
     saveStaffToDB(updated).catch((err) => console.warn('[Power24] Staff Cloud Update Note:', err));
@@ -939,6 +464,8 @@ export const updateStaffMember = (id, updatedFields) => {
 
 export const deleteStaffMember = (id) => {
   memoryStaff = memoryStaff.filter((s) => s.id !== id);
+  saveToStorage(STORAGE_KEYS.STAFF, memoryStaff);
+  window.dispatchEvent(new Event('power24_staff_updated'));
   deleteStaffFromDB(id).catch((err) => console.warn('[Power24] Staff Cloud Delete Note:', err));
   return memoryStaff;
 };
@@ -951,32 +478,32 @@ export const toggleStaffStatus = (id) => {
 };
 
 // ==========================================
-// 6. SOLAR PROJECT MANAGEMENT SITES (Direct Memory & Firestore)
+// 6. SOLAR PROJECT MANAGEMENT SITES (Direct Memory, LocalStorage & Firestore)
 // ==========================================
 
 export const getManagementSites = () => {
   return memorySites.map((s, idx) => ({
     ...s,
     id: s.id || `P24-${String(idx + 1).padStart(3, '0')}`,
-    customerName: s.customerName || s.clientName || s.name || 'Customer',
-    siteAddress: s.siteAddress || s.location || 'Gorakhpur, UP',
-    district: s.district || 'Gorakhpur',
-    capacity: s.capacity || '3kw',
-    projectValue: Number(s.projectValue) || Number(s.projectIncome) || 230000,
-    loanAmount: s.loanAmount !== undefined ? Number(s.loanAmount) : Number(s.projectIncome) || 200000,
+    customerName: s.customerName || s.clientName || s.name || '',
+    siteAddress: s.siteAddress || s.location || '',
+    district: s.district || '',
+    capacity: s.capacity || '',
+    projectValue: Number(s.projectValue) || Number(s.projectIncome) || 0,
+    loanAmount: s.loanAmount !== undefined ? Number(s.loanAmount) : Number(s.projectIncome) || 0,
     customerMargin: s.customerMargin !== undefined ? Number(s.customerMargin) : 0,
-    projectIncome: Number(s.projectIncome) || (Number(s.loanAmount || 0) + Number(s.customerMargin || 0)) || 200000,
+    projectIncome: Number(s.projectIncome) || (Number(s.loanAmount || 0) + Number(s.customerMargin || 0)) || 0,
     materialCost: Number(s.materialCost) || 0,
     labourCost: Number(s.labourCost) || 0,
     transportCost: Number(s.transportCost) || 0,
     miscCost: Number(s.miscCost) || 0,
     totalExpense: Number(s.totalExpense) || ((Number(s.materialCost) || 0) + (Number(s.labourCost) || 0) + (Number(s.transportCost) || 0) + (Number(s.miscCost) || 0)),
     amountReceived: Number(s.amountReceived) || 0,
-    amountPending: s.amountPending !== undefined ? Number(s.amountPending) : (Number(s.projectIncome || 200000) - Number(s.amountReceived || 0)),
+    amountPending: s.amountPending !== undefined ? Number(s.amountPending) : (Number(s.projectIncome || 0) - Number(s.amountReceived || 0)),
     profitLoss: s.profitLoss !== undefined ? Number(s.profitLoss) : 0,
     profitMargin: s.profitMargin !== undefined ? Number(s.profitMargin) : 0,
     siteStatus: s.siteStatus || s.status || 'Running',
-    startDate: s.startDate || '26.03.2026',
+    startDate: s.startDate || '',
     completionDate: s.completionDate || '',
     remarks: s.remarks || s.notes || ''
   }));
@@ -987,7 +514,7 @@ export const addManagementSite = (site) => {
   const autoId = `P24-${String(nextNum).padStart(3, '0')}`;
   const loan = Number(site.loanAmount) || 0;
   const margin = Number(site.customerMargin) || 0;
-  const income = (loan + margin) > 0 ? (loan + margin) : (Number(site.projectIncome) || Number(site.projectValue) || 230000);
+  const income = (loan + margin) > 0 ? (loan + margin) : (Number(site.projectIncome) || Number(site.projectValue) || 0);
   const mat = Number(site.materialCost) || 0;
   const lab = Number(site.labourCost) || 0;
   const tra = Number(site.transportCost) || 0;
@@ -1001,9 +528,10 @@ export const addManagementSite = (site) => {
   const newSite = {
     ...site,
     id: site.id && site.id.trim() ? site.id.trim() : autoId,
-    customerName: site.customerName || site.clientName || 'Customer',
-    siteAddress: site.siteAddress || site.location || 'Gorakhpur, UP',
-    projectValue: Number(site.projectValue) || 230000,
+    customerName: site.customerName || site.clientName || '',
+    siteAddress: site.siteAddress || site.location || '',
+    district: site.district || '',
+    projectValue: Number(site.projectValue) || 0,
     loanAmount: loan,
     customerMargin: margin,
     projectIncome: income,
@@ -1017,9 +545,14 @@ export const addManagementSite = (site) => {
     profitLoss: profit,
     profitMargin: profitPercent,
     siteStatus: site.siteStatus || 'Running',
+    startDate: site.startDate || '',
+    completionDate: site.completionDate || '',
+    remarks: site.remarks || '',
     createdAt: new Date().toISOString()
   };
   memorySites = [newSite, ...memorySites];
+  saveToStorage(STORAGE_KEYS.SITES, memorySites);
+  window.dispatchEvent(new Event('power24_sites_updated'));
   saveSiteToDB(newSite).catch((err) => console.warn('[Power24] Site Cloud Save Note:', err));
   return memorySites;
 };
@@ -1059,6 +592,8 @@ export const updateManagementSite = (id, updatedFields) => {
     }
     return s;
   });
+  saveToStorage(STORAGE_KEYS.SITES, memorySites);
+  window.dispatchEvent(new Event('power24_sites_updated'));
   const updated = memorySites.find((s) => s.id === id);
   if (updated) {
     saveSiteToDB(updated).catch((err) => console.warn('[Power24] Site Cloud Update Note:', err));
@@ -1068,12 +603,14 @@ export const updateManagementSite = (id, updatedFields) => {
 
 export const deleteManagementSite = (id) => {
   memorySites = memorySites.filter((s) => s.id !== id);
+  saveToStorage(STORAGE_KEYS.SITES, memorySites);
+  window.dispatchEvent(new Event('power24_sites_updated'));
   deleteSiteFromDB(id).catch((err) => console.warn('[Power24] Site Cloud Delete Note:', err));
   return memorySites;
 };
 
 // ==========================================
-// 7. PROJECT EXPENSES (Direct Memory & Firestore)
+// 7. PROJECT EXPENSES (Direct Memory, LocalStorage & Firestore)
 // ==========================================
 
 export const getManagementExpenses = () => {
@@ -1082,8 +619,8 @@ export const getManagementExpenses = () => {
     id: e.id || `EXP-${String(idx + 1).padStart(3, '0')}`,
     amount: Number(e.amount) || 0,
     category: e.category || 'Misc',
-    vendor: e.vendor || 'Vendor',
-    date: e.date || '26.09.2026'
+    vendor: e.vendor || '',
+    date: e.date || ''
   }));
 };
 
@@ -1097,12 +634,16 @@ export const addManagementExpense = (expense) => {
     createdAt: new Date().toISOString()
   };
   memoryExpenses = [newExp, ...memoryExpenses];
+  saveToStorage(STORAGE_KEYS.EXPENSES, memoryExpenses);
+  window.dispatchEvent(new Event('power24_expenses_updated'));
   saveExpenseToDB(newExp).catch((err) => console.warn('[Power24] Expense Cloud Save Note:', err));
   return memoryExpenses;
 };
 
 export const updateManagementExpense = (id, updatedFields) => {
   memoryExpenses = memoryExpenses.map((e) => (e.id === id ? { ...e, ...updatedFields } : e));
+  saveToStorage(STORAGE_KEYS.EXPENSES, memoryExpenses);
+  window.dispatchEvent(new Event('power24_expenses_updated'));
   const updated = memoryExpenses.find((e) => e.id === id);
   if (updated) {
     saveExpenseToDB(updated).catch((err) => console.warn('[Power24] Expense Cloud Update Note:', err));
@@ -1112,12 +653,14 @@ export const updateManagementExpense = (id, updatedFields) => {
 
 export const deleteManagementExpense = (id) => {
   memoryExpenses = memoryExpenses.filter((e) => e.id !== id);
+  saveToStorage(STORAGE_KEYS.EXPENSES, memoryExpenses);
+  window.dispatchEvent(new Event('power24_expenses_updated'));
   deleteExpenseFromDB(id).catch((err) => console.warn('[Power24] Expense Cloud Delete Note:', err));
   return memoryExpenses;
 };
 
 // ==========================================
-// 8. PROJECT PAYMENTS (Direct Memory & Firestore)
+// 8. PROJECT PAYMENTS (Direct Memory, LocalStorage & Firestore)
 // ==========================================
 
 export const getManagementPayments = () => {
@@ -1126,7 +669,8 @@ export const getManagementPayments = () => {
     id: p.id || `PAY-${String(idx + 1).padStart(3, '0')}`,
     amount: Number(p.amount) || 0,
     paymentType: p.paymentType || 'Customer Margin',
-    date: p.date || '25.09.2026'
+    disbursementStage: p.disbursementStage || (String(p.paymentType).includes('2') ? 'Disbursement 2' : String(p.paymentType).includes('1') ? 'Disbursement 1' : ''),
+    date: p.date || ''
   }));
 };
 
@@ -1140,12 +684,16 @@ export const addManagementPayment = (payment) => {
     createdAt: new Date().toISOString()
   };
   memoryPayments = [newPay, ...memoryPayments];
+  saveToStorage(STORAGE_KEYS.PAYMENTS, memoryPayments);
+  window.dispatchEvent(new Event('power24_payments_updated'));
   savePaymentToDB(newPay).catch((err) => console.warn('[Power24] Payment Cloud Save Note:', err));
   return memoryPayments;
 };
 
 export const updateManagementPayment = (id, updatedFields) => {
   memoryPayments = memoryPayments.map((p) => (p.id === id ? { ...p, ...updatedFields } : p));
+  saveToStorage(STORAGE_KEYS.PAYMENTS, memoryPayments);
+  window.dispatchEvent(new Event('power24_payments_updated'));
   const updated = memoryPayments.find((p) => p.id === id);
   if (updated) {
     savePaymentToDB(updated).catch((err) => console.warn('[Power24] Payment Cloud Update Note:', err));
@@ -1155,12 +703,14 @@ export const updateManagementPayment = (id, updatedFields) => {
 
 export const deleteManagementPayment = (id) => {
   memoryPayments = memoryPayments.filter((p) => p.id !== id);
+  saveToStorage(STORAGE_KEYS.PAYMENTS, memoryPayments);
+  window.dispatchEvent(new Event('power24_payments_updated'));
   deletePaymentFromDB(id).catch((err) => console.warn('[Power24] Payment Cloud Delete Note:', err));
   return memoryPayments;
 };
 
 // ==========================================
-// 9. MATERIAL BUDGETS (Direct Memory & Firestore)
+// 9. MATERIAL BUDGETS (Direct Memory, LocalStorage & Firestore)
 // ==========================================
 
 export const getManagementMaterialBudgets = () => {
@@ -1194,6 +744,8 @@ export const addManagementBudgetItem = (item) => {
     createdAt: new Date().toISOString()
   };
   memoryBudgets = [newMat, ...memoryBudgets];
+  saveToStorage(STORAGE_KEYS.BUDGETS, memoryBudgets);
+  window.dispatchEvent(new Event('power24_budgets_updated'));
   saveBudgetToDB(newMat).catch((err) => console.warn('[Power24] Budget Cloud Save Note:', err));
   return memoryBudgets;
 };
@@ -1217,6 +769,8 @@ export const updateManagementBudgetItem = (id, updatedFields) => {
     }
     return b;
   });
+  saveToStorage(STORAGE_KEYS.BUDGETS, memoryBudgets);
+  window.dispatchEvent(new Event('power24_budgets_updated'));
   const updated = memoryBudgets.find((b) => b.id === id);
   if (updated) {
     saveBudgetToDB(updated).catch((err) => console.warn('[Power24] Budget Cloud Update Note:', err));
@@ -1226,12 +780,16 @@ export const updateManagementBudgetItem = (id, updatedFields) => {
 
 export const deleteManagementBudgetItem = (id) => {
   memoryBudgets = memoryBudgets.filter((b) => b.id !== id);
+  saveToStorage(STORAGE_KEYS.BUDGETS, memoryBudgets);
+  window.dispatchEvent(new Event('power24_budgets_updated'));
   deleteBudgetFromDB(id).catch((err) => console.warn('[Power24] Budget Cloud Delete Note:', err));
   return memoryBudgets;
 };
 
 export const saveManagementMaterialBudget = (items) => {
   memoryBudgets = Array.isArray(items) ? items : [];
+  saveToStorage(STORAGE_KEYS.BUDGETS, memoryBudgets);
+  window.dispatchEvent(new Event('power24_budgets_updated'));
   for (const it of memoryBudgets) {
     saveBudgetToDB(it).catch((err) => console.warn('[Power24] Budget Batch Save Note:', err));
   }
@@ -1327,6 +885,8 @@ export const saveUser = (user) => {
   } else {
     memoryUsers.push(user);
   }
+  saveToStorage(STORAGE_KEYS.USERS, memoryUsers);
+  window.dispatchEvent(new Event('power24_users_updated'));
   saveUserToDB(user).catch((err) => console.warn('[Power24] User Cloud Save Note:', err));
   return memoryUsers;
 };
@@ -1363,6 +923,9 @@ export const setCurrentUser = (user) => {
       sessionStorage.setItem('power24_current_user', JSON.stringify(user));
     } else {
       sessionStorage.removeItem('power24_current_user');
+    }
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new Event('power24_user_updated'));
     }
   } catch (err) {
     console.warn('[Power24] User session note:', err);
@@ -1414,10 +977,15 @@ export const getUserBookings = (user) => {
   const uPhone = (typeof user === 'object' && user.phone ? user.phone : '').replace(/\D/g, '');
 
   return memoryBookings.filter((b) => {
-    if (uId && b.userId && b.userId === uId) return true;
+    // 1. Unique Match by User ID
+    if (uId && b.userId && String(b.userId) === String(uId)) return true;
+    // 2. Unique Match by Verified Email Address
     if (uEmail && b.email && b.email.toLowerCase().trim() === uEmail) return true;
-    if (uPhone.length >= 7 && b.phone && b.phone.replace(/\D/g, '').endsWith(uPhone.slice(-10))) return true;
-    if (typeof user === 'object' && user.name && b.name && b.name.toLowerCase().trim() === user.name.toLowerCase().trim()) return true;
+    // 3. Unique Match by 10-Digit Mobile Number
+    if (uPhone.length >= 10 && b.phone) {
+      const bPhoneClean = b.phone.replace(/\D/g, '');
+      if (bPhoneClean.length >= 10 && bPhoneClean.slice(-10) === uPhone.slice(-10)) return true;
+    }
     return false;
   });
 };
@@ -1429,10 +997,15 @@ export const getUserOrders = (user) => {
   const uPhone = (typeof user === 'object' && user.phone ? user.phone : '').replace(/\D/g, '');
 
   return memoryOrders.filter((o) => {
-    if (uId && o.userId && o.userId === uId) return true;
+    // 1. Unique Match by User ID
+    if (uId && o.userId && String(o.userId) === String(uId)) return true;
+    // 2. Unique Match by Verified Email Address
     if (uEmail && o.email && o.email.toLowerCase().trim() === uEmail) return true;
-    if (uPhone.length >= 7 && o.phone && o.phone.replace(/\D/g, '').endsWith(uPhone.slice(-10))) return true;
-    if (typeof user === 'object' && user.name && (o.customerName || o.name) && (o.customerName || o.name).toLowerCase().trim() === user.name.toLowerCase().trim()) return true;
+    // 3. Unique Match by 10-Digit Mobile Number
+    if (uPhone.length >= 10 && o.phone) {
+      const oPhoneClean = o.phone.replace(/\D/g, '');
+      if (oPhoneClean.length >= 10 && oPhoneClean.slice(-10) === uPhone.slice(-10)) return true;
+    }
     return false;
   });
 };
@@ -1445,9 +1018,16 @@ export const initFirebaseAutoSync = () => {
 // UTILITIES
 // ==========================================
 
-export const safeSetItem = () => {
-  // No-op compatibility placeholder
-  return true;
+export const safeSetItem = (key, value) => {
+  if (typeof window === 'undefined') return true;
+  try {
+    const valStr = typeof value === 'string' ? value : JSON.stringify(value);
+    localStorage.setItem(key, valStr);
+    return true;
+  } catch (err) {
+    console.warn('[Power24] safeSetItem note:', err);
+    return false;
+  }
 };
 
 export const compressImageFile = (fileOrDataUrl, maxWidth = 900, maxHeight = 900, quality = 0.72) => {

@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { saveBooking } from '../utils/storage';
 import { saveContactMessageToDB } from '../firebase/firestoreService';
+import SEO from '../components/common/SEO.jsx';
 
 const Contacts = () => {
   const [submitted, setSubmitted] = useState(false);
@@ -82,6 +83,12 @@ const Contacts = () => {
 
   return (
     <div className="bg-slate-50 min-h-screen text-slate-950 py-10 sm:py-16 font-['Outfit',sans-serif]">
+      <SEO
+        title="Contact Us - Helpline & Office"
+        description="Contact POWER24Solar Services Pvt Ltd. Phone: +91 7398198475. Office: House No-46 F Nahar Road Shivpur, Gorakhpur UP."
+        canonical="https://power24.in/contact"
+        keywords="Contact Power24, Power 24 phone number, Power 24 Gorakhpur office, Power24 Solar helpline, Solar company contact UP"
+      />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* 1. Header Section */}
@@ -161,7 +168,7 @@ const Contacts = () => {
                   Government Registered Entity
                 </span>
                 <h3 className="text-xl sm:text-2xl font-black text-slate-950">
-                  Power24 & Solar Services Pvt Ltd
+                  POWER24Solar Services Pvt Ltd
                 </h3>
                 <p className="text-xs text-slate-500 font-bold mt-0.5">
                   Engineering Excellence in Power & Renewable Energy Infrastructure
@@ -251,13 +258,26 @@ const Contacts = () => {
                 <p className="text-slate-600 max-w-md mx-auto text-xs sm:text-sm font-medium leading-relaxed">
                   Thank you, <strong className="text-emerald-700 font-bold">{formData.name}</strong>! Our solar engineer assigned to <strong className="text-slate-950 font-bold">{formData.city}</strong> will call you at <strong className="text-slate-950 font-bold">{formData.phone}</strong> shortly.
                 </p>
-                <button
-                  type="button"
-                  onClick={() => setSubmitted(false)}
-                  className="px-8 py-3 rounded-full bg-gradient-to-r from-[#d91478] to-[#16a34a] text-xs font-black uppercase tracking-wider text-white shadow-lg hover:scale-105 transition-all cursor-pointer"
-                >
-                  Send Another Inquiry
-                </button>
+                <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2 max-w-md mx-auto">
+                  <a
+                    href={`https://api.whatsapp.com/send?phone=917398198475&text=${encodeURIComponent(
+                      `*Power24 Contact Inquiry*\n\n*Name:* ${formData.name}\n*Phone:* ${formData.phone}\n*City:* ${formData.city}\n*Type:* ${formData.inquiryType}\n*Message:* ${formData.message || 'Please provide quotation.'}`
+                    )}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-full sm:w-auto px-6 py-3 rounded-full bg-[#16a34a] hover:bg-emerald-700 text-xs font-black uppercase tracking-wider text-white shadow-lg flex items-center justify-center gap-2 hover:scale-105 transition-all cursor-pointer"
+                  >
+                    <MessageCircle className="w-4 h-4" />
+                    <span>Send on WhatsApp</span>
+                  </a>
+                  <button
+                    type="button"
+                    onClick={() => setSubmitted(false)}
+                    className="w-full sm:w-auto px-6 py-3 rounded-full bg-slate-100 hover:bg-slate-200 text-xs font-bold uppercase tracking-wider text-slate-700 transition-colors cursor-pointer"
+                  >
+                    Send Another Inquiry
+                  </button>
+                </div>
               </div>
             ) : (
               <form onSubmit={handleSubmit} className="space-y-5">

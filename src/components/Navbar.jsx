@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
-import { Menu, X, User, LayoutDashboard } from 'lucide-react';
+import { Menu, X, User, LayoutDashboard, Sparkles } from 'lucide-react';
 import p24Logo from '../assets/P24logo.webp';
 import { getCurrentUser } from '../utils/storage';
 
@@ -10,8 +10,21 @@ const Navbar = ({ onOpenCustomKit }) => {
   const location = useLocation();
 
   useEffect(() => {
-    setCurrentUser(getCurrentUser());
+    const updateUser = () => setCurrentUser(getCurrentUser());
+    updateUser();
+    window.addEventListener('power24_user_updated', updateUser);
+    return () => window.removeEventListener('power24_user_updated', updateUser);
   }, [location]);
+
+  const rawName = (
+    currentUser?.name ||
+    currentUser?.customerName ||
+    (currentUser?.email ? currentUser.email.split('@')[0] : '') ||
+    currentUser?.phone ||
+    'User'
+  ).trim();
+  const initialChar = rawName ? rawName.charAt(0).toUpperCase() : 'U';
+  const firstName = rawName ? rawName.split(' ')[0] : 'User';
 
   const navLinks = [
     { name: 'HOME', path: '/' },
@@ -30,18 +43,12 @@ const Navbar = ({ onOpenCustomKit }) => {
           <Link to="/" className="flex items-center gap-2.5 sm:gap-3 group shrink-0">
             <img
               src={p24Logo}
-              alt="Power24 Solar Logo"
+              alt="Power24 Solar - Power 24 Rooftop Solar Energy Services"
               className="h-10 sm:h-12 w-auto object-contain group-hover:scale-105 transition-transform duration-300"
             />
             <div>
-              <div className="flex items-center gap-1.5">
-                <span className="text-xl sm:text-2xl font-black tracking-tight font-['Outfit',sans-serif]">
-                  <span className="text-[#d91478]">POWER</span>
-                  <span className="text-[#16a34a]">24</span>
-                </span>
-              </div>
-              <span className="block text-[9px] sm:text-[10px] font-bold text-slate-500 tracking-widest uppercase -mt-0.5">
-                Solar Services Pvt Ltd
+              <span className="text-lg sm:text-xl font-black tracking-tight font-['Outfit',sans-serif] whitespace-nowrap">
+                <span className="text-[#d91478]">POWER</span><span className="text-[#16a34a]">24</span><span className="text-slate-700 text-sm sm:text-base">Solar Services Pvt Ltd</span>
               </span>
             </div>
           </Link>
@@ -67,6 +74,17 @@ const Navbar = ({ onOpenCustomKit }) => {
 
           {/* 3. Right CTA Buttons (Desktop) */}
           <div className="hidden lg:flex items-center gap-2.5 shrink-0">
+            {onOpenCustomKit && (
+              <button
+                type="button"
+                onClick={onOpenCustomKit}
+                className="px-4 py-2.5 rounded-full bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 text-emerald-800 font-black text-xs uppercase tracking-wider flex items-center gap-1.5 transition-all hover:scale-105 active:scale-95 shadow-xs"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
+                <span>Custom Kit</span>
+              </button>
+            )}
+
             {/* User Account / Login Button */}
             {currentUser ? (
               <Link
@@ -74,9 +92,9 @@ const Navbar = ({ onOpenCustomKit }) => {
                 className="px-4 py-2.5 rounded-full bg-slate-100 hover:bg-slate-200 border border-slate-300 text-slate-900 font-bold text-xs uppercase tracking-wider flex items-center gap-2 transition-all hover:scale-105 active:scale-95"
               >
                 <div className="w-6 h-6 rounded-full bg-gradient-to-tr from-[#d91478] to-[#16a34a] text-white flex items-center justify-center text-[10px] font-black uppercase">
-                  {currentUser.name.charAt(0)}
+                  {initialChar}
                 </div>
-                <span>{currentUser.name.split(' ')[0]}</span>
+                <span>{firstName}</span>
               </Link>
             ) : (
               <Link
@@ -91,6 +109,18 @@ const Navbar = ({ onOpenCustomKit }) => {
 
           {/* Mobile Right Actions */}
           <div className="flex lg:hidden items-center gap-1.5 sm:gap-2">
+            {onOpenCustomKit && (
+              <button
+                type="button"
+                onClick={onOpenCustomKit}
+                className="p-2 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 transition-colors"
+                aria-label="Custom Solar Kit"
+                title="Design Custom Kit"
+              >
+                <Sparkles className="w-4 h-4 text-emerald-600" />
+              </button>
+            )}
+
             {currentUser ? (
               <Link
                 to="/dashboard"
@@ -141,6 +171,25 @@ const Navbar = ({ onOpenCustomKit }) => {
                 </NavLink>
               ))}
 
+              {onOpenCustomKit && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsOpen(false);
+                    onOpenCustomKit();
+                  }}
+                  className="w-full px-5 py-3.5 text-sm font-black uppercase tracking-wider rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 hover:bg-emerald-100 flex items-center justify-between transition-all"
+                >
+                  <span className="flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-emerald-600" />
+                    <span>Design Custom Solar Kit</span>
+                  </span>
+                  <span className="text-[10px] bg-emerald-600 text-white px-2 py-0.5 rounded-full font-bold">
+                    Calculator
+                  </span>
+                </button>
+              )}
+
               {currentUser ? (
                 <NavLink
                   to="/dashboard"
@@ -149,7 +198,7 @@ const Navbar = ({ onOpenCustomKit }) => {
                 >
                   <span className="flex items-center gap-2">
                     <LayoutDashboard className="w-4 h-4 text-[#d91478]" />
-                    <span>My Dashboard ({currentUser.name})</span>
+                    <span>My Dashboard ({firstName})</span>
                   </span>
                 </NavLink>
               ) : (

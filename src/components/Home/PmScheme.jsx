@@ -7,6 +7,14 @@ const PmScheme = () => {
   const subsidyData = [
     {
       sno: '1',
+      capacity: '1 kW (कि०वा०)',
+      central: '₹30,000',
+      state: '₹0',
+      total: '₹30,000',
+      highlight: false,
+    },
+    {
+      sno: '2',
       capacity: '2 kW (कि०वा०)',
       central: '₹60,000',
       state: '₹30,000',
@@ -14,7 +22,7 @@ const PmScheme = () => {
       highlight: false,
     },
     {
-      sno: '2',
+      sno: '3',
       capacity: '3 kW (कि०वा०)',
       central: '₹78,000',
       state: '₹30,000',
@@ -22,7 +30,7 @@ const PmScheme = () => {
       highlight: true,
     },
     {
-      sno: '3',
+      sno: '4',
       capacity: '4 kW (कि०वा०)',
       central: '₹78,000',
       state: '₹30,000',
@@ -30,7 +38,7 @@ const PmScheme = () => {
       highlight: false,
     },
     {
-      sno: '4',
+      sno: '5',
       capacity: '5 kW (कि०वा०)',
       central: '₹78,000',
       state: '₹30,000',
@@ -38,7 +46,7 @@ const PmScheme = () => {
       highlight: false,
     },
     {
-      sno: '5',
+      sno: '6',
       capacity: '6 kW - 10 kW',
       central: '₹78,000',
       state: '₹30,000',

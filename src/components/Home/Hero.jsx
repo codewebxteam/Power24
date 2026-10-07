@@ -13,7 +13,7 @@ const Hero = ({ onOpenCustomKit }) => {
         {/* Full Image */}
         <img
           src={solarHeroImg}
-          alt="Power24 Solar Clean Energy"
+          alt="Power24 Solar - Power 24 Rooftop Clean Energy Installation in Gorakhpur and UP"
           className="absolute inset-0 w-full h-full object-cover object-center select-none"
         />
         
@@ -27,11 +27,12 @@ const Hero = ({ onOpenCustomKit }) => {
             {/* Top Welcome Tag */}
             <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-slate-950/40 backdrop-blur-md border border-white/40 text-[10px] sm:text-xs font-bold tracking-widest text-emerald-300 uppercase shadow-lg">
               <Zap className="w-3.5 h-3.5 text-[#d91478] fill-[#d91478]" />
-              <span>Power & Solar Services Pvt Ltd • Gorakhpur, UP</span>
+              <span>POWER24Solar Services Pvt Ltd • Gorakhpur, UP</span>
             </div>
 
             {/* Main Headline */}
             <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black text-white tracking-tight leading-[1.12] drop-shadow-[0_4px_12px_rgba(0,0,0,0.8)]">
+              <span className="sr-only">Power24 Solar - Power 24 Rooftop Solar Energy Company - </span>
               Smart Solar Power for a<br />
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-teal-300 to-[#d91478] drop-shadow-[0_2px_8px_rgba(0,0,0,0.5)]">
                 Zero-Bill Tomorrow
@@ -40,7 +41,7 @@ const Hero = ({ onOpenCustomKit }) => {
 
             {/* Description */}
             <p className="text-xs sm:text-sm md:text-base text-white font-semibold leading-relaxed max-w-lg drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]">
-              High-yield Tier-1 Mono PERC & TOPCon solar rooftop installations with up to <strong className="text-emerald-300 font-bold">₹1,08,000 PM Surya Ghar Subsidy</strong>. Save up to 90% on electricity bills.
+              Join thousands of families powering with <strong className="text-emerald-300">Power24 Solar</strong>. High-yield Tier-1 Mono PERC & TOPCon rooftop installations with up to <strong className="text-emerald-300 font-bold">₹1,08,000 PM Surya Ghar Subsidy</strong>. Save up to 90% on electricity bills.
             </p>
 
             {/* Action Buttons */}

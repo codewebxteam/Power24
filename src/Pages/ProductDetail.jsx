@@ -106,6 +106,10 @@ const ProductDetail = () => {
     if (prod?.capacityPricing && prod.capacityPricing[kw]) {
       return Number(prod.capacityPricing[kw]);
     }
+    const kwNum = parseInt(kw, 10) || 1;
+    if (prod?.ratePerWatt) {
+      return kwNum * 1000 * Number(prod.ratePerWatt);
+    }
     const defaults = {
       '1kW': 65000,
       '2kW': 125000,
@@ -136,12 +140,14 @@ const ProductDetail = () => {
   const isSubsidyEligible = hasKwCapacity;
   const currentGross = hasKwCapacity
     ? getCapacityPrice(product, selectedKw)
-    : (parseInt(String(product.price || '').replace(/\D/g, ''), 10) || 25000);
+    : (Number(product.originalPrice || product.manualGross) || parseInt(String(product.price || '').replace(/\D/g, ''), 10) || 0);
   const currentSubsidy = isSubsidyEligible ? getSubsidy(selectedKw) : 0;
   const manualNetVal = (selectedKw === '1kW' && product?.manualPrice)
     ? Number(String(product.manualPrice).replace(/[^\d.]/g, ''))
     : 0;
-  const currentNet = (manualNetVal > 0) ? manualNetVal : Math.max(0, currentGross - currentSubsidy);
+  const currentNet = hasKwCapacity
+    ? ((manualNetVal > 0) ? manualNetVal : Math.max(0, currentGross - currentSubsidy))
+    : (Number(product.offerPrice || product.manualPrice) || currentGross);
 
   // Estimates
   const kwNum = parseInt(selectedKw, 10) || 3;
@@ -153,7 +159,7 @@ const ProductDetail = () => {
   const handleShareWhatsApp = () => {
     const text = hasKwCapacity
       ? `*Power24 Solar Inquiry*%0A%0A*Item:* ${product.name}%0A*Selected Size:* ${selectedKw}%0A*Gross Price:* ₹${currentGross.toLocaleString('en-IN')}%0A${isSubsidyEligible ? `*PM Surya Ghar Subsidy:* ₹${currentSubsidy.toLocaleString('en-IN')}%0A*Net Payable:* ₹${currentNet.toLocaleString('en-IN')}%0A` : ''}%0APlease schedule a site survey!`
-      : `*Power24 Product Inquiry*%0A%0A*Product:* ${product.name}%0A*Price:* ${product.price}%0A%0APlease send quotation!`;
+      : `*Power24 Product Inquiry*%0A%0A*Product:* ${product.name}%0A*Offer Price:* ₹${currentNet.toLocaleString('en-IN')}${currentGross > currentNet ? `%0A*MRP:* ₹${currentGross.toLocaleString('en-IN')}` : ''}%0A%0APlease send quotation / order details!`;
     window.open(`https://api.whatsapp.com/send?phone=917398198475&text=${text}`, '_blank');
   };
 
@@ -255,7 +261,11 @@ const ProductDetail = () => {
                 )}
 
                 {/* Badges */}
-                <div className="absolute top-4 left-4 flex items-center gap-2">
+                <div className="absolute top-4 left-4 flex items-center gap-2 flex-wrap z-10">
+                  <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-black uppercase tracking-wider bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 text-slate-950 shadow-lg border border-amber-300">
+                    <Sparkles className="w-3.5 h-3.5 text-slate-950 fill-slate-950" />
+                    Special Offer
+                  </span>
                   <span className={`px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-wider shadow-lg ${isKit ? 'bg-[#d91478] text-white' : 'bg-emerald-600 text-white'
                     }`}>
                     {product.tag || (isKit ? '☀️ Complete Solar Kit' : '⚡ Hardware')}
@@ -371,7 +381,11 @@ const ProductDetail = () => {
 
               {/* Product Header */}
               <div className="space-y-2 border-b border-slate-100 pb-4">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-gradient-to-r from-amber-400 to-yellow-400 text-slate-950 shadow-xs border border-amber-300">
+                    <Sparkles className="w-3.5 h-3.5 text-slate-950 fill-slate-950" />
+                    Special Offer
+                  </span>
                   <span className={`px-3 py-1 rounded-full text-xs font-black uppercase border ${isKit ? 'bg-pink-100 text-[#d91478] border-pink-300' : 'bg-emerald-100 text-emerald-950 border-emerald-300'
                     }`}>
                     {isKit ? 'PM Surya Ghar Subsidy Eligible' : 'Tier-1 Certified Hardware'}
@@ -471,21 +485,41 @@ const ProductDetail = () => {
                 </div>
               ) : (
                 /* Non-Kit Single Product Price Box */
-                <div className="p-5 bg-gradient-to-br from-emerald-50/60 via-slate-50 to-emerald-50/30 rounded-2xl border-2 border-emerald-200 space-y-2.5 shadow-2xs">
+                <div className="p-5 bg-gradient-to-br from-pink-50/70 via-slate-50 to-emerald-50/50 rounded-2xl border-2 border-pink-200 space-y-3.5 shadow-sm">
                   <div className="flex items-center justify-between">
-                    <div>
-                      <span className="text-[10px] font-black uppercase text-emerald-900 block tracking-wider">Product Price:</span>
-                      <span className="text-2xl sm:text-3xl font-black text-emerald-800">
-                        {product.price || `₹${currentGross.toLocaleString('en-IN')}`}
-                      </span>
-                    </div>
-                    <span className="text-xs font-black text-emerald-800 bg-white px-3 py-1 rounded-full border border-emerald-300 shadow-2xs">
+                    <span className="text-xs font-black uppercase text-slate-600 block tracking-wider">
+                      Special Offer Price (विशेष ऑफर कीमत)
+                    </span>
+                    <span className="text-xs font-black text-emerald-800 bg-emerald-100 px-3 py-1 rounded-full border border-emerald-300 shadow-2xs">
                       {product.tag || 'Tier-1 Certified Hardware'}
                     </span>
                   </div>
-                  <div className="text-[11px] font-bold text-slate-600 flex items-center gap-1.5 pt-1 border-t border-emerald-100">
-                    <Truck className="w-3.5 h-3.5 text-emerald-700" />
-                    <span>Free Doorstep Delivery Available</span>
+
+                  <div className="flex items-baseline gap-3 flex-wrap">
+                    <span className="text-3xl sm:text-4xl font-black text-[#d91478] font-mono">
+                      ₹{currentNet.toLocaleString('en-IN')}
+                    </span>
+                    {currentGross > currentNet && (
+                      <span className="text-base sm:text-lg text-slate-400 line-through font-bold font-mono">
+                        MRP: ₹{currentGross.toLocaleString('en-IN')}
+                      </span>
+                    )}
+                    {currentGross > currentNet && (
+                      <span className="text-xs font-black text-emerald-800 bg-emerald-100 px-2.5 py-1 rounded-full border border-emerald-300">
+                        Save ₹{(currentGross - currentNet).toLocaleString('en-IN')} ({Math.round(((currentGross - currentNet) / currentGross) * 100)}% OFF)
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-200 text-[11px] font-bold text-slate-700">
+                    <div className="flex items-center gap-1.5">
+                      <Truck className="w-3.5 h-3.5 text-emerald-600" />
+                      <span>Free Doorstep Delivery</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                      <span>{product.warranty || 'Certified Warranty'}</span>
+                    </div>
                   </div>
                 </div>
               )}
@@ -598,7 +632,7 @@ const ProductDetail = () => {
                       </span>
                     </div>
                     <div className="text-xs font-black text-[#d91478] mt-1">
-                      Payable on Delivery: ₹{(isSubsidyEligible && currentSubsidy > 0 ? currentNet : currentGross).toLocaleString('en-IN')}{isSubsidyEligible ? '*' : ''}
+                      Payable on Delivery: ₹{currentNet.toLocaleString('en-IN')}{hasKwCapacity ? '*' : ''}
                     </div>
                   </div>
                 </div>
@@ -826,12 +860,18 @@ const ProductDetail = () => {
                 >
                   <div className="space-y-2 sm:space-y-3">
                     {rel.image && (
-                      <div className="h-28 sm:h-36 rounded-xl sm:rounded-2xl overflow-hidden bg-slate-950">
+                      <div className="relative h-28 sm:h-36 rounded-xl sm:rounded-2xl overflow-hidden bg-slate-950">
                         <img
                           src={rel.image}
                           alt={rel.name}
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform"
                         />
+                        <div className="absolute top-1.5 left-1.5">
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[8px] sm:text-[9px] font-black uppercase tracking-wider bg-gradient-to-r from-amber-400 to-yellow-400 text-slate-950 shadow-xs border border-amber-300">
+                            <Sparkles className="w-2.5 h-2.5 text-slate-950 fill-slate-950" />
+                            Special Offer
+                          </span>
+                        </div>
                       </div>
                     )}
                     <h4 className="text-xs sm:text-sm font-black text-slate-900 group-hover:text-[#d91478] transition-colors line-clamp-2">

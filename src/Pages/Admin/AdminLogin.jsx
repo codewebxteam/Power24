@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Lock, Mail, Eye, EyeOff, ShieldCheck, Sun, ArrowLeft, KeyRound, Sparkles, Leaf } from 'lucide-react';
+import { Lock, Mail, Eye, EyeOff, ShieldCheck, Sun, ArrowLeft, KeyRound, Leaf } from 'lucide-react';
 import { getAdminAuth, setAdminAuth } from '../../utils/storage';
+import { fetchAdminAuthFromDB } from '../../firebase/firestoreService';
+import { auth } from '../../firebase/firebase';
+import { signInWithEmailAndPassword } from 'firebase/auth';
 
 const AdminLogin = () => {
   const navigate = useNavigate();
@@ -18,30 +21,84 @@ const AdminLogin = () => {
     }
   }, [navigate]);
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
     setError('');
     setLoading(true);
 
-    setTimeout(() => {
-      // Default Admin Credentials
-      if (
-        (email.trim().toLowerCase() === 'admin@power24.com' || email.trim().toLowerCase() === 'admin@power.com' || email.trim().toLowerCase() === 'admin') &&
-        (password === 'admin123' || password === 'power24' || password === 'admin')
-      ) {
+    const inputEmail = email.trim().toLowerCase();
+    const inputPassword = password.trim();
+
+    try {
+      // Priority 1: Firebase Authentication (Secure & Standard - No password needed in Vercel env!)
+      if (auth) {
+        try {
+          const userCredential = await signInWithEmailAndPassword(auth, inputEmail, inputPassword);
+          const loggedUser = userCredential.user;
+
+          // Check if this user email is authorized as Admin
+          let dbCredentials = null;
+          try {
+            dbCredentials = await fetchAdminAuthFromDB();
+          } catch (err) {
+            console.warn('[AdminLogin] Could not fetch DB auth:', err);
+          }
+
+          const allowedAdminEmail = (dbCredentials?.email || import.meta.env.VITE_ADMIN_EMAIL || 'naarishakti2026@gmail.com').trim().toLowerCase();
+
+          if (loggedUser.email && loggedUser.email.toLowerCase() === allowedAdminEmail) {
+            setAdminAuth(true);
+            navigate('/admin/dashboard');
+            return;
+          } else {
+            setError('Access Denied: This account is not authorized as an Administrator.');
+            setLoading(false);
+            return;
+          }
+        } catch (firebaseErr) {
+          console.warn('[AdminLogin] Firebase Auth response:', firebaseErr.code);
+          if (
+            firebaseErr.code === 'auth/wrong-password' ||
+            firebaseErr.code === 'auth/invalid-credential' ||
+            firebaseErr.code === 'auth/user-not-found'
+          ) {
+            setError('Invalid Admin Email or Password. Please try again.');
+            setLoading(false);
+            return;
+          } else if (firebaseErr.code === 'auth/too-many-requests') {
+            setError('Too many failed attempts. Please try again after some time.');
+            setLoading(false);
+            return;
+          }
+          // If error is configuration/network, proceed to local/fallback check
+        }
+      }
+
+      // Priority 2: Firestore Database or Local Development Fallback
+      let dbCredentials = null;
+      try {
+        dbCredentials = await fetchAdminAuthFromDB();
+      } catch (err) {
+        console.warn('[AdminLogin] Could not fetch DB auth, using env fallback:', err);
+      }
+
+      const targetEmail = (dbCredentials?.email || import.meta.env.VITE_ADMIN_EMAIL || 'naarishakti2026@gmail.com').trim().toLowerCase();
+      const targetPassword = dbCredentials?.password || import.meta.env.VITE_ADMIN_PASSWORD || '@Admin00';
+
+      const isMatch = inputEmail === targetEmail && inputPassword === targetPassword;
+
+      if (isMatch) {
         setAdminAuth(true);
         navigate('/admin/dashboard');
       } else {
-        setError('Invalid Email or Password. Default: admin@power24.com / admin123');
+        setError('Invalid Admin Email or Password. Please try again.');
         setLoading(false);
       }
-    }, 400);
-  };
-
-  const handleAutoFill = () => {
-    setEmail('admin@power24.com');
-    setPassword('admin123');
-    setError('');
+    } catch (err) {
+      console.error('[AdminLogin] Login error:', err);
+      setError('Login verification failed. Please try again.');
+      setLoading(false);
+    }
   };
 
   return (
@@ -160,24 +217,6 @@ const AdminLogin = () => {
               )}
             </button>
           </form>
-
-          {/* Demo Auto-Fill Pill */}
-          <div className="mt-6 pt-5 border-t-2 border-slate-800 text-center">
-            <div className="bg-slate-950/90 rounded-2xl p-3.5 border-2 border-slate-800 flex items-center justify-between text-xs sm:text-sm">
-              <div className="text-left text-slate-400">
-                <span className="block text-xs uppercase font-black text-emerald-400">Default Demo Credentials:</span>
-                <span className="font-mono text-xs sm:text-sm font-bold text-slate-200">admin@power24.com / admin123</span>
-              </div>
-              <button
-                type="button"
-                onClick={handleAutoFill}
-                className="px-3.5 py-2 rounded-xl bg-emerald-400/10 hover:bg-emerald-400/20 text-emerald-400 border border-emerald-400/30 text-xs font-black uppercase transition-colors shrink-0 flex items-center gap-1.5 cursor-pointer"
-              >
-                <Sparkles className="w-4 h-4" />
-                <span>Auto Fill</span>
-              </button>
-            </div>
-          </div>
         </div>
       </div>
     </div>

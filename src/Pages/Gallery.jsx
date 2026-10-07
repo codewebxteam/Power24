@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 const solarHeroImg = 'https://ik.imagekit.io/qvztwdsij/solar%20hero%20-%20Copy.png?updatedAt=1790432262362';
 import { getGalleryItems } from '../utils/storage';
 import { subscribeGallery } from '../firebase/firestoreService';
+import SEO from '../components/common/SEO.jsx';
 
 const Gallery = () => {
   const [filter, setFilter] = useState('all');
@@ -25,6 +26,12 @@ const Gallery = () => {
 
   return (
     <div className="bg-slate-50 min-h-screen text-slate-950 py-10 sm:py-16 font-['Outfit',sans-serif]">
+      <SEO
+        title="Project Installations Gallery"
+        description="Explore real rooftop solar installations completed across Uttar Pradesh by Power24 Solar (Power 24). See 1kW to 10kW residential and commercial rooftop solar projects."
+        canonical="https://power24.in/gallery"
+        keywords="Power24 solar installations, Power 24 project gallery, Solar photos Gorakhpur, Rooftop solar UP"
+      />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="text-center max-w-3xl mx-auto mb-8 sm:mb-12 space-y-2 sm:space-y-3">

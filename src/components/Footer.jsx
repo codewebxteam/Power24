@@ -1,9 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Phone, Mail, MapPin, ShieldCheck, ArrowRight, Sparkles } from 'lucide-react';
+import { Phone, Mail, MapPin, ShieldCheck, ArrowRight, Sparkles, X, FileText, CheckCircle2, ExternalLink } from 'lucide-react';
 import p24Logo from '../assets/P24logo.webp';
 
 const Footer = () => {
+  const [legalModal, setLegalModal] = useState(null); // 'privacy' | 'terms' | null
+
   return (
     <footer className="bg-slate-950 border-t border-slate-800 text-slate-400 pt-12 sm:pt-16 pb-10 sm:pb-12 mt-auto font-['Outfit',sans-serif]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -132,11 +134,31 @@ const Footer = () => {
 
         {/* Bottom Bar */}
         <div className="pt-6 sm:pt-8 flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4 text-xs sm:text-sm text-slate-400 text-center sm:text-left font-medium">
-          <p>© 2026 Power24 & Solar Services Private Limited. All rights reserved.</p>
+          <p>© 2026 POWER24Solar Services Pvt Ltd. All rights reserved.</p>
           <div className="flex items-center gap-4 sm:gap-6 flex-wrap justify-center">
-            <span className="hover:text-slate-200 transition-colors cursor-pointer">Privacy Policy</span>
-            <span className="hover:text-slate-200 transition-colors cursor-pointer">Terms of Service</span>
-            <span className="hover:text-slate-200 transition-colors cursor-pointer">MNRE Guidelines</span>
+            <button
+              type="button"
+              onClick={() => setLegalModal('privacy')}
+              className="hover:text-slate-200 transition-colors cursor-pointer bg-transparent border-0 p-0 text-xs sm:text-sm text-slate-400"
+            >
+              Privacy Policy
+            </button>
+            <button
+              type="button"
+              onClick={() => setLegalModal('terms')}
+              className="hover:text-slate-200 transition-colors cursor-pointer bg-transparent border-0 p-0 text-xs sm:text-sm text-slate-400"
+            >
+              Terms of Service
+            </button>
+            <a
+              href="https://pmsuryaghar.gov.in"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-emerald-400 transition-colors flex items-center gap-1 text-xs sm:text-sm text-slate-400"
+            >
+              <span>MNRE Guidelines</span>
+              <ExternalLink className="w-3 h-3 text-slate-500" />
+            </a>
             <Link to="/staff/login" className="text-slate-300 hover:text-blue-400 transition-colors font-bold flex items-center gap-1.5">
               <span className="w-1.5 h-1.5 rounded-full bg-blue-400 inline-block"></span>
               <span>Staff Login</span>
@@ -147,6 +169,85 @@ const Footer = () => {
           </div>
         </div>
       </div>
+
+      {/* Legal Information Modal (Privacy Policy & Terms of Service) */}
+      {legalModal && (
+        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="relative w-full max-w-2xl bg-slate-900 border-2 border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl text-slate-200 max-h-[85vh] overflow-y-auto space-y-4 animate-in fade-in zoom-in-95">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-4">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center justify-center">
+                  <FileText className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-lg sm:text-xl font-black text-white">
+                    {legalModal === 'privacy' ? 'Privacy Policy' : 'Terms of Service'}
+                  </h3>
+                  <p className="text-xs text-slate-400">POWER24Solar Services Pvt Ltd</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setLegalModal(null)}
+                className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
+                aria-label="Close modal"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {legalModal === 'privacy' ? (
+              <div className="space-y-4 text-xs sm:text-sm text-slate-300 leading-relaxed">
+                <div>
+                  <h4 className="font-bold text-white mb-1">1. Information We Collect</h4>
+                  <p>When you request a solar site survey or place an equipment order, we collect your name, contact phone number, installation address, and estimated monthly electricity consumption to determine rooftop engineering feasibility.</p>
+                </div>
+                <div>
+                  <h4 className="font-bold text-white mb-1">2. PM Surya Ghar Subsidy Processing</h4>
+                  <p>Consumer numbers and DISCOM verification details provided for government subsidy claims are shared strictly with the National PM Surya Ghar Portal and your local electricity distribution company for Direct Benefit Transfer (DBT) approval.</p>
+                </div>
+                <div>
+                  <h4 className="font-bold text-white mb-1">3. Data Security & Confidentiality</h4>
+                  <p>We do not sell, rent, or trade your personal information to third-party marketing entities. All customer records are stored securely in encrypted cloud infrastructure.</p>
+                </div>
+                <div>
+                  <h4 className="font-bold text-white mb-1">4. Grievance & Inquiries</h4>
+                  <p>For data privacy queries, please write to our compliance officer at <span className="text-emerald-400 font-bold">naarishakti2026@gmail.com</span> or call <span className="text-emerald-400 font-bold">+91 7398198475</span>.</p>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-4 text-xs sm:text-sm text-slate-300 leading-relaxed">
+                <div>
+                  <h4 className="font-bold text-white mb-1">1. Site Survey & Feasibility</h4>
+                  <p>Site surveys arranged through Power24 are preliminary technical evaluations. Final system capacity (kW) and energy yield depend on physical roof structural strength, shadow assessment, and DISCOM sanctioned electrical load.</p>
+                </div>
+                <div>
+                  <h4 className="font-bold text-white mb-1">2. Government Subsidies & Approvals</h4>
+                  <p>PM Surya Ghar subsidies (up to ₹1,08,000) are disbursed directly by the Government of India / MNRE into the consumer's bank account following technical inspection and net-metering synchronization by the electricity utility.</p>
+                </div>
+                <div>
+                  <h4 className="font-bold text-white mb-1">3. Equipment Warranties</h4>
+                  <p>Photovoltaic modules carry standard 25-year manufacturer performance warranties. Grid-tie and hybrid inverters are backed by 5 to 8 years OEM warranties as specified in the product documentation.</p>
+                </div>
+                <div>
+                  <h4 className="font-bold text-white mb-1">4. Jurisdiction</h4>
+                  <p>All service engagements and commercial transactions are subject to the exclusive jurisdiction of the competent courts in Gorakhpur, Uttar Pradesh.</p>
+                </div>
+              </div>
+            )}
+
+            <div className="pt-4 border-t border-slate-800 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setLegalModal(null)}
+                className="px-6 py-2.5 rounded-full bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-black text-xs uppercase tracking-wider transition-colors cursor-pointer"
+              >
+                Got It
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </footer>
   );
 };
