@@ -39,31 +39,35 @@ const Navbar = ({ onOpenCustomKit }) => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 sm:h-20">
           
-          {/* 1. Brand Logo with P24 Official Badge */}
-          <Link to="/" className="flex items-center gap-2.5 sm:gap-3 group shrink-0">
+          {/* 1. Brand Logo with Colorful Name in One Line */}
+          <Link to="/" className="flex items-center gap-2 sm:gap-2.5 group shrink-0 py-1">
             <img
               src={p24Logo}
               alt="Power24 Solar - Power 24 Rooftop Solar Energy Services"
-              className="h-10 sm:h-12 w-auto object-contain group-hover:scale-105 transition-transform duration-300"
+              className="h-9 sm:h-11 w-auto object-contain group-hover:scale-105 transition-transform duration-300 shrink-0"
             />
-            <div>
-              <span className="text-lg sm:text-xl font-black tracking-tight font-['Outfit',sans-serif] whitespace-nowrap">
-                <span className="text-[#d91478]">POWER</span><span className="text-[#16a34a]">24</span><span className="text-slate-700 text-sm sm:text-base">Solar Services Pvt Ltd</span>
+            <div className="flex items-center">
+              <span className="text-base sm:text-lg lg:text-xl font-black tracking-tight font-['Outfit',sans-serif] whitespace-nowrap flex items-center gap-0.5">
+                <span className="text-[#d91478]">POWER</span>
+                <span className="text-[#16a34a]">24</span>
+                <span className="bg-gradient-to-r from-[#0284c7] via-[#16a34a] to-[#d91478] bg-clip-text text-transparent font-extrabold text-xs sm:text-sm lg:text-base ml-1">
+                  Solar Services Pvt Ltd
+                </span>
               </span>
             </div>
           </Link>
 
-          {/* 2. Center Navigation Links */}
-          <nav className="hidden lg:flex items-center gap-1.5 xl:gap-2 bg-slate-100/90 border border-slate-300/80 rounded-full p-1.5 shadow-inner">
+          {/* 2. Center Navigation Links (Clean, Compact, Colorful) */}
+          <nav className="hidden lg:flex items-center gap-1 bg-slate-100/90 border border-slate-200/90 rounded-full p-1 shadow-inner">
             {navLinks.map((link) => (
               <NavLink
                 key={link.name}
                 to={link.path}
                 className={({ isActive }) =>
-                  `px-4 xl:px-5 py-2 text-xs xl:text-sm font-black tracking-wider uppercase transition-all duration-200 rounded-full ${
+                  `px-3 xl:px-4 py-1.5 text-[11px] xl:text-xs font-black tracking-wider uppercase transition-all duration-200 rounded-full ${
                     isActive
                       ? 'bg-gradient-to-r from-[#d91478] to-[#16a34a] text-white shadow-md shadow-[#d91478]/25'
-                      : 'text-slate-800 hover:text-[#d91478] hover:bg-white'
+                      : 'text-slate-700 hover:text-[#d91478] hover:bg-white/90'
                   }`
                 }
               >

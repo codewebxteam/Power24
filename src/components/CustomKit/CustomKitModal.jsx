@@ -282,14 +282,10 @@ const CustomKitModal = ({ isOpen, onClose }) => {
   const panelCost = currentPanelObj ? (currentPanelObj.panelTotal || (totalWatts * (currentPanelObj.pricePerWatt || 26))) : 0;
   const inverterCost = currentInverterObj ? (currentInverterObj.invTotal || (systemSize * (currentInverterObj.basePricePerKw || 4500))) : 0;
   const batteryCost = currentBatteryObj ? currentBatteryObj.price : 0;
-  const structureCost = systemSize * 3500;
-  const wiringCost = 4000;
-  const protectionCost = 5500 + systemSize * 800; // ACDB/DCDB, Earthing & Lightning Arrestor
-  const installationCivilCost = 6000 + systemSize * 1200;
 
   const hasCoreSelection = panelOptions.length > 0 || inverterOptions.length > 0;
   const grossTotal = hasCoreSelection
-    ? panelCost + inverterCost + batteryCost + structureCost + wiringCost + protectionCost + installationCivilCost
+    ? panelCost + inverterCost + batteryCost
     : 0;
 
   // Subsidy Calculation (PM Surya Ghar Muft Bijli Yojana)
@@ -921,16 +917,6 @@ const CustomKitModal = ({ isOpen, onClose }) => {
                         <p className="text-[11px] text-slate-500 -mt-1 font-mono">
                           {currentInverterObj?.name || 'Custom Inverter (Consult support)'}
                         </p>
-
-                        <div className="flex justify-between pt-1">
-                          <span className="text-slate-600">Mounting Structure & Cables:</span>
-                          <span className="font-bold text-slate-900">₹{(structureCost + wiringCost).toLocaleString('en-IN')}</span>
-                        </div>
-
-                        <div className="flex justify-between pt-1">
-                          <span className="text-slate-600">Protection, Earthing & Civil Installation:</span>
-                          <span className="font-bold text-slate-900">₹{(protectionCost + installationCivilCost).toLocaleString('en-IN')}</span>
-                        </div>
 
                         {/* Totals */}
                         <div className="pt-3 border-t-2 border-slate-300 space-y-1.5">

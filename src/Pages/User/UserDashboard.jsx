@@ -70,7 +70,10 @@ const UserDashboard = () => {
     };
   }, [navigate]);
 
-  const handleLogout = () => {
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+
+  const handleConfirmLogout = () => {
+    setShowLogoutConfirm(false);
     logoutUser();
     navigate('/', { replace: true });
   };
@@ -190,7 +193,7 @@ const UserDashboard = () => {
 
             <button
               type="button"
-              onClick={handleLogout}
+              onClick={() => setShowLogoutConfirm(true)}
               className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-rose-50 text-slate-700 hover:text-rose-600 border border-slate-200 text-xs font-black uppercase tracking-wider transition-colors flex items-center gap-1.5 cursor-pointer"
             >
               <LogOut className="w-4 h-4" />
@@ -656,6 +659,45 @@ const UserDashboard = () => {
         )}
 
       </div>
+
+      {/* User Logout Confirmation Modal */}
+      {showLogoutConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm animate-in fade-in">
+          <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl border border-slate-100 text-center space-y-5 animate-in zoom-in-95">
+            <div className="w-16 h-16 bg-rose-100 text-rose-600 rounded-2xl flex items-center justify-center mx-auto shadow-inner">
+              <LogOut className="w-8 h-8" />
+            </div>
+            
+            <div className="space-y-2">
+              <h3 className="text-xl font-black text-slate-900 tracking-tight">
+                Confirm Logout
+              </h3>
+              <p className="text-sm text-slate-600">
+                क्या आप अपने Customer Account से लॉगआउट करना चाहते हैं?
+              </p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setShowLogoutConfirm(false)}
+                className="px-4 py-2.5 rounded-xl border border-slate-300 text-slate-700 font-bold text-sm hover:bg-slate-100 transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmLogout}
+                className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-rose-600 to-red-600 text-white font-bold text-sm hover:opacity-95 shadow-lg shadow-rose-500/25 transition-all cursor-pointer flex items-center justify-center gap-2"
+              >
+                <LogOut className="w-4 h-4" />
+                <span>Yes, Logout</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 };

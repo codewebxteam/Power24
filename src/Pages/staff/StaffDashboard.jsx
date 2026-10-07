@@ -25,6 +25,7 @@ const StaffDashboard = () => {
   const navigate = useNavigate();
   const [currentStaff, setCurrentStaff] = useState(null);
   const [toastMessage, setToastMessage] = useState('');
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   const showToast = (msg) => {
     setToastMessage(msg);
@@ -46,7 +47,8 @@ const StaffDashboard = () => {
     setCurrentStaff(staffData);
   }, [navigate]);
 
-  const handleLogout = () => {
+  const handleConfirmLogout = () => {
+    setShowLogoutConfirm(false);
     logoutStaff();
     navigate('/staff/login');
   };
@@ -116,7 +118,8 @@ const StaffDashboard = () => {
 
             {/* Logout Button */}
             <button
-              onClick={handleLogout}
+              type="button"
+              onClick={() => setShowLogoutConfirm(true)}
               className="p-2 sm:px-3.5 sm:py-2 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/40 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
               title="Logout from Staff Portal"
             >
@@ -143,6 +146,44 @@ const StaffDashboard = () => {
           </p>
         </div>
       </footer>
+
+      {/* Staff Logout Confirmation Modal */}
+      {showLogoutConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm animate-in fade-in">
+          <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl border border-slate-100 text-center space-y-5 animate-in zoom-in-95">
+            <div className="w-16 h-16 bg-rose-100 text-rose-600 rounded-2xl flex items-center justify-center mx-auto shadow-inner">
+              <LogOut className="w-8 h-8" />
+            </div>
+            
+            <div className="space-y-2">
+              <h3 className="text-xl font-black text-slate-900 tracking-tight">
+                Staff Logout Confirmation
+              </h3>
+              <p className="text-sm text-slate-600">
+                क्या आप Staff Project Portal से लॉगआउट करना चाहते हैं?
+              </p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setShowLogoutConfirm(false)}
+                className="px-4 py-2.5 rounded-xl border border-slate-300 text-slate-700 font-bold text-sm hover:bg-slate-100 transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmLogout}
+                className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-rose-600 to-red-600 text-white font-bold text-sm hover:opacity-95 shadow-lg shadow-rose-500/25 transition-all cursor-pointer flex items-center justify-center gap-2"
+              >
+                <LogOut className="w-4 h-4" />
+                <span>Yes, Logout</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -228,6 +228,7 @@ const AdminDashboard = () => {
   const [editProductUrlInput, setEditProductUrlInput] = useState('');
   const [showManualTweak, setShowManualTweak] = useState(false);
   const [showEditManualTweak, setShowEditManualTweak] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   const resetNewProductForm = () => {
     setNewProduct(getEmptyNewProduct());
@@ -388,6 +389,7 @@ const AdminDashboard = () => {
       signOut(auth).catch(() => {});
     }
     setAdminAuth(false);
+    setShowLogoutConfirm(false);
     navigate('/admin/login');
   };
 
@@ -1351,7 +1353,7 @@ const AdminDashboard = () => {
             {(sidebarOpen || mobileSidebarOpen) && (
               <button
                 type="button"
-                onClick={handleLogout}
+                onClick={() => setShowLogoutConfirm(true)}
                 className="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-slate-800 transition-colors cursor-pointer"
                 title="Logout"
               >
@@ -1443,6 +1445,17 @@ const AdminDashboard = () => {
                 <span className="text-[10px] text-emerald-600 font-bold block">Online</span>
               </div>
             </div>
+
+            {/* Top Bar Logout Button */}
+            <button
+              type="button"
+              onClick={() => setShowLogoutConfirm(true)}
+              className="p-2 rounded-xl text-slate-500 hover:text-rose-600 hover:bg-rose-50 border border-transparent hover:border-rose-200 transition-all cursor-pointer flex items-center gap-1.5 text-xs font-bold"
+              title="Logout from Admin Portal"
+            >
+              <LogOut className="w-4 h-4 text-rose-500" />
+              <span className="hidden md:inline">Logout</span>
+            </button>
           </div>
         </header>
 
@@ -5259,6 +5272,44 @@ const AdminDashboard = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Logout Confirmation Modal */}
+      {showLogoutConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm animate-in fade-in">
+          <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl border border-slate-100 text-center space-y-5 animate-in zoom-in-95">
+            <div className="w-16 h-16 bg-rose-100 text-rose-600 rounded-2xl flex items-center justify-center mx-auto shadow-inner">
+              <LogOut className="w-8 h-8" />
+            </div>
+            
+            <div className="space-y-2">
+              <h3 className="text-xl font-black text-slate-900 tracking-tight">
+                Confirm Logout
+              </h3>
+              <p className="text-sm text-slate-600">
+                क्या आप Admin Dashboard से लॉगआउट करना चाहते हैं? आपका वर्तमान सेशन समाप्त हो जाएगा।
+              </p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setShowLogoutConfirm(false)}
+                className="px-4 py-2.5 rounded-xl border border-slate-300 text-slate-700 font-bold text-sm hover:bg-slate-100 transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-rose-600 to-red-600 text-white font-bold text-sm hover:opacity-95 shadow-lg shadow-rose-500/25 transition-all cursor-pointer flex items-center justify-center gap-2"
+              >
+                <LogOut className="w-4 h-4" />
+                <span>Yes, Logout</span>
+              </button>
+            </div>
           </div>
         </div>
       )}

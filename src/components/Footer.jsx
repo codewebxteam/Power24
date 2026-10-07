@@ -23,7 +23,7 @@ const Footer = () => {
               <div>
                 <span className="text-xl sm:text-2xl font-black tracking-tight text-white block leading-tight">
                   <span className="text-[#d91478]">POWER</span><span className="text-[#16a34a]">24</span>
-                  <span className="text-white text-lg ml-1 font-bold">& Solar Services</span>
+                  <span className="bg-gradient-to-r from-emerald-400 via-sky-300 to-pink-400 bg-clip-text text-transparent text-lg ml-1 font-bold">Solar Services Pvt Ltd</span>
                 </span>
                 <span className="text-xs sm:text-sm text-emerald-400 font-bold block tracking-wide mt-0.5">
                   (Engineering Excellence in Power & Renewables)
