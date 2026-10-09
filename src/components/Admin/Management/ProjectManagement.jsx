@@ -12,6 +12,7 @@ import {
   Edit2,
   CheckCircle2,
   AlertCircle,
+  AlertTriangle,
   TrendingUp,
   TrendingDown,
   Calendar,
@@ -36,8 +37,16 @@ import {
   Truck,
   Users,
   Info,
-  BookOpen
+  BookOpen,
+  User,
+  Receipt,
+  Wallet,
+  ExternalLink,
+  History,
+  ClipboardList,
+  Check
 } from 'lucide-react';
+import p24Logo from '../../../assets/P24logo.webp';
 import {
   getManagementSites,
   addManagementSite,
@@ -59,8 +68,8 @@ import {
 } from '../../../utils/storage';
 
 const ProjectManagement = ({ onShowToast }) => {
-  // Sub-tabs: 'dashboard' | 'site_master' | 'expense_entry' | 'payment_entry' | 'material_budget'
-  const [subTab, setSubTab] = useState('dashboard');
+  // Sub-tabs: 'all_in_one' | 'dashboard' | 'site_master' | 'expense_entry' | 'payment_entry' | 'material_budget'
+  const [subTab, setSubTab] = useState('all_in_one');
   const [showLogicRulesGuide, setShowLogicRulesGuide] = useState(false);
 
   // State
@@ -68,6 +77,11 @@ const ProjectManagement = ({ onShowToast }) => {
   const [expenses, setExpenses] = useState([]);
   const [payments, setPayments] = useState([]);
   const [budgets, setBudgets] = useState([]);
+
+  // All-in-One Operations Hub State
+  const [selectedHubSiteId, setSelectedHubSiteId] = useState('');
+  const [hubSearchQuery, setHubSearchQuery] = useState('');
+  const [hubInnerTab, setHubInnerTab] = useState('all'); // 'all' | 'expenses' | 'payments' | 'materials' | 'pl_sheet'
 
   // Dashboard Filters
   const [selectedDashboardSiteId, setSelectedDashboardSiteId] = useState('ALL');
@@ -189,6 +203,7 @@ const ProjectManagement = ({ onShowToast }) => {
   const [newExpenseForm, setNewExpenseForm] = useState(getEmptyExpenseForm());
   const [newPaymentForm, setNewPaymentForm] = useState(getEmptyPaymentForm());
   const [newBudgetItemForm, setNewBudgetItemForm] = useState(getEmptyBudgetItemForm());
+  const [pendingConfirm, setPendingConfirm] = useState(null);
 
   // Normalization Helpers
   const normSiteId = (id) => String(id || '').trim().toUpperCase();
@@ -205,8 +220,11 @@ const ProjectManagement = ({ onShowToast }) => {
     setPayments(p);
     setBudgets(b);
 
-    if (s.length > 0 && !selectedBudgetSiteId) {
-      setSelectedBudgetSiteId(s[0].id);
+    if (s.length > 0) {
+      if (!selectedBudgetSiteId) {
+        setSelectedBudgetSiteId(s[0].id);
+      }
+      setSelectedHubSiteId((prev) => (prev && s.some((item) => normSiteId(item.id) === normSiteId(prev)) ? prev : s[0].id));
     }
   };
 
@@ -278,6 +296,600 @@ const ProjectManagement = ({ onShowToast }) => {
     if (hundred > 0) res += inWords(hundred);
 
     return res.trim() + ' Rupees Only';
+  };
+
+  // Direct Instant Print / Save as PDF Handlers (No Extra Web Popups)
+  const handleDirectPrintSite = (st) => {
+    if (!st) return;
+    const siteExpenses = expenses.filter((e) => normSiteId(e.siteId) === normSiteId(st.id));
+    const sitePayments = payments.filter((p) => normSiteId(p.siteId) === normSiteId(st.id));
+
+    const matCost = siteExpenses.filter(e => normCategory(e.category) === 'material').reduce((a, c) => a + (Number(c.amount) || 0), 0);
+    const labCost = siteExpenses.filter(e => normCategory(e.category) === 'labour').reduce((a, c) => a + (Number(c.amount) || 0), 0);
+    const traCost = siteExpenses.filter(e => normCategory(e.category) === 'transport').reduce((a, c) => a + (Number(c.amount) || 0), 0);
+    const misCost = siteExpenses.filter(e => normCategory(e.category) === 'misc').reduce((a, c) => a + (Number(c.amount) || 0), 0);
+    const totExpense = matCost + labCost + traCost + misCost;
+
+    const loan = Number(st.loanAmount) || 0;
+    const margin = Number(st.customerMargin) || 0;
+    const totIncome = (loan + margin) > 0 ? (loan + margin) : (Number(st.projectIncome) || Number(st.projectValue) || 0);
+    const profit = totIncome - totExpense;
+    const profitMargin = totIncome > 0 ? ((profit / totIncome) * 100) : 0;
+
+    const totalReceived = sitePayments.reduce((a, c) => a + (Number(c.amount) || 0), 0);
+    const totalPending = totIncome - totalReceived;
+
+    const printWindow = window.open('', '_blank', 'width=900,height=800');
+    if (!printWindow) {
+      setPrintingSite(st);
+      setTimeout(() => window.print(), 150);
+      return;
+    }
+
+    const logoUrl = window.location.origin + '/P24logo.webp';
+
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html lang="en">
+      <head>
+        <meta charset="UTF-8">
+        <title>POWER24 Solar Settlement Slip - ${st.id} - ${st.customerName || st.clientName || 'Customer'}</title>
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet">
+        <style>
+          * { box-sizing: border-box; margin: 0; padding: 0; }
+          body { font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif; color: #0f172a; background: #fff; padding: 24px; font-size: 12px; }
+          @media print {
+            @page { margin: 8mm 10mm; size: A4 portrait; }
+            body { padding: 0; }
+          }
+          .mono { font-family: 'JetBrains Mono', monospace; }
+          .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #0f172a; padding-bottom: 12px; margin-bottom: 14px; }
+          .brand { display: flex; align-items: center; gap: 12px; }
+          .brand img { height: 48px; width: auto; object-fit: contain; }
+          .brand-title { font-size: 22px; font-weight: 900; line-height: 1; }
+          .p-pink { color: #d91478; }
+          .p-green { color: #16a34a; }
+          .p-blue { color: #0284c7; }
+          .sub-text { font-size: 10px; color: #475569; font-weight: 600; margin-top: 4px; }
+          .doc-tag { text-align: right; font-size: 11px; border-left: 2px solid #e2e8f0; padding-left: 12px; }
+          .banner { text-align: center; background: linear-gradient(90deg, #0f172a, #0284c7, #16a34a); color: #fff; padding: 7px; border-radius: 8px; font-weight: 900; font-size: 11px; letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 14px; }
+          .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; background: #f8fafc; padding: 12px; border-radius: 10px; border: 1px solid #e2e8f0; margin-bottom: 14px; }
+          .field-label { font-size: 9px; font-weight: 700; text-transform: uppercase; color: #64748b; display: block; }
+          .field-val { font-size: 12px; font-weight: 700; color: #0f172a; }
+          .ledger-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px; }
+          .ledger-box { border: 1px solid #cbd5e1; border-radius: 10px; overflow: hidden; font-size: 11px; }
+          .ledger-head { padding: 7px 10px; font-weight: 900; font-size: 11px; color: #fff; text-transform: uppercase; display: flex; justify-content: space-between; }
+          .head-inflow { background: #0284c7; }
+          .head-outflow { background: #d91478; }
+          .ledger-body { padding: 10px; background: #fff; }
+          .row { display: flex; justify-content: space-between; padding: 3px 0; border-bottom: 1px solid #f1f5f9; }
+          .row.total { font-weight: 900; font-size: 12px; border-top: 2px solid #cbd5e1; padding-top: 6px; margin-top: 4px; }
+          .kpi-bar { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; background: #020617; color: #fff; padding: 12px; border-radius: 10px; margin-bottom: 14px; }
+          .kpi-item span:first-child { font-size: 9px; color: #94a3b8; text-transform: uppercase; display: block; }
+          .kpi-item span:last-child { font-size: 15px; font-weight: 900; }
+          .c-green { color: #22c55e; }
+          .c-pink { color: #f43f5e; }
+          .c-sky { color: #38bdf8; }
+          .c-amber { color: #fbbf24; }
+          .tables-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; font-size: 10px; }
+          .table-card { border: 1px solid #e2e8f0; border-radius: 10px; padding: 8px; background: #f8fafc; }
+          .table-card h4 { font-weight: 900; font-size: 10px; margin-bottom: 4px; text-transform: uppercase; color: #1e293b; }
+          table { width: 100%; border-collapse: collapse; text-align: left; }
+          th { border-bottom: 1px solid #cbd5e1; padding: 3px 2px; color: #64748b; font-weight: 700; }
+          td { padding: 3px 2px; border-bottom: 1px solid #f1f5f9; }
+          .sig-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; text-align: center; border-top: 2px solid #0f172a; padding-top: 18px; margin-top: 20px; }
+          .sig-line { border-bottom: 1px dashed #94a3b8; padding-bottom: 3px; font-weight: 700; margin-bottom: 4px; min-height: 20px; }
+          .sig-title { font-size: 9px; text-transform: uppercase; color: #64748b; font-weight: 700; }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <div class="brand">
+            <img src="${logoUrl}" alt="POWER24" onerror="this.style.display='none'">
+            <div>
+              <div class="brand-title">
+                <span class="p-pink">POWER</span><span class="p-green">24</span> <span class="p-blue">Solar Services Pvt Ltd</span>
+              </div>
+              <div class="sub-text">
+                Authorized Rooftop Solar Installation & EPC Partner • Gorakhpur HQ, UP | Helpline: +91 94508 81224 | Web: www.power24.in
+              </div>
+            </div>
+          </div>
+          <div class="doc-tag mono">
+            <div><strong>DATE:</strong> ${new Date().toLocaleDateString('en-IN')}</div>
+            <div style="color: #0284c7; font-weight: 900;">SITE ID: #${st.id}</div>
+            <div style="font-size: 8px; color: #64748b;">OFFICIAL DOSSIER</div>
+          </div>
+        </div>
+
+        <div class="banner">
+          SOLAR PROJECT SETTLEMENT & PROFIT / LOSS SUMMARY STATEMENT
+        </div>
+
+        <div class="grid-4">
+          <div>
+            <span class="field-label">Customer Name</span>
+            <span class="field-val" style="font-size: 13px;">${st.customerName || st.clientName || '-'}</span>
+          </div>
+          <div>
+            <span class="field-label">Contact / Phone</span>
+            <span class="field-val mono">${st.customerPhone || st.phone || st.contact || '-'}</span>
+          </div>
+          <div>
+            <span class="field-label">Site Location / District</span>
+            <span class="field-val">${st.siteAddress || st.district || '-'}</span>
+          </div>
+          <div>
+            <span class="field-label">Solar Capacity</span>
+            <span class="field-val mono" style="color: #0284c7;">${st.capacity || '-'} kW</span>
+          </div>
+          <div>
+            <span class="field-label">Consumer / CA No.</span>
+            <span class="field-val mono">${st.consumerNumber || st.caNumber || '-'}</span>
+          </div>
+          <div>
+            <span class="field-label">DISCOM / Grid</span>
+            <span class="field-val">${st.discom || 'UPPCL'}</span>
+          </div>
+          <div>
+            <span class="field-label">Site Status</span>
+            <span class="field-val" style="color: #16a34a; font-weight: 900;">${st.siteStatus || st.status || 'Running'}</span>
+          </div>
+          <div>
+            <span class="field-label">Project Dates</span>
+            <span class="field-val mono">${st.startDate || '-'} → ${st.completionDate || 'Ongoing'}</span>
+          </div>
+          ${(st.remarks || st.notes) ? `
+            <div style="grid-column: span 4; border-top: 1px solid #e2e8f0; padding-top: 4px;">
+              <span class="field-label">Project Notes:</span>
+              <span style="font-style: italic; color: #475569; font-size: 10px;">${st.remarks || st.notes}</span>
+            </div>
+          ` : ''}
+        </div>
+
+        <div class="ledger-grid">
+          <div class="ledger-box">
+            <div class="ledger-head head-inflow">
+              <span>1. Project Inflow (Revenue)</span>
+              <span class="mono">CREDIT</span>
+            </div>
+            <div class="ledger-body">
+              <div class="row">
+                <span>Project Quoted Value:</span>
+                <span class="mono"><strong>${formatINR(st.projectValue || 0)}</strong></span>
+              </div>
+              <div class="row">
+                <span>Bank Loan Component:</span>
+                <span class="mono"><strong>${formatINR(loan)}</strong></span>
+              </div>
+              ${loan > 0 ? `
+                <div style="padding-left: 8px; font-size: 9px; color: #64748b; background: #f8fafc; padding: 4px; border-radius: 4px; margin: 3px 0;">
+                  <div style="display:flex;justify-content:space-between;">
+                    <span>• Tranche 1 (Disb 1):</span>
+                    <span class="mono" style="color:#0284c7;font-weight:700;">${formatINR(sitePayments.filter(p => normCategory(p.paymentType).includes('loan') && (p.disbursementStage === 'Disbursement 1' || (!p.disbursementStage && !String(p.paymentType).includes('2')))).reduce((a, c) => a + (Number(c.amount) || 0), 0))}</span>
+                  </div>
+                  <div style="display:flex;justify-content:space-between; margin-top: 2px;">
+                    <span>• Tranche 2 (Disb 2):</span>
+                    <span class="mono" style="color:#4f46e5;font-weight:700;">${formatINR(sitePayments.filter(p => normCategory(p.paymentType).includes('loan') && (p.disbursementStage === 'Disbursement 2' || String(p.paymentType).includes('2'))).reduce((a, c) => a + (Number(c.amount) || 0), 0))}</span>
+                  </div>
+                </div>
+              ` : ''}
+              <div class="row">
+                <span>Customer Margin Amount:</span>
+                <span class="mono"><strong>${formatINR(margin)}</strong></span>
+              </div>
+              <div class="row total" style="background: #f0f9ff; color: #0369a1; padding: 4px 6px; border-radius: 4px;">
+                <span>TOTAL PROJECT INCOME:</span>
+                <span class="mono">${formatINR(totIncome)}</span>
+              </div>
+              <div style="font-size: 8px; color: #64748b; font-style: italic; margin-top: 3px;">(${numberToWords(totIncome)})</div>
+            </div>
+          </div>
+
+          <div class="ledger-box">
+            <div class="ledger-head head-outflow">
+              <span>2. Cost Outflow (Incurred Expenses)</span>
+              <span class="mono">DEBIT</span>
+            </div>
+            <div class="ledger-body">
+              <div class="row">
+                <span>Material Cost (Panels/Inverter):</span>
+                <span class="mono"><strong>${formatINR(matCost)}</strong></span>
+              </div>
+              <div class="row">
+                <span>Labour & Installation Cost:</span>
+                <span class="mono"><strong>${formatINR(labCost)}</strong></span>
+              </div>
+              <div class="row">
+                <span>Transport & Freight:</span>
+                <span class="mono"><strong>${formatINR(traCost)}</strong></span>
+              </div>
+              <div class="row">
+                <span>Misc & Statutory Approvals:</span>
+                <span class="mono"><strong>${formatINR(misCost)}</strong></span>
+              </div>
+              <div class="row total" style="background: #fff1f2; color: #9f1239; padding: 4px 6px; border-radius: 4px;">
+                <span>TOTAL INCURRED EXPENSES:</span>
+                <span class="mono">${formatINR(totExpense)}</span>
+              </div>
+              <div style="font-size: 8px; color: #64748b; font-style: italic; margin-top: 3px;">(${numberToWords(totExpense)})</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="kpi-bar mono">
+          <div class="kpi-item">
+            <span>NET PROFIT / LOSS</span>
+            <span class="${profit >= 0 ? 'c-green' : 'c-pink'}">${formatINR(profit)}</span>
+          </div>
+          <div class="kpi-item">
+            <span>PROFIT MARGIN</span>
+            <span class="c-sky">${profitMargin.toFixed(2)}%</span>
+          </div>
+          <div class="kpi-item">
+            <span>TOTAL RECEIVED</span>
+            <span class="c-green">${formatINR(totalReceived)}</span>
+          </div>
+          <div class="kpi-item">
+            <span>PENDING / DUE</span>
+            <span class="${totalPending > 0 ? 'c-amber' : ''}">${formatINR(totalPending)}</span>
+          </div>
+        </div>
+
+        <div class="tables-grid">
+          <div class="table-card">
+            <h4>Expense Vouchers Logged (${siteExpenses.length})</h4>
+            ${siteExpenses.length === 0 ? '<p style="color:#94a3b8; font-style:italic;">No expenses recorded.</p>' : `
+              <table>
+                <thead>
+                  <tr><th>Date</th><th>Item / Vendor</th><th>Cat</th><th style="text-align:right;">Amt</th></tr>
+                </thead>
+                <tbody class="mono">
+                  ${siteExpenses.slice(0, 6).map(e => `
+                    <tr>
+                      <td>${e.date || '-'}</td>
+                      <td>${e.vendor || e.description || '-'}</td>
+                      <td>${e.category}</td>
+                      <td style="text-align:right; color:#e11d48; font-weight:700;">${formatINR(e.amount)}</td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+            `}
+          </div>
+
+          <div class="table-card">
+            <h4>Payment Receipts Logged (${sitePayments.length})</h4>
+            ${sitePayments.length === 0 ? '<p style="color:#94a3b8; font-style:italic;">No payments recorded.</p>' : `
+              <table>
+                <thead>
+                  <tr><th>Date</th><th>Type</th><th>Mode</th><th style="text-align:right;">Amt</th></tr>
+                </thead>
+                <tbody class="mono">
+                  ${sitePayments.slice(0, 6).map(p => `
+                    <tr>
+                      <td>${p.date || '-'}</td>
+                      <td>${p.disbursementStage ? `Loan (${p.disbursementStage === 'Disbursement 2' ? 'Disb 2' : 'Disb 1'})` : (p.paymentType || 'Receipt')}</td>
+                      <td>${p.paymentMode}</td>
+                      <td style="text-align:right; color:#16a34a; font-weight:700;">${formatINR(p.amount)}</td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+            `}
+          </div>
+        </div>
+
+        <div class="sig-grid">
+          <div>
+            <div class="sig-line">${st.customerName || 'Customer'}</div>
+            <div class="sig-title">Customer Acceptance</div>
+          </div>
+          <div>
+            <div class="sig-line">Solar Project Eng.</div>
+            <div class="sig-title">Site Engineer</div>
+          </div>
+          <div>
+            <div class="sig-line">Accounts Dept.</div>
+            <div class="sig-title">Verified By</div>
+          </div>
+          <div>
+            <div class="sig-line" style="color: #0284c7;">POWER24 Signatory</div>
+            <div class="sig-title">Authorized Signatory</div>
+          </div>
+        </div>
+
+        <script>
+          window.onload = function() {
+            setTimeout(function() {
+              window.print();
+            }, 250);
+          };
+        </script>
+      </body>
+      </html>
+    `);
+    printWindow.document.close();
+  };
+
+  const handleDirectPrintExpense = (exp) => {
+    if (!exp) return;
+    const targetSite = sites.find(s => normSiteId(s.id) === normSiteId(exp.siteId));
+    const printWindow = window.open('', '_blank', 'width=800,height=700');
+    if (!printWindow) {
+      setPrintingExpense(exp);
+      setTimeout(() => window.print(), 150);
+      return;
+    }
+
+    const logoUrl = window.location.origin + '/P24logo.webp';
+
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html lang="en">
+      <head>
+        <meta charset="UTF-8">
+        <title>Expense Voucher - ${exp.id}</title>
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet">
+        <style>
+          * { box-sizing: border-box; margin: 0; padding: 0; }
+          body { font-family: 'Outfit', sans-serif; color: #0f172a; padding: 24px; font-size: 12px; }
+          @media print {
+            @page { margin: 10mm; size: A5 landscape; }
+            body { padding: 0; }
+          }
+          .mono { font-family: 'JetBrains Mono', monospace; }
+          .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #0f172a; padding-bottom: 10px; margin-bottom: 12px; }
+          .brand { display: flex; align-items: center; gap: 10px; }
+          .brand img { height: 42px; width: auto; object-fit: contain; }
+          .brand-title { font-size: 18px; font-weight: 900; line-height: 1; }
+          .p-pink { color: #d91478; }
+          .p-green { color: #16a34a; }
+          .p-blue { color: #0284c7; }
+          .banner { text-align: center; background: #be123c; color: #fff; padding: 6px; border-radius: 6px; font-weight: 900; font-size: 11px; text-transform: uppercase; margin-bottom: 14px; font-family: 'JetBrains Mono', monospace; }
+          .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; background: #f8fafc; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 14px; }
+          .field-label { font-size: 9px; font-weight: 700; text-transform: uppercase; color: #64748b; display: block; }
+          .field-val { font-size: 12px; font-weight: 700; color: #0f172a; }
+          .amt-box { background: #fff1f2; border: 2px solid #fecdd3; padding: 12px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+          .amt-fig { font-size: 20px; font-weight: 900; color: #be123c; font-family: 'JetBrains Mono', monospace; }
+          .sig-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; text-align: center; border-top: 2px solid #0f172a; padding-top: 18px; margin-top: 24px; }
+          .sig-line { border-bottom: 1px dashed #94a3b8; padding-bottom: 4px; font-weight: 700; margin-bottom: 4px; }
+          .sig-title { font-size: 9px; text-transform: uppercase; color: #64748b; font-weight: 700; }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <div class="brand">
+            <img src="${logoUrl}" alt="POWER24" onerror="this.style.display='none'">
+            <div>
+              <div class="brand-title">
+                <span class="p-pink">POWER</span><span class="p-green">24</span> <span class="p-blue">Solar Services Pvt Ltd</span>
+              </div>
+              <div style="font-size: 9px; color: #64748b; margin-top: 2px;">Gorakhpur HQ, UP | Helpline: +91 94508 81224 | Web: www.power24.in</div>
+            </div>
+          </div>
+          <div class="mono" style="text-align: right; border-left: 2px solid #e2e8f0; padding-left: 10px;">
+            <div><strong>DATE:</strong> ${exp.date || new Date().toLocaleDateString('en-IN')}</div>
+            <div style="color: #be123c; font-weight: 900;">VOUCHER NO: #${exp.id || '-'}</div>
+          </div>
+        </div>
+
+        <div class="banner">PAYMENT EXPENSE VOUCHER (DEBIT SLIP)</div>
+
+        <div class="grid-3">
+          <div>
+            <span class="field-label">Site ID</span>
+            <span class="field-val mono" style="color: #0284c7;">${exp.siteId || '-'}</span>
+          </div>
+          <div>
+            <span class="field-label">Site / Customer</span>
+            <span class="field-val">${targetSite ? (targetSite.customerName || targetSite.name) : '-'}</span>
+          </div>
+          <div>
+            <span class="field-label">Expense Category</span>
+            <span class="field-val" style="color: #be123c; font-weight: 900;">${exp.category || 'Material'}</span>
+          </div>
+          <div>
+            <span class="field-label">Paid To (Vendor)</span>
+            <span class="field-val">${exp.vendor || exp.vendorPerson || '-'}</span>
+          </div>
+          <div>
+            <span class="field-label">Payment Mode</span>
+            <span class="field-val">${exp.paymentMode || 'UPI'}</span>
+          </div>
+          <div>
+            <span class="field-label">Bill / Ref No.</span>
+            <span class="field-val mono">${exp.billNo || exp.voucherNo || '-'}</span>
+          </div>
+          <div style="grid-column: span 3; border-top: 1px solid #e2e8f0; padding-top: 4px;">
+            <span class="field-label">Description:</span>
+            <span style="font-size: 11px; color: #334155;">${exp.description || '-'}</span>
+          </div>
+        </div>
+
+        <div class="amt-box">
+          <div>
+            <span class="field-label" style="color: #be123c;">Amount Paid (Figures)</span>
+            <span class="amt-fig">${formatINR(exp.amount)}</span>
+          </div>
+          <div style="text-align: right; max-width: 320px;">
+            <span class="field-label">Amount in Words</span>
+            <span style="font-style: italic; font-weight: 700; color: #334155;">${numberToWords(exp.amount)}</span>
+          </div>
+        </div>
+
+        <div class="sig-grid">
+          <div>
+            <div class="sig-line">Prepared By</div>
+            <div class="sig-title">Accountant</div>
+          </div>
+          <div>
+            <div class="sig-line">Verified & Approved</div>
+            <div class="sig-title">Project Manager</div>
+          </div>
+          <div>
+            <div class="sig-line">${exp.vendor || 'Receiver'}</div>
+            <div class="sig-title">Receiver's Signature</div>
+          </div>
+        </div>
+
+        <script>
+          window.onload = function() {
+            setTimeout(function() {
+              window.print();
+            }, 250);
+          };
+        </script>
+      </body>
+      </html>
+    `);
+    printWindow.document.close();
+  };
+
+  const handleDirectPrintPayment = (pay) => {
+    if (!pay) return;
+    const targetSite = sites.find(s => normSiteId(s.id) === normSiteId(pay.siteId));
+    const sitePayments = payments.filter(p => normSiteId(p.siteId) === normSiteId(pay.siteId));
+    const totalRecSite = sitePayments.reduce((a, c) => a + (Number(c.amount) || 0), 0);
+
+    const loan = Number(targetSite?.loanAmount) || 0;
+    const margin = Number(targetSite?.customerMargin) || 0;
+    const totIncome = (loan + margin) > 0 ? (loan + margin) : (Number(targetSite?.projectIncome) || Number(targetSite?.projectValue) || 0);
+    const pendingSite = Math.max(0, totIncome - totalRecSite);
+
+    const printWindow = window.open('', '_blank', 'width=800,height=700');
+    if (!printWindow) {
+      setPrintingPayment(pay);
+      setTimeout(() => window.print(), 150);
+      return;
+    }
+
+    const logoUrl = window.location.origin + '/P24logo.webp';
+
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html lang="en">
+      <head>
+        <meta charset="UTF-8">
+        <title>Money Receipt - ${pay.id}</title>
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet">
+        <style>
+          * { box-sizing: border-box; margin: 0; padding: 0; }
+          body { font-family: 'Outfit', sans-serif; color: #0f172a; padding: 24px; font-size: 12px; }
+          @media print {
+            @page { margin: 10mm; size: A5 landscape; }
+            body { padding: 0; }
+          }
+          .mono { font-family: 'JetBrains Mono', monospace; }
+          .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #0f172a; padding-bottom: 10px; margin-bottom: 12px; }
+          .brand { display: flex; align-items: center; gap: 10px; }
+          .brand img { height: 42px; width: auto; object-fit: contain; }
+          .brand-title { font-size: 18px; font-weight: 900; line-height: 1; }
+          .p-pink { color: #d91478; }
+          .p-green { color: #16a34a; }
+          .p-blue { color: #0284c7; }
+          .banner { text-align: center; background: #047857; color: #fff; padding: 6px; border-radius: 6px; font-weight: 900; font-size: 11px; text-transform: uppercase; margin-bottom: 14px; font-family: 'JetBrains Mono', monospace; }
+          .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; background: #f8fafc; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 14px; }
+          .field-label { font-size: 9px; font-weight: 700; text-transform: uppercase; color: #64748b; display: block; }
+          .field-val { font-size: 12px; font-weight: 700; color: #0f172a; }
+          .amt-box { background: #ecfdf5; border: 2px solid #a7f3d0; padding: 12px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+          .amt-fig { font-size: 20px; font-weight: 900; color: #047857; font-family: 'JetBrains Mono', monospace; }
+          .sig-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 40px; text-align: center; border-top: 2px solid #0f172a; padding-top: 18px; margin-top: 24px; }
+          .sig-line { border-bottom: 1px dashed #94a3b8; padding-bottom: 4px; font-weight: 700; margin-bottom: 4px; }
+          .sig-title { font-size: 9px; text-transform: uppercase; color: #64748b; font-weight: 700; }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <div class="brand">
+            <img src="${logoUrl}" alt="POWER24" onerror="this.style.display='none'">
+            <div>
+              <div class="brand-title">
+                <span class="p-pink">POWER</span><span class="p-green">24</span> <span class="p-blue">Solar Services Pvt Ltd</span>
+              </div>
+              <div style="font-size: 9px; color: #64748b; margin-top: 2px;">Gorakhpur HQ, UP | Helpline: +91 94508 81224 | Web: www.power24.in</div>
+            </div>
+          </div>
+          <div class="mono" style="text-align: right; border-left: 2px solid #e2e8f0; padding-left: 10px;">
+            <div><strong>DATE:</strong> ${pay.date || new Date().toLocaleDateString('en-IN')}</div>
+            <div style="color: #047857; font-weight: 900;">RECEIPT NO: #${pay.id || '-'}</div>
+          </div>
+        </div>
+
+        <div class="banner">OFFICIAL MONEY RECEIPT / PAYMENT ACKNOWLEDGEMENT</div>
+
+        <div class="grid-3">
+          <div>
+            <span class="field-label">Site ID</span>
+            <span class="field-val mono" style="color: #0284c7;">${pay.siteId || '-'}</span>
+          </div>
+          <div>
+            <span class="field-label">Received With Thanks From</span>
+            <span class="field-val">${targetSite ? (targetSite.customerName || targetSite.name) : (pay.customerName || '-')}</span>
+          </div>
+          <div>
+            <span class="field-label">Payment Type / Tranche</span>
+            <span class="field-val" style="color: #047857; font-weight: 900;">
+              ${pay.disbursementStage ? `Bank Loan (${pay.disbursementStage})` : (pay.paymentType || 'Receipt')}
+            </span>
+          </div>
+          <div>
+            <span class="field-label">Payment Mode</span>
+            <span class="field-val">${pay.paymentMode || pay.mode || 'NEFT/RTGS'}</span>
+          </div>
+          <div>
+            <span class="field-label">UTR / Transaction Ref</span>
+            <span class="field-val mono">${pay.refNo || pay.referenceNo || '-'}</span>
+          </div>
+          <div>
+            <span class="field-label">Remaining Balance Due</span>
+            <span class="field-val mono" style="color: #b45309;">${formatINR(pendingSite)}</span>
+          </div>
+          <div style="grid-column: span 3; border-top: 1px solid #e2e8f0; padding-top: 4px;">
+            <span class="field-label">Remarks:</span>
+            <span style="font-size: 11px; color: #334155;">${pay.remarks || pay.notes || '-'}</span>
+          </div>
+        </div>
+
+        <div class="amt-box">
+          <div>
+            <span class="field-label" style="color: #047857;">Amount Received (Figures)</span>
+            <span class="amt-fig">${formatINR(pay.amount)}</span>
+          </div>
+          <div style="text-align: right; max-width: 320px;">
+            <span class="field-label">Amount in Words</span>
+            <span style="font-style: italic; font-weight: 700; color: #334155;">${numberToWords(pay.amount)}</span>
+          </div>
+        </div>
+
+        <div class="sig-grid">
+          <div>
+            <div class="sig-line">Received By (Accounts)</div>
+            <div class="sig-title">Cashier / Accountant</div>
+          </div>
+          <div>
+            <div class="sig-line" style="color: #0284c7;">POWER24 Signatory</div>
+            <div class="sig-title">Authorized Signatory</div>
+          </div>
+        </div>
+
+        <script>
+          window.onload = function() {
+            setTimeout(function() {
+              window.print();
+            }, 250);
+          };
+        </script>
+      </body>
+      </html>
+    `);
+    printWindow.document.close();
   };
 
   // =========================================================
@@ -360,13 +972,106 @@ const ProjectManagement = ({ onShowToast }) => {
     .reduce((acc, curr) => acc + (Number(curr.amount) || 0), 0);
 
   // =========================================================
+  // CALCULATIONS FOR ALL-IN-ONE OPERATIONS HUB
+  // =========================================================
+  const filteredHubDropdownSites = sites.filter((s) => {
+    if (!hubSearchQuery.trim()) return true;
+    const q = hubSearchQuery.toLowerCase();
+    return (
+      (s.customerName && s.customerName.toLowerCase().includes(q)) ||
+      (s.id && s.id.toLowerCase().includes(q)) ||
+      (s.phone && s.phone.toLowerCase().includes(q)) ||
+      (s.district && s.district.toLowerCase().includes(q)) ||
+      (s.siteAddress && s.siteAddress.toLowerCase().includes(q))
+    );
+  });
+
+  const currentHubSite = sites.find((s) => normSiteId(s.id) === normSiteId(selectedHubSiteId)) || (sites.length > 0 ? sites[0] : null);
+
+  const hubSiteExpenses = currentHubSite
+    ? expenses.filter((e) => normSiteId(e.siteId) === normSiteId(currentHubSite.id))
+    : [];
+
+  const hubSitePayments = currentHubSite
+    ? payments.filter((p) => normSiteId(p.siteId) === normSiteId(currentHubSite.id))
+    : [];
+
+  const hubSiteBudgets = currentHubSite
+    ? budgets.filter((b) => normSiteId(b.siteId) === normSiteId(currentHubSite.id))
+    : [];
+
+  const hubProjectValue = currentHubSite
+    ? (((Number(currentHubSite.loanAmount) || 0) + (Number(currentHubSite.customerMargin) || 0)) > 0
+        ? (Number(currentHubSite.loanAmount) || 0) + (Number(currentHubSite.customerMargin) || 0)
+        : (Number(currentHubSite.projectIncome) || Number(currentHubSite.projectValue) || 0))
+    : 0;
+
+  const hubTotalExpenses = hubSiteExpenses.reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
+  const hubTotalPayments = hubSitePayments.reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
+  const hubPendingPayment = Math.max(0, hubProjectValue - hubTotalPayments);
+  const hubNetProfit = hubProjectValue - hubTotalExpenses;
+  const hubProfitMargin = hubProjectValue > 0 ? ((hubNetProfit / hubProjectValue) * 100) : 0;
+  const hubPaymentCollectionPercent = hubProjectValue > 0 ? ((hubTotalPayments / hubProjectValue) * 100) : 0;
+
+  const hubMaterialExp = hubSiteExpenses.filter((e) => normCategory(e.category) === 'material').reduce((s, e) => s + (Number(e.amount) || 0), 0);
+  const hubLabourExp = hubSiteExpenses.filter((e) => normCategory(e.category) === 'labour').reduce((s, e) => s + (Number(e.amount) || 0), 0);
+  const hubTransportExp = hubSiteExpenses.filter((e) => normCategory(e.category) === 'transport').reduce((s, e) => s + (Number(e.amount) || 0), 0);
+  const hubMiscExp = hubSiteExpenses.filter((e) => normCategory(e.category) === 'misc' || normCategory(e.category) === 'miscellaneous').reduce((s, e) => s + (Number(e.amount) || 0), 0);
+
+  const hubBudgetEstTotal = hubSiteBudgets.reduce((sum, b) => sum + (Number(b.budgetAmount) || (Number(b.qty) * Number(b.budgetRate)) || 0), 0);
+  const hubBudgetActualTotal = hubSiteBudgets.reduce((sum, b) => sum + (Number(b.actualAmount) || (Number(b.qty) * Number(b.actualRate)) || 0), 0);
+
+  // Quick Hub Launchers
+  const handleOpenAddExpenseForHub = () => {
+    if (!currentHubSite) {
+      toast('Please select a Customer / Site first.');
+      return;
+    }
+    setNewExpenseForm({
+      ...getEmptyExpenseForm(sites),
+      siteId: currentHubSite.id,
+      date: new Date().toISOString().split('T')[0]
+    });
+    setShowAddExpenseModal(true);
+  };
+
+  const handleOpenAddPaymentForHub = () => {
+    if (!currentHubSite) {
+      toast('Please select a Customer / Site first.');
+      return;
+    }
+    setNewPaymentForm({
+      ...getEmptyPaymentForm(sites),
+      siteId: currentHubSite.id,
+      customerName: currentHubSite.customerName || '',
+      date: new Date().toISOString().split('T')[0]
+    });
+    setShowAddPaymentModal(true);
+  };
+
+  const handleOpenAddMaterialForHub = () => {
+    if (!currentHubSite) {
+      toast('Please select a Customer / Site first.');
+      return;
+    }
+    setNewBudgetItemForm({
+      ...getEmptyBudgetItemForm(sites),
+      siteId: currentHubSite.id
+    });
+    setShowAddBudgetItemModal(true);
+  };
+
+  // =========================================================
   // HANDLERS
   // =========================================================
   // Rule 1: Unique Site ID like P24-001, P24-002
   const handleAddSite = (e) => {
     e.preventDefault();
     const customer = newSiteForm.customerName?.trim() || newSiteForm.name?.trim();
-    if (!customer) return;
+    if (!customer) {
+      toast('Please enter customer name');
+      return;
+    }
 
     const loan = Number(newSiteForm.loanAmount) || 0;
     const margin = Number(newSiteForm.customerMargin) || 0;
@@ -416,11 +1121,31 @@ const ProjectManagement = ({ onShowToast }) => {
       completionDate: newSiteForm.completionDate || ''
     };
 
-    const updated = addManagementSite(siteObj);
-    setSites(updated);
-    setShowAddSiteModal(false);
-    setNewSiteForm(getEmptySiteForm());
-    toast(`Solar Project Site ${generatedId} created successfully!`);
+    setPendingConfirm({
+      title: 'Confirm Create Solar Project Site',
+      subtitle: 'Please verify the site details and financial figures before saving.',
+      actionLabel: 'Yes, Save Project Site',
+      badgeText: 'New Project Site',
+      badgeColor: 'blue',
+      details: [
+        { label: 'Site ID', value: generatedId, highlight: true },
+        { label: 'Customer Name', value: customer },
+        { label: 'Solar Capacity', value: `${newSiteForm.capacity || '-'} kW` },
+        { label: 'District / Location', value: newSiteForm.district || newSiteForm.siteAddress || '-' },
+        { label: 'Project Value', value: formatINR(newSiteForm.projectValue || 0) },
+        { label: 'Bank Loan', value: formatINR(loan) },
+        { label: 'Customer Margin', value: formatINR(margin) },
+        { label: 'Total Project Income', value: formatINR(calcIncome), highlight: true }
+      ],
+      onConfirm: () => {
+        const updated = addManagementSite(siteObj);
+        setSites(updated);
+        setShowAddSiteModal(false);
+        setNewSiteForm(getEmptySiteForm());
+        setPendingConfirm(null);
+        toast(`Solar Project Site ${generatedId} created successfully!`);
+      }
+    });
   };
 
   const handleEditSiteSave = (e) => {
@@ -470,19 +1195,50 @@ const ProjectManagement = ({ onShowToast }) => {
       completionDate: editingSite.completionDate || ''
     };
 
-    const updated = updateManagementSite(editingSite.id, siteObj);
-    setSites(updated);
-    setShowEditSiteModal(false);
-    setEditingSite(null);
-    toast(`Site ${editingSite.id} updated!`);
+    setPendingConfirm({
+      title: `Confirm Update for Site #${editingSite.id}`,
+      subtitle: 'Are you sure you want to update this solar project site details?',
+      actionLabel: 'Yes, Update Site',
+      badgeText: 'Update Site',
+      badgeColor: 'blue',
+      details: [
+        { label: 'Site ID', value: editingSite.id, highlight: true },
+        { label: 'Customer Name', value: customer },
+        { label: 'Solar Capacity', value: `${editingSite.capacity || '-'} kW` },
+        { label: 'Total Income', value: formatINR(calcIncome) },
+        { label: 'Total Expenses', value: formatINR(totExp) },
+        { label: 'Status', value: editingSite.siteStatus || 'Running' }
+      ],
+      onConfirm: () => {
+        const updated = updateManagementSite(editingSite.id, siteObj);
+        setSites(updated);
+        setShowEditSiteModal(false);
+        setEditingSite(null);
+        setPendingConfirm(null);
+        toast(`Site ${editingSite.id} updated!`);
+      }
+    });
   };
 
   const handleDeleteSite = (id) => {
-    if (window.confirm(`Are you sure you want to delete Site #${id}? All related records will be removed.`)) {
-      const updated = deleteManagementSite(id);
-      setSites(updated);
-      toast('Site record deleted.');
-    }
+    setPendingConfirm({
+      title: `Confirm Deletion of Site #${id}`,
+      subtitle: 'This will permanently remove the project site and all associated financial records.',
+      actionLabel: 'Yes, Delete Site Permanently',
+      badgeText: 'Permanent Deletion',
+      badgeColor: 'rose',
+      isDanger: true,
+      details: [
+        { label: 'Site ID', value: id, highlight: true },
+        { label: 'Warning', value: 'All expenses, payments and BOQ items for this site will be lost.' }
+      ],
+      onConfirm: () => {
+        const updated = deleteManagementSite(id);
+        setSites(updated);
+        setPendingConfirm(null);
+        toast('Site record deleted.');
+      }
+    });
   };
 
   const handleExportCSV = () => {
@@ -604,6 +1360,11 @@ const ProjectManagement = ({ onShowToast }) => {
     const finalAmount = Number(newExpenseForm.amount) > 0 ? Number(newExpenseForm.amount) : (q * rate);
     const gst = Number(newExpenseForm.gstAmount) || 0;
 
+    if (finalAmount <= 0) {
+      toast('Please enter a valid expense amount');
+      return;
+    }
+
     const expenseObj = {
       ...newExpenseForm,
       id: generatedId,
@@ -627,11 +1388,31 @@ const ProjectManagement = ({ onShowToast }) => {
       remarks: newExpenseForm.remarks || ''
     };
 
-    const updated = addManagementExpense(expenseObj);
-    setExpenses(updated);
-    setShowAddExpenseModal(false);
-    setNewExpenseForm(getEmptyExpenseForm(sites));
-    toast(`Expense voucher ${generatedId} recorded successfully!`);
+    setPendingConfirm({
+      title: 'Confirm New Expense Voucher',
+      subtitle: 'Please verify the expense amount, category, and vendor details before recording.',
+      actionLabel: 'Yes, Save Expense Voucher',
+      badgeText: 'Expense Debit',
+      badgeColor: 'rose',
+      details: [
+        { label: 'Voucher ID', value: generatedId },
+        { label: 'Site / Customer', value: `${newExpenseForm.siteId} - ${expenseObj.siteName || 'Site'}` },
+        { label: 'Category', value: expenseObj.category, highlight: true },
+        { label: 'Paid Amount', value: formatINR(finalAmount), highlight: true },
+        { label: 'Paid To / Vendor', value: expenseObj.vendor || '-' },
+        { label: 'Payment Mode', value: expenseObj.paymentMode },
+        { label: 'Bill / Voucher Ref', value: expenseObj.billNo || '-' },
+        { label: 'Date', value: expenseObj.date || new Date().toLocaleDateString('en-IN') }
+      ],
+      onConfirm: () => {
+        const updated = addManagementExpense(expenseObj);
+        setExpenses(updated);
+        setShowAddExpenseModal(false);
+        setNewExpenseForm(getEmptyExpenseForm(sites));
+        setPendingConfirm(null);
+        toast(`Expense voucher ${generatedId} recorded successfully!`);
+      }
+    });
   };
 
   const handleEditExpenseSave = (e) => {
@@ -656,19 +1437,50 @@ const ProjectManagement = ({ onShowToast }) => {
       paidBy: editingExpense.paidBy || ''
     };
 
-    const updated = updateManagementExpense(editingExpense.id, expenseObj);
-    setExpenses(updated);
-    setShowEditExpenseModal(false);
-    setEditingExpense(null);
-    toast(`Expense voucher #${editingExpense.id} updated!`);
+    setPendingConfirm({
+      title: `Confirm Update for Expense Voucher #${editingExpense.id}`,
+      subtitle: 'Please verify the updated expense voucher details before saving.',
+      actionLabel: 'Yes, Update Expense',
+      badgeText: 'Update Expense',
+      badgeColor: 'rose',
+      details: [
+        { label: 'Voucher ID', value: editingExpense.id },
+        { label: 'Site ID', value: editingExpense.siteId },
+        { label: 'Category', value: expenseObj.category },
+        { label: 'Updated Amount', value: formatINR(finalAmount), highlight: true },
+        { label: 'Paid To', value: expenseObj.vendor || '-' },
+        { label: 'Payment Mode', value: expenseObj.paymentMode }
+      ],
+      onConfirm: () => {
+        const updated = updateManagementExpense(editingExpense.id, expenseObj);
+        setExpenses(updated);
+        setShowEditExpenseModal(false);
+        setEditingExpense(null);
+        setPendingConfirm(null);
+        toast(`Expense voucher #${editingExpense.id} updated!`);
+      }
+    });
   };
 
   const handleDeleteExpense = (id) => {
-    if (window.confirm(`Are you sure you want to delete expense record #${id}?`)) {
-      const updated = deleteManagementExpense(id);
-      setExpenses(updated);
-      toast('Expense record deleted.');
-    }
+    setPendingConfirm({
+      title: `Confirm Deletion of Expense Voucher #${id}`,
+      subtitle: 'This will remove the expense debit entry from project accounts ledger.',
+      actionLabel: 'Yes, Delete Expense',
+      badgeText: 'Delete Expense',
+      badgeColor: 'rose',
+      isDanger: true,
+      details: [
+        { label: 'Voucher ID', value: `#${id}`, highlight: true },
+        { label: 'Action', value: 'Debit entry will be removed from site ledger.' }
+      ],
+      onConfirm: () => {
+        const updated = deleteManagementExpense(id);
+        setExpenses(updated);
+        setPendingConfirm(null);
+        toast('Expense record deleted.');
+      }
+    });
   };
 
   const handleExportExpensesCSV = () => {
@@ -745,6 +1557,12 @@ const ProjectManagement = ({ onShowToast }) => {
       : `PAY-${String(payments.length + 1).padStart(3, '0')}`;
 
     const cust = newPaymentForm.customerName?.trim() || (targetSite ? (targetSite.customerName || targetSite.name) : 'Customer');
+    const amt = Number(newPaymentForm.amount) || 0;
+
+    if (amt <= 0) {
+      toast('Please enter a valid payment amount');
+      return;
+    }
 
     const payObj = {
       ...newPaymentForm,
@@ -758,7 +1576,7 @@ const ProjectManagement = ({ onShowToast }) => {
       disbursementStage: normCategory(newPaymentForm.paymentType).includes('loan')
         ? (newPaymentForm.disbursementStage || (String(newPaymentForm.paymentType).includes('2') ? 'Disbursement 2' : 'Disbursement 1'))
         : '',
-      amount: Number(newPaymentForm.amount) || 0,
+      amount: amt,
       paymentMode: newPaymentForm.paymentMode || 'NEFT/RTGS',
       bankName: newPaymentForm.bankName || '',
       refNo: newPaymentForm.refNo || '',
@@ -767,11 +1585,30 @@ const ProjectManagement = ({ onShowToast }) => {
       remarks: newPaymentForm.remarks || ''
     };
 
-    const updated = addManagementPayment(payObj);
-    setPayments(updated);
-    setShowAddPaymentModal(false);
-    setNewPaymentForm(getEmptyPaymentForm(sites));
-    toast(`Payment receipt ${generatedId} recorded successfully!`);
+    setPendingConfirm({
+      title: 'Confirm Payment Money Receipt',
+      subtitle: 'Please verify the payment credit amount and tranche details before generating receipt.',
+      actionLabel: 'Yes, Record Payment',
+      badgeText: 'Payment Credit',
+      badgeColor: 'emerald',
+      details: [
+        { label: 'Receipt ID', value: generatedId },
+        { label: 'Site / Customer', value: `${newPaymentForm.siteId} - ${cust}` },
+        { label: 'Payment Type', value: payObj.disbursementStage ? `Bank Loan (${payObj.disbursementStage})` : payObj.paymentType, highlight: true },
+        { label: 'Amount Received', value: formatINR(payObj.amount), highlight: true },
+        { label: 'Payment Mode', value: payObj.paymentMode },
+        { label: 'UTR / Ref No.', value: payObj.refNo || '-' },
+        { label: 'Date', value: payObj.date || new Date().toLocaleDateString('en-IN') }
+      ],
+      onConfirm: () => {
+        const updated = addManagementPayment(payObj);
+        setPayments(updated);
+        setShowAddPaymentModal(false);
+        setNewPaymentForm(getEmptyPaymentForm(sites));
+        setPendingConfirm(null);
+        toast(`Payment receipt ${generatedId} recorded successfully!`);
+      }
+    });
   };
 
   const handleEditPaymentSave = (e) => {
@@ -795,19 +1632,49 @@ const ProjectManagement = ({ onShowToast }) => {
       receivedBy: editingPayment.receivedBy || ''
     };
 
-    const updated = updateManagementPayment(editingPayment.id, payObj);
-    setPayments(updated);
-    setShowEditPaymentModal(false);
-    setEditingPayment(null);
-    toast(`Payment receipt #${editingPayment.id} updated!`);
+    setPendingConfirm({
+      title: `Confirm Update for Payment #${editingPayment.id}`,
+      subtitle: 'Please verify the updated payment details before saving to ledger.',
+      actionLabel: 'Yes, Update Payment',
+      badgeText: 'Update Payment',
+      badgeColor: 'emerald',
+      details: [
+        { label: 'Receipt ID', value: editingPayment.id },
+        { label: 'Site / Customer', value: `${editingPayment.siteId} (${cust})` },
+        { label: 'Updated Amount', value: formatINR(payObj.amount), highlight: true },
+        { label: 'Payment Type', value: payObj.paymentType },
+        { label: 'Payment Mode', value: payObj.paymentMode }
+      ],
+      onConfirm: () => {
+        const updated = updateManagementPayment(editingPayment.id, payObj);
+        setPayments(updated);
+        setShowEditPaymentModal(false);
+        setEditingPayment(null);
+        setPendingConfirm(null);
+        toast(`Payment receipt #${editingPayment.id} updated!`);
+      }
+    });
   };
 
   const handleDeletePayment = (id) => {
-    if (window.confirm(`Are you sure you want to delete payment record #${id}?`)) {
-      const updated = deleteManagementPayment(id);
-      setPayments(updated);
-      toast('Payment record deleted.');
-    }
+    setPendingConfirm({
+      title: `Confirm Deletion of Payment Receipt #${id}`,
+      subtitle: 'This will remove the payment credit entry from the project ledger.',
+      actionLabel: 'Yes, Delete Payment',
+      badgeText: 'Delete Payment',
+      badgeColor: 'rose',
+      isDanger: true,
+      details: [
+        { label: 'Receipt ID', value: `#${id}`, highlight: true },
+        { label: 'Action', value: 'Credit receipt will be removed from site ledger.' }
+      ],
+      onConfirm: () => {
+        const updated = deleteManagementPayment(id);
+        setPayments(updated);
+        setPendingConfirm(null);
+        toast('Payment record deleted.');
+      }
+    });
   };
 
   const handleExportPaymentsCSV = () => {
@@ -893,11 +1760,30 @@ const ProjectManagement = ({ onShowToast }) => {
       remarks: newBudgetItemForm.remarks || ''
     };
 
-    const updated = addManagementBudgetItem(budgetObj);
-    setBudgets(updated);
-    setShowAddBudgetItemModal(false);
-    setNewBudgetItemForm(getEmptyBudgetItemForm(sites));
-    toast(`Material budget item ${generatedId} added!`);
+    setPendingConfirm({
+      title: 'Confirm Add Material BOQ Item',
+      subtitle: 'Please check the material specification and budget rate before adding.',
+      actionLabel: 'Yes, Add Material BOQ',
+      badgeText: 'BOQ Item',
+      badgeColor: 'amber',
+      details: [
+        { label: 'BOQ Item ID', value: generatedId },
+        { label: 'Site ID', value: budgetObj.siteId },
+        { label: 'Material', value: budgetObj.material, highlight: true },
+        { label: 'Category', value: budgetObj.category },
+        { label: 'Quantity', value: `${budgetObj.qty} ${budgetObj.unit}` },
+        { label: 'Budget Amount', value: formatINR(bAmt), highlight: true },
+        { label: 'Procurement Status', value: budgetObj.procurementStatus }
+      ],
+      onConfirm: () => {
+        const updated = addManagementBudgetItem(budgetObj);
+        setBudgets(updated);
+        setShowAddBudgetItemModal(false);
+        setNewBudgetItemForm(getEmptyBudgetItemForm(sites));
+        setPendingConfirm(null);
+        toast(`Material budget item ${generatedId} added!`);
+      }
+    });
   };
 
   const handleEditBudgetItemSave = (e) => {
@@ -922,19 +1808,48 @@ const ProjectManagement = ({ onShowToast }) => {
       supplier: editingBudgetItem.supplier || ''
     };
 
-    const updated = updateManagementBudgetItem(editingBudgetItem.id, budgetObj);
-    setBudgets(updated);
-    setShowEditBudgetItemModal(false);
-    setEditingBudgetItem(null);
-    toast(`Material budget #${editingBudgetItem.id} updated!`);
+    setPendingConfirm({
+      title: `Confirm Update for BOQ Item #${editingBudgetItem.id}`,
+      subtitle: 'Please verify the updated BOQ specification and budget rates before saving.',
+      actionLabel: 'Yes, Update BOQ',
+      badgeText: 'Update BOQ',
+      badgeColor: 'amber',
+      details: [
+        { label: 'Item ID', value: editingBudgetItem.id },
+        { label: 'Material', value: budgetObj.material },
+        { label: 'Budget Amount', value: formatINR(bAmt), highlight: true },
+        { label: 'Actual Amount', value: formatINR(aAmt) }
+      ],
+      onConfirm: () => {
+        const updated = updateManagementBudgetItem(editingBudgetItem.id, budgetObj);
+        setBudgets(updated);
+        setShowEditBudgetItemModal(false);
+        setEditingBudgetItem(null);
+        setPendingConfirm(null);
+        toast(`Material budget #${editingBudgetItem.id} updated!`);
+      }
+    });
   };
 
   const handleDeleteBudgetItem = (id) => {
-    if (window.confirm(`Are you sure you want to delete Material Budget item #${id}?`)) {
-      const updated = deleteManagementBudgetItem(id);
-      setBudgets(updated);
-      toast('Budget item removed.');
-    }
+    setPendingConfirm({
+      title: `Confirm Deletion of BOQ Item #${id}`,
+      subtitle: 'This will remove the material item from the site BOQ list.',
+      actionLabel: 'Yes, Delete BOQ Item',
+      badgeText: 'Delete BOQ',
+      badgeColor: 'rose',
+      isDanger: true,
+      details: [
+        { label: 'Item ID', value: `#${id}`, highlight: true },
+        { label: 'Action', value: 'Item will be deleted from BOQ master.' }
+      ],
+      onConfirm: () => {
+        const updated = deleteManagementBudgetItem(id);
+        setBudgets(updated);
+        setPendingConfirm(null);
+        toast('Budget item removed.');
+      }
+    });
   };
 
   const handleExportBudgetsCSV = () => {
@@ -992,8 +1907,9 @@ const ProjectManagement = ({ onShowToast }) => {
     toast('Material Budget CSV Export downloaded!');
   };
 
-  // Sub-Navigation Tabs definition (5 Sub-Sections)
+  // Sub-Navigation Tabs definition (All-in-One Site Hub + 5 Dedicated Sections)
   const navigationSubTabs = [
+    { id: 'all_in_one', label: '⚡ All-in-One Site Hub', icon: Zap, badge: 'Quick Entry' },
     { id: 'dashboard', label: 'Dashboard', icon: BarChart3, badge: null },
     { id: 'site_master', label: 'Site Master', icon: Building, badge: sites.length },
     { id: 'expense_entry', label: 'Expense Entry', icon: DollarSign, badge: expenses.length },
@@ -1189,6 +2105,993 @@ const ProjectManagement = ({ onShowToast }) => {
               </p>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* 0. ALL-IN-ONE CUSTOMER & SITE OPERATIONS HUB (NEW UNIFIED TAB) */}
+      {/* ========================================================================= */}
+      {subTab === 'all_in_one' && (
+        <div className="space-y-6">
+          {/* Header & Site Selector Control Card */}
+          <div className="bg-gradient-to-r from-blue-950 via-slate-900 to-indigo-950 text-white border-2 border-blue-600/30 rounded-3xl p-5 sm:p-6 shadow-xl relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl pointer-events-none"></div>
+            
+            <div className="relative z-10 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-5">
+              <div className="space-y-1 max-w-xl">
+                <div className="flex items-center gap-2">
+                  <span className="px-3 py-1 rounded-full bg-blue-500/20 border border-blue-400/40 text-sky-300 text-[11px] font-black uppercase tracking-wider flex items-center gap-1.5 shadow-sm">
+                    <Zap className="w-3.5 h-3.5 text-amber-400" />
+                    <span>Single Window Operations Hub</span>
+                  </span>
+                  <span className="text-xs text-slate-400 font-mono hidden sm:inline">Admin & Staff Unified Console</span>
+                </div>
+                <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight">
+                  Customer & Site 360° Management
+                </h2>
+                <p className="text-xs sm:text-sm text-slate-300">
+                  Select a customer or site ID once to perform any action — add expenses, log payments, manage material BOQ, edit details & print slips in one place.
+                </p>
+              </div>
+
+              {/* Action: Quick Add New Site Button */}
+              <div className="flex items-center gap-2 w-full lg:w-auto shrink-0">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setNewSiteForm(getEmptySiteForm());
+                    setShowAddSiteModal(true);
+                  }}
+                  className="w-full sm:w-auto px-4 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold rounded-xl text-xs sm:text-sm flex items-center justify-center gap-2 shadow-lg shadow-blue-500/25 transition-all cursor-pointer hover:scale-[1.02]"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>+ Register New Site</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Customer & Site Selector Combo Box */}
+            <div className="mt-5 pt-5 border-t border-slate-700/60 grid grid-cols-1 md:grid-cols-12 gap-3 items-center">
+              {/* Search Bar */}
+              <div className="md:col-span-4 relative">
+                <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  placeholder="Filter customer, site ID, mobile..."
+                  value={hubSearchQuery}
+                  onChange={(e) => setHubSearchQuery(e.target.value)}
+                  className="w-full pl-9 pr-8 py-2.5 bg-slate-900/90 border border-slate-700 rounded-xl text-xs text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+                {hubSearchQuery && (
+                  <button
+                    onClick={() => setHubSearchQuery('')}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+
+              {/* Master Dropdown with Customer Name + Site ID + Capacity */}
+              <div className="md:col-span-8 flex items-center gap-2">
+                <div className="relative flex-1">
+                  <Building className="w-4 h-4 text-blue-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  <select
+                    value={currentHubSite ? currentHubSite.id : ''}
+                    onChange={(e) => setSelectedHubSiteId(e.target.value)}
+                    className="w-full pl-9 pr-9 py-2.5 bg-slate-900/90 border-2 border-blue-500/60 rounded-xl text-xs sm:text-sm font-bold text-white focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 cursor-pointer appearance-none shadow-inner"
+                  >
+                    {filteredHubDropdownSites.length === 0 ? (
+                      <option value="" disabled className="bg-slate-900 text-slate-400">
+                        {sites.length === 0 ? 'No sites registered yet' : 'No matching sites found'}
+                      </option>
+                    ) : (
+                      filteredHubDropdownSites.map((s) => (
+                        <option key={s.id} value={s.id} className="bg-slate-900 text-white py-2">
+                          👤 {s.customerName || s.clientName || 'Customer'} — 🆔 {s.id} ({s.capacity ? `${s.capacity} kW` : 'kW'} • {s.district || s.siteAddress || 'Site'} • {s.siteStatus || s.status || 'Active'})
+                        </option>
+                      ))
+                    )}
+                  </select>
+                  <ChevronDown className="w-4 h-4 text-blue-400 absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                </div>
+                
+                <span className="hidden sm:inline-flex px-3 py-2 bg-blue-900/60 border border-blue-700/50 rounded-xl text-[11px] font-bold text-blue-200 shrink-0">
+                  {filteredHubDropdownSites.length} of {sites.length} Sites
+                </span>
+              </div>
+            </div>
+
+            {/* Quick-Pills for Fast Switching (Shows top 8 sites) */}
+            {sites.length > 0 && (
+              <div className="mt-3 flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none text-[11px]">
+                <span className="text-slate-400 shrink-0 font-medium mr-1 flex items-center gap-1">
+                  <Sparkles className="w-3 h-3 text-amber-400" /> Quick Select:
+                </span>
+                {sites.slice(0, 8).map((s) => {
+                  const isSel = currentHubSite && normSiteId(s.id) === normSiteId(currentHubSite.id);
+                  return (
+                    <button
+                      key={s.id}
+                      onClick={() => setSelectedHubSiteId(s.id)}
+                      className={`px-2.5 py-1 rounded-lg font-bold shrink-0 transition-all cursor-pointer flex items-center gap-1.5 ${
+                        isSel
+                          ? 'bg-blue-600 text-white shadow-sm ring-1 ring-blue-400'
+                          : 'bg-slate-800/80 text-slate-300 hover:bg-slate-700 hover:text-white'
+                      }`}
+                    >
+                      <span>{s.customerName || 'Customer'}</span>
+                      <span className="text-[10px] opacity-75 font-mono">({s.id})</span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* MAIN SELECTED SITE CONTENT */}
+          {!currentHubSite ? (
+            <div className="bg-white border-2 border-dashed border-blue-200 rounded-3xl p-12 text-center space-y-4 shadow-sm">
+              <div className="w-16 h-16 rounded-2xl bg-blue-50 border border-blue-200 text-blue-600 mx-auto flex items-center justify-center shadow-inner">
+                <Building className="w-8 h-8" />
+              </div>
+              <div className="max-w-md mx-auto space-y-1">
+                <h3 className="text-lg font-black text-slate-900">No Solar Site Selected</h3>
+                <p className="text-xs text-slate-500">
+                  Select an existing customer from the dropdown above or register a new solar site to start recording expenses, payments and materials.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setNewSiteForm(getEmptySiteForm());
+                  setShowAddSiteModal(true);
+                }}
+                className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-xs sm:text-sm inline-flex items-center gap-2 shadow-lg shadow-blue-500/20"
+              >
+                <Plus className="w-4 h-4" />
+                <span>+ Register First Site</span>
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {/* Customer & Site Hero Profile Card */}
+              <div className="bg-white border border-blue-200/80 rounded-3xl p-5 sm:p-6 shadow-sm space-y-5">
+                <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 pb-4 border-b border-slate-100">
+                  <div className="flex items-start gap-3.5">
+                    <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 text-white font-black text-lg sm:text-xl flex items-center justify-center shadow-md shadow-blue-500/20 shrink-0">
+                      {(currentHubSite.customerName || currentHubSite.clientName || 'S').charAt(0).toUpperCase()}
+                    </div>
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2.5 flex-wrap">
+                        <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+                          {currentHubSite.customerName || currentHubSite.clientName || 'Customer Site'}
+                        </h2>
+                        <span className="px-2.5 py-0.5 rounded-lg bg-blue-100 text-blue-800 text-xs font-mono font-black border border-blue-200">
+                          {currentHubSite.id}
+                        </span>
+                        <span
+                          className={`px-2.5 py-0.5 rounded-full text-xs font-bold capitalize flex items-center gap-1.5 ${
+                            normCategory(currentHubSite.siteStatus || currentHubSite.status) === 'completed'
+                              ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                              : normCategory(currentHubSite.siteStatus || currentHubSite.status) === 'running' || normCategory(currentHubSite.siteStatus || currentHubSite.status) === 'in progress'
+                              ? 'bg-blue-100 text-blue-800 border border-blue-200'
+                              : 'bg-amber-100 text-amber-800 border border-amber-200'
+                          }`}
+                        >
+                          <span className="w-1.5 h-1.5 rounded-full bg-current animate-ping"></span>
+                          {currentHubSite.siteStatus || currentHubSite.status || 'Active'}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-4 text-xs text-slate-500 flex-wrap pt-0.5">
+                        {currentHubSite.phone && (
+                          <a
+                            href={`tel:${currentHubSite.phone}`}
+                            className="flex items-center gap-1 text-blue-600 hover:text-blue-800 font-semibold"
+                          >
+                            <Phone className="w-3.5 h-3.5" />
+                            <span>{currentHubSite.phone}</span>
+                          </a>
+                        )}
+                        <span className="flex items-center gap-1">
+                          <MapPin className="w-3.5 h-3.5 text-slate-400" />
+                          <span>{currentHubSite.siteAddress || currentHubSite.location || 'Address Not Set'}{currentHubSite.district ? `, ${currentHubSite.district}` : ''}</span>
+                        </span>
+                        <span className="flex items-center gap-1 font-bold text-slate-700">
+                          <Zap className="w-3.5 h-3.5 text-amber-500" />
+                          <span>{currentHubSite.capacity || '0'} kW System</span>
+                        </span>
+                        {currentHubSite.createdDate && (
+                          <span className="flex items-center gap-1 text-slate-400">
+                            <Calendar className="w-3.5 h-3.5" />
+                            <span>Started: {currentHubSite.createdDate}</span>
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 1-Click Action Buttons Bar for this Site */}
+                  <div className="flex items-center gap-2 flex-wrap w-full lg:w-auto">
+                    {/* + Add Expense Button */}
+                    <button
+                      type="button"
+                      onClick={handleOpenAddExpenseForHub}
+                      className="px-3.5 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-md shadow-rose-500/20 transition-all cursor-pointer hover:scale-[1.02]"
+                      title="Add Expense for this Customer Site"
+                    >
+                      <DollarSign className="w-3.5 h-3.5" />
+                      <span>+ Add Expense</span>
+                    </button>
+
+                    {/* + Add Payment Button */}
+                    <button
+                      type="button"
+                      onClick={handleOpenAddPaymentForHub}
+                      className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-md shadow-emerald-500/20 transition-all cursor-pointer hover:scale-[1.02]"
+                      title="Record Payment for this Customer Site"
+                    >
+                      <CreditCard className="w-3.5 h-3.5" />
+                      <span>+ Add Payment</span>
+                    </button>
+
+                    {/* + Add Material BOQ Button */}
+                    <button
+                      type="button"
+                      onClick={handleOpenAddMaterialForHub}
+                      className="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-md shadow-indigo-500/20 transition-all cursor-pointer hover:scale-[1.02]"
+                      title="Add Material Item to BOQ"
+                    >
+                      <Package className="w-3.5 h-3.5" />
+                      <span>+ Add Material</span>
+                    </button>
+
+                    {/* Edit Site Details */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditingSite({ ...currentHubSite });
+                        setShowEditSiteModal(true);
+                      }}
+                      className="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer"
+                      title="Edit Site Details"
+                    >
+                      <Edit2 className="w-3.5 h-3.5 text-slate-600" />
+                      <span>Edit</span>
+                    </button>
+
+                    {/* Print Site Slip */}
+                    <button
+                      type="button"
+                      onClick={() => handleDirectPrintSite(currentHubSite)}
+                      className="px-3 py-2 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer"
+                      title="Print Site Summary Slip"
+                    >
+                      <Printer className="w-3.5 h-3.5 text-blue-600" />
+                      <span>Slip</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* 4 LIVE FINANCIAL STAT CARDS FOR THIS CUSTOMER */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                  {/* Card 1: Project Value */}
+                  <div className="bg-gradient-to-br from-blue-50 to-indigo-50/60 border border-blue-200 rounded-2xl p-4 shadow-sm space-y-2">
+                    <div className="flex items-center justify-between text-xs text-blue-800 font-bold">
+                      <span className="flex items-center gap-1.5">
+                        <Building className="w-4 h-4 text-blue-600" />
+                        <span>Project Value</span>
+                      </span>
+                      <span className="text-[10px] uppercase font-mono px-2 py-0.5 bg-blue-200/60 text-blue-900 rounded-full">
+                        Total Income
+                      </span>
+                    </div>
+                    <div className="text-xl sm:text-2xl font-black text-slate-900">
+                      {formatINR(hubProjectValue)}
+                    </div>
+                    <div className="pt-2 border-t border-blue-200/60 flex items-center justify-between text-[11px] text-slate-600 font-medium">
+                      <span>Loan: {formatINR(currentHubSite.loanAmount)}</span>
+                      <span>Margin: {formatINR(currentHubSite.customerMargin)}</span>
+                    </div>
+                  </div>
+
+                  {/* Card 2: Payments Collected */}
+                  <div className="bg-gradient-to-br from-emerald-50 to-teal-50/60 border border-emerald-200 rounded-2xl p-4 shadow-sm space-y-2">
+                    <div className="flex items-center justify-between text-xs text-emerald-800 font-bold">
+                      <span className="flex items-center gap-1.5">
+                        <CreditCard className="w-4 h-4 text-emerald-600" />
+                        <span>Payments Received</span>
+                      </span>
+                      <span className="text-[10px] font-bold px-2 py-0.5 bg-emerald-200/60 text-emerald-900 rounded-full">
+                        {hubPaymentCollectionPercent.toFixed(0)}% Collected
+                      </span>
+                    </div>
+                    <div className="text-xl sm:text-2xl font-black text-emerald-700">
+                      {formatINR(hubTotalPayments)}
+                    </div>
+                    <div className="space-y-1 pt-1 border-t border-emerald-200/60">
+                      <div className="w-full bg-emerald-200/50 rounded-full h-1.5 overflow-hidden">
+                        <div
+                          className="bg-emerald-600 h-1.5 rounded-full transition-all"
+                          style={{ width: `${Math.min(100, hubPaymentCollectionPercent)}%` }}
+                        ></div>
+                      </div>
+                      <div className="flex items-center justify-between text-[11px] text-slate-600 font-medium">
+                        <span>{hubSitePayments.length} Payment(s)</span>
+                        <span className="text-amber-700 font-bold">Pending: {formatINR(hubPendingPayment)}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Card 3: Total Expenses */}
+                  <div className="bg-gradient-to-br from-rose-50 to-orange-50/60 border border-rose-200 rounded-2xl p-4 shadow-sm space-y-2">
+                    <div className="flex items-center justify-between text-xs text-rose-800 font-bold">
+                      <span className="flex items-center gap-1.5">
+                        <DollarSign className="w-4 h-4 text-rose-600" />
+                        <span>Total Expenses</span>
+                      </span>
+                      <span className="text-[10px] font-bold px-2 py-0.5 bg-rose-200/60 text-rose-900 rounded-full">
+                        {hubSiteExpenses.length} Vouchers
+                      </span>
+                    </div>
+                    <div className="text-xl sm:text-2xl font-black text-rose-700">
+                      {formatINR(hubTotalExpenses)}
+                    </div>
+                    <div className="pt-2 border-t border-rose-200/60 grid grid-cols-2 gap-1 text-[10px] text-slate-600">
+                      <span>Mat: <strong>{formatINR(hubMaterialExp)}</strong></span>
+                      <span>Lab: <strong>{formatINR(hubLabourExp)}</strong></span>
+                      <span>Trp: <strong>{formatINR(hubTransportExp)}</strong></span>
+                      <span>Misc: <strong>{formatINR(hubMiscExp)}</strong></span>
+                    </div>
+                  </div>
+
+                  {/* Card 4: Net Profit / Loss */}
+                  <div className={`bg-gradient-to-br ${
+                    hubNetProfit >= 0
+                      ? 'from-sky-50 to-blue-50/60 border-sky-200'
+                      : 'from-amber-50 to-rose-50/60 border-rose-300'
+                  } border rounded-2xl p-4 shadow-sm space-y-2`}>
+                    <div className="flex items-center justify-between text-xs font-bold text-slate-800">
+                      <span className="flex items-center gap-1.5">
+                        <TrendingUp className={`w-4 h-4 ${hubNetProfit >= 0 ? 'text-blue-600' : 'text-rose-600'}`} />
+                        <span>Site Net Profit</span>
+                      </span>
+                      <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${
+                        hubNetProfit >= 0 ? 'bg-blue-200 text-blue-900' : 'bg-rose-200 text-rose-900'
+                      }`}>
+                        {hubProfitMargin.toFixed(1)}% Margin
+                      </span>
+                    </div>
+                    <div className={`text-xl sm:text-2xl font-black ${
+                      hubNetProfit >= 0 ? 'text-blue-900' : 'text-rose-700'
+                    }`}>
+                      {formatINR(hubNetProfit)}
+                    </div>
+                    <div className="pt-2 border-t border-slate-200 flex items-center justify-between text-[11px] text-slate-600 font-medium">
+                      <span>BOQ Items: {hubSiteBudgets.length}</span>
+                      <span>BOQ Est: {formatINR(hubBudgetEstTotal)}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* UNIFIED WORKSPACE TABS FOR THE SELECTED SITE */}
+              <div className="bg-white border border-blue-200/80 rounded-3xl p-5 sm:p-6 shadow-sm space-y-5">
+                {/* Inner Tab Buttons */}
+                <div className="flex items-center justify-between gap-3 border-b border-slate-200 pb-3 flex-wrap">
+                  <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0">
+                    {[
+                      { id: 'all', label: '⚡ All Activity Feed', count: hubSiteExpenses.length + hubSitePayments.length },
+                      { id: 'expenses', label: '💸 Expense Vouchers', count: hubSiteExpenses.length },
+                      { id: 'payments', label: '💳 Payment Receipts', count: hubSitePayments.length },
+                      { id: 'materials', label: '📦 Material Budget (BOQ)', count: hubSiteBudgets.length },
+                      { id: 'pl_sheet', label: '📊 Site P&L Statement', count: null }
+                    ].map((tabItem) => (
+                      <button
+                        key={tabItem.id}
+                        type="button"
+                        onClick={() => setHubInnerTab(tabItem.id)}
+                        className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer whitespace-nowrap ${
+                          hubInnerTab === tabItem.id
+                            ? 'bg-blue-600 text-white shadow-sm'
+                            : 'text-slate-600 hover:text-blue-700 hover:bg-blue-50'
+                        }`}
+                      >
+                        <span>{tabItem.label}</span>
+                        {tabItem.count !== null && (
+                          <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-black ${
+                            hubInnerTab === tabItem.id ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-700'
+                          }`}>
+                            {tabItem.count}
+                          </span>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Contextual Quick Add Button */}
+                  <div className="flex items-center gap-2">
+                    {hubInnerTab === 'expenses' && (
+                      <button
+                        type="button"
+                        onClick={handleOpenAddExpenseForHub}
+                        className="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-lg text-xs flex items-center gap-1.5 shadow-sm"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        <span>Add Expense</span>
+                      </button>
+                    )}
+                    {hubInnerTab === 'payments' && (
+                      <button
+                        type="button"
+                        onClick={handleOpenAddPaymentForHub}
+                        className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-xs flex items-center gap-1.5 shadow-sm"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        <span>Record Payment</span>
+                      </button>
+                    )}
+                    {hubInnerTab === 'materials' && (
+                      <button
+                        type="button"
+                        onClick={handleOpenAddMaterialForHub}
+                        className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg text-xs flex items-center gap-1.5 shadow-sm"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        <span>Add Material Item</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* INNER TAB 1: ALL ACTIVITY (COMBINED FEED) */}
+                {hubInnerTab === 'all' && (
+                  <div className="space-y-6">
+                    {/* Quick Entry Action Prompt Cards */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
+                      <div
+                        onClick={handleOpenAddExpenseForHub}
+                        className="bg-gradient-to-br from-rose-50 to-pink-50/50 border border-rose-200/80 rounded-2xl p-4 flex items-center justify-between hover:shadow-md transition-all cursor-pointer group"
+                      >
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-1.5 text-xs font-black text-rose-800">
+                            <DollarSign className="w-4 h-4 text-rose-600" />
+                            <span>Record Site Expense</span>
+                          </div>
+                          <p className="text-[11px] text-slate-500">
+                            Labour, material purchase, transport or misc bills
+                          </p>
+                        </div>
+                        <div className="w-8 h-8 rounded-xl bg-rose-600 text-white flex items-center justify-center group-hover:scale-110 transition-all shrink-0">
+                          <Plus className="w-4 h-4" />
+                        </div>
+                      </div>
+
+                      <div
+                        onClick={handleOpenAddPaymentForHub}
+                        className="bg-gradient-to-br from-emerald-50 to-teal-50/50 border border-emerald-200/80 rounded-2xl p-4 flex items-center justify-between hover:shadow-md transition-all cursor-pointer group"
+                      >
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-1.5 text-xs font-black text-emerald-800">
+                            <CreditCard className="w-4 h-4 text-emerald-600" />
+                            <span>Record Client Payment</span>
+                          </div>
+                          <p className="text-[11px] text-slate-500">
+                            Margin money, loan disbursement or subsidy credit
+                          </p>
+                        </div>
+                        <div className="w-8 h-8 rounded-xl bg-emerald-600 text-white flex items-center justify-center group-hover:scale-110 transition-all shrink-0">
+                          <Plus className="w-4 h-4" />
+                        </div>
+                      </div>
+
+                      <div
+                        onClick={handleOpenAddMaterialForHub}
+                        className="bg-gradient-to-br from-indigo-50 to-blue-50/50 border border-indigo-200/80 rounded-2xl p-4 flex items-center justify-between hover:shadow-md transition-all cursor-pointer group"
+                      >
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-1.5 text-xs font-black text-indigo-800">
+                            <Package className="w-4 h-4 text-indigo-600" />
+                            <span>Add Material BOQ Item</span>
+                          </div>
+                          <p className="text-[11px] text-slate-500">
+                            Panels, inverter, structure, cable specifications
+                          </p>
+                        </div>
+                        <div className="w-8 h-8 rounded-xl bg-indigo-600 text-white flex items-center justify-center group-hover:scale-110 transition-all shrink-0">
+                          <Plus className="w-4 h-4" />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Dual Summary Grid: Recent Expenses vs Recent Payments */}
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+                      {/* Left: Recent Expenses for this site */}
+                      <div className="border border-slate-200 rounded-2xl p-4 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <h4 className="text-xs font-black text-slate-800 uppercase flex items-center gap-1.5">
+                            <DollarSign className="w-3.5 h-3.5 text-rose-600" />
+                            <span>Site Expenses ({hubSiteExpenses.length})</span>
+                          </h4>
+                          <button
+                            onClick={() => setHubInnerTab('expenses')}
+                            className="text-[11px] font-bold text-blue-600 hover:text-blue-800"
+                          >
+                            View All →
+                          </button>
+                        </div>
+
+                        {hubSiteExpenses.length === 0 ? (
+                          <div className="py-8 text-center text-xs text-slate-400">
+                            No expenses recorded yet for this site.
+                          </div>
+                        ) : (
+                          <div className="space-y-2">
+                            {hubSiteExpenses.slice(0, 5).map((exp) => (
+                              <div
+                                key={exp.id}
+                                className="p-2.5 bg-slate-50 hover:bg-blue-50/50 border border-slate-100 rounded-xl flex items-center justify-between text-xs transition-all"
+                              >
+                                <div className="space-y-0.5">
+                                  <div className="flex items-center gap-1.5">
+                                    <span className="font-bold text-slate-900">{exp.itemType || exp.description || exp.category}</span>
+                                    <span className="px-1.5 py-0.2 rounded bg-slate-200/80 text-[10px] font-mono text-slate-700">
+                                      {exp.category}
+                                    </span>
+                                  </div>
+                                  <div className="text-[10px] text-slate-400">
+                                    {exp.date || 'No Date'} • Vendor: {exp.vendor || 'N/A'} • {exp.paymentMode}
+                                  </div>
+                                </div>
+                                <div className="text-right">
+                                  <span className="font-black text-rose-600 block">{formatINR(exp.amount)}</span>
+                                  <div className="flex items-center gap-1 mt-0.5 justify-end">
+                                    <button
+                                      onClick={() => handleDirectPrintExpense(exp)}
+                                      className="p-1 text-slate-400 hover:text-blue-600 cursor-pointer"
+                                      title="Print Voucher"
+                                    >
+                                      <Printer className="w-3 h-3" />
+                                    </button>
+                                    <button
+                                      onClick={() => {
+                                        setEditingExpense({ ...exp });
+                                        setShowEditExpenseModal(true);
+                                      }}
+                                      className="p-1 text-slate-400 hover:text-slate-700 cursor-pointer"
+                                      title="Edit"
+                                    >
+                                      <Edit2 className="w-3 h-3" />
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Right: Recent Payments for this site */}
+                      <div className="border border-slate-200 rounded-2xl p-4 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <h4 className="text-xs font-black text-slate-800 uppercase flex items-center gap-1.5">
+                            <CreditCard className="w-3.5 h-3.5 text-emerald-600" />
+                            <span>Client Payments ({hubSitePayments.length})</span>
+                          </h4>
+                          <button
+                            onClick={() => setHubInnerTab('payments')}
+                            className="text-[11px] font-bold text-blue-600 hover:text-blue-800"
+                          >
+                            View All →
+                          </button>
+                        </div>
+
+                        {hubSitePayments.length === 0 ? (
+                          <div className="py-8 text-center text-xs text-slate-400">
+                            No payment receipts recorded yet for this site.
+                          </div>
+                        ) : (
+                          <div className="space-y-2">
+                            {hubSitePayments.slice(0, 5).map((pay) => (
+                              <div
+                                key={pay.id}
+                                className="p-2.5 bg-slate-50 hover:bg-emerald-50/50 border border-slate-100 rounded-xl flex items-center justify-between text-xs transition-all"
+                              >
+                                <div className="space-y-0.5">
+                                  <div className="flex items-center gap-1.5">
+                                    <span className="font-bold text-slate-900">{pay.paymentType || 'Payment'}</span>
+                                    <span className="px-1.5 py-0.2 rounded bg-emerald-100 text-[10px] font-bold text-emerald-800">
+                                      {pay.paymentMode || 'NEFT'}
+                                    </span>
+                                  </div>
+                                  <div className="text-[10px] text-slate-400">
+                                    {pay.date || 'No Date'} • Ref: {pay.refNo || 'Direct'}
+                                  </div>
+                                </div>
+                                <div className="text-right">
+                                  <span className="font-black text-emerald-600 block">{formatINR(pay.amount)}</span>
+                                  <div className="flex items-center gap-1 mt-0.5 justify-end">
+                                    <button
+                                      onClick={() => handleDirectPrintPayment(pay)}
+                                      className="p-1 text-slate-400 hover:text-blue-600 cursor-pointer"
+                                      title="Print Receipt"
+                                    >
+                                      <Printer className="w-3 h-3" />
+                                    </button>
+                                    <button
+                                      onClick={() => {
+                                        setEditingPayment({ ...pay });
+                                        setShowEditPaymentModal(true);
+                                      }}
+                                      className="p-1 text-slate-400 hover:text-slate-700"
+                                      title="Edit"
+                                    >
+                                      <Edit2 className="w-3 h-3" />
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* INNER TAB 2: EXPENSES TABLE */}
+                {hubInnerTab === 'expenses' && (
+                  <div className="space-y-4">
+                    <div className="overflow-x-auto rounded-2xl border border-slate-200">
+                      <table className="w-full text-left text-xs">
+                        <thead className="bg-slate-50 text-slate-600 font-bold border-b border-slate-200 uppercase text-[10px]">
+                          <tr>
+                            <th className="px-3 py-3">Voucher #</th>
+                            <th className="px-3 py-3">Date</th>
+                            <th className="px-3 py-3">Category</th>
+                            <th className="px-3 py-3">Item / Description</th>
+                            <th className="px-3 py-3">Vendor</th>
+                            <th className="px-3 py-3 text-right">Qty & Rate</th>
+                            <th className="px-3 py-3 text-right">Total Amount</th>
+                            <th className="px-3 py-3">Mode</th>
+                            <th className="px-3 py-3 text-center">Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                          {hubSiteExpenses.length === 0 ? (
+                            <tr>
+                              <td colSpan={9} className="px-4 py-8 text-center text-slate-400 text-xs">
+                                No expenses logged for this site. Click "+ Add Expense" above to record one.
+                              </td>
+                            </tr>
+                          ) : (
+                            hubSiteExpenses.map((exp) => (
+                              <tr key={exp.id} className="hover:bg-blue-50/40 transition-colors">
+                                <td className="px-3 py-3 font-mono font-bold text-blue-700">{exp.id}</td>
+                                <td className="px-3 py-3 text-slate-600">{exp.date || '—'}</td>
+                                <td className="px-3 py-3">
+                                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-800">
+                                    {exp.category}
+                                  </span>
+                                </td>
+                                <td className="px-3 py-3 font-semibold text-slate-800">
+                                  {exp.itemType || exp.description || '—'}
+                                </td>
+                                <td className="px-3 py-3 text-slate-600">{exp.vendor || '—'}</td>
+                                <td className="px-3 py-3 text-right text-slate-600 font-mono">
+                                  {exp.qty || 1} {exp.unit || 'NO'} @ {formatINR(exp.rate || 0)}
+                                </td>
+                                <td className="px-3 py-3 text-right font-black text-rose-600 font-mono">
+                                  {formatINR(exp.amount)}
+                                </td>
+                                <td className="px-3 py-3 text-slate-600 font-medium">{exp.paymentMode || 'UPI'}</td>
+                                <td className="px-3 py-3 text-center">
+                                  <div className="flex items-center justify-center gap-1.5">
+                                    <button
+                                      type="button"
+                                      onClick={() => handleDirectPrintExpense(exp)}
+                                      className="p-1.5 text-blue-600 hover:bg-blue-100 rounded-lg transition-all cursor-pointer"
+                                      title="Print Expense Voucher"
+                                    >
+                                      <Printer className="w-3.5 h-3.5" />
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setEditingExpense({ ...exp });
+                                        setShowEditExpenseModal(true);
+                                      }}
+                                      className="p-1.5 text-slate-600 hover:bg-slate-100 rounded-lg transition-all"
+                                      title="Edit Expense"
+                                    >
+                                      <Edit2 className="w-3.5 h-3.5" />
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleDeleteExpense(exp.id)}
+                                      className="p-1.5 text-rose-600 hover:bg-rose-100 rounded-lg transition-all"
+                                      title="Delete Expense"
+                                    >
+                                      <Trash2 className="w-3.5 h-3.5" />
+                                    </button>
+                                  </div>
+                                </td>
+                              </tr>
+                            ))
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+
+                {/* INNER TAB 3: PAYMENTS TABLE */}
+                {hubInnerTab === 'payments' && (
+                  <div className="space-y-4">
+                    <div className="overflow-x-auto rounded-2xl border border-slate-200">
+                      <table className="w-full text-left text-xs">
+                        <thead className="bg-slate-50 text-slate-600 font-bold border-b border-slate-200 uppercase text-[10px]">
+                          <tr>
+                            <th className="px-3 py-3">Receipt #</th>
+                            <th className="px-3 py-3">Date</th>
+                            <th className="px-3 py-3">Payment Type / Stage</th>
+                            <th className="px-3 py-3 text-right">Amount Received</th>
+                            <th className="px-3 py-3">Payment Mode</th>
+                            <th className="px-3 py-3">Bank & Ref Txn ID</th>
+                            <th className="px-3 py-3">Received By</th>
+                            <th className="px-3 py-3 text-center">Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                          {hubSitePayments.length === 0 ? (
+                            <tr>
+                              <td colSpan={8} className="px-4 py-8 text-center text-slate-400 text-xs">
+                                No payments recorded for this site yet. Click "+ Record Payment" above to add.
+                              </td>
+                            </tr>
+                          ) : (
+                            hubSitePayments.map((pay) => (
+                              <tr key={pay.id} className="hover:bg-emerald-50/40 transition-colors">
+                                <td className="px-3 py-3 font-mono font-bold text-emerald-700">{pay.id}</td>
+                                <td className="px-3 py-3 text-slate-600">{pay.date || '—'}</td>
+                                <td className="px-3 py-3 font-bold text-slate-800">
+                                  {pay.paymentType || 'Customer Payment'}
+                                </td>
+                                <td className="px-3 py-3 text-right font-black text-emerald-600 font-mono">
+                                  {formatINR(pay.amount)}
+                                </td>
+                                <td className="px-3 py-3 font-medium text-slate-600">{pay.paymentMode || 'NEFT'}</td>
+                                <td className="px-3 py-3 text-slate-600 font-mono text-[11px]">
+                                  {pay.bankName ? `${pay.bankName} • ` : ''}{pay.refNo || '—'}
+                                </td>
+                                <td className="px-3 py-3 text-slate-600">{pay.receivedBy || 'Accounts'}</td>
+                                <td className="px-3 py-3 text-center">
+                                  <div className="flex items-center justify-center gap-1.5">
+                                    <button
+                                      type="button"
+                                      onClick={() => handleDirectPrintPayment(pay)}
+                                      className="p-1.5 text-blue-600 hover:bg-blue-100 rounded-lg transition-all cursor-pointer"
+                                      title="Print Payment Slip"
+                                    >
+                                      <Printer className="w-3.5 h-3.5" />
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setEditingPayment({ ...pay });
+                                        setShowEditPaymentModal(true);
+                                      }}
+                                      className="p-1.5 text-slate-600 hover:bg-slate-100 rounded-lg transition-all"
+                                      title="Edit Payment"
+                                    >
+                                      <Edit2 className="w-3.5 h-3.5" />
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleDeletePayment(pay.id)}
+                                      className="p-1.5 text-rose-600 hover:bg-rose-100 rounded-lg transition-all"
+                                      title="Delete Payment"
+                                    >
+                                      <Trash2 className="w-3.5 h-3.5" />
+                                    </button>
+                                  </div>
+                                </td>
+                              </tr>
+                            ))
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+
+                {/* INNER TAB 4: MATERIAL BUDGET (BOQ) */}
+                {hubInnerTab === 'materials' && (
+                  <div className="space-y-4">
+                    <div className="overflow-x-auto rounded-2xl border border-slate-200">
+                      <table className="w-full text-left text-xs">
+                        <thead className="bg-slate-50 text-slate-600 font-bold border-b border-slate-200 uppercase text-[10px]">
+                          <tr>
+                            <th className="px-3 py-3">Category</th>
+                            <th className="px-3 py-3">Material Item</th>
+                            <th className="px-3 py-3">Brand & Spec</th>
+                            <th className="px-3 py-3 text-right">Qty & Unit</th>
+                            <th className="px-3 py-3 text-right">Budget Rate</th>
+                            <th className="px-3 py-3 text-right">Budget Amount</th>
+                            <th className="px-3 py-3 text-right">Actual Amount</th>
+                            <th className="px-3 py-3 text-center">Variance</th>
+                            <th className="px-3 py-3">Status</th>
+                            <th className="px-3 py-3 text-center">Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                          {hubSiteBudgets.length === 0 ? (
+                            <tr>
+                              <td colSpan={10} className="px-4 py-8 text-center text-slate-400 text-xs">
+                                No material BOQ budgeted for this site yet. Click "+ Add Material Item" to budget panels, inverters, structures etc.
+                              </td>
+                            </tr>
+                          ) : (
+                            hubSiteBudgets.map((b) => {
+                              const bAmt = Number(b.budgetAmount) || ((Number(b.qty) || 0) * (Number(b.budgetRate) || 0));
+                              const aAmt = Number(b.actualAmount) || ((Number(b.qty) || 0) * (Number(b.actualRate) || 0));
+                              const variance = bAmt - aAmt;
+                              return (
+                                <tr key={b.id} className="hover:bg-indigo-50/40 transition-colors">
+                                  <td className="px-3 py-3 font-semibold text-slate-800">{b.category || 'General'}</td>
+                                  <td className="px-3 py-3 font-bold text-slate-900">{b.material || '—'}</td>
+                                  <td className="px-3 py-3 text-slate-600">{b.brand ? `${b.brand} ` : ''}{b.specification || ''}</td>
+                                  <td className="px-3 py-3 text-right font-mono font-bold">{b.qty} {b.unit || 'NO'}</td>
+                                  <td className="px-3 py-3 text-right font-mono text-slate-600">{formatINR(b.budgetRate)}</td>
+                                  <td className="px-3 py-3 text-right font-mono font-bold text-slate-900">{formatINR(bAmt)}</td>
+                                  <td className="px-3 py-3 text-right font-mono font-bold text-blue-700">{formatINR(aAmt)}</td>
+                                  <td className="px-3 py-3 text-center font-mono font-bold">
+                                    <span className={`px-2 py-0.5 rounded-full text-[10px] ${
+                                      variance >= 0 ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'
+                                    }`}>
+                                      {formatINR(variance)}
+                                    </span>
+                                  </td>
+                                  <td className="px-3 py-3">
+                                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-800">
+                                      {b.procurementStatus || 'Planned'}
+                                    </span>
+                                  </td>
+                                  <td className="px-3 py-3 text-center">
+                                    <div className="flex items-center justify-center gap-1.5">
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          setEditingBudgetItem({ ...b });
+                                          setShowEditBudgetItemModal(true);
+                                        }}
+                                        className="p-1.5 text-slate-600 hover:bg-slate-100 rounded-lg transition-all"
+                                        title="Edit Budget Item"
+                                      >
+                                        <Edit2 className="w-3.5 h-3.5" />
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => handleDeleteBudgetItem(b.id)}
+                                        className="p-1.5 text-rose-600 hover:bg-rose-100 rounded-lg transition-all"
+                                        title="Delete Budget Item"
+                                      >
+                                        <Trash2 className="w-3.5 h-3.5" />
+                                      </button>
+                                    </div>
+                                  </td>
+                                </tr>
+                              );
+                            })
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+
+                {/* INNER TAB 5: PRINTABLE SITE P&L STATEMENT */}
+                {hubInnerTab === 'pl_sheet' && (
+                  <div className="space-y-4">
+                    <div className="p-6 bg-slate-50 border border-slate-200 rounded-2xl space-y-5">
+                      <div className="flex items-center justify-between border-b border-slate-200 pb-4 flex-wrap gap-2">
+                        <div>
+                          <h3 className="text-base font-black text-slate-900 uppercase">
+                            Site Profit & Loss Summary Statement
+                          </h3>
+                          <p className="text-xs text-slate-500">
+                            Customer: {currentHubSite.customerName} • Site ID: {currentHubSite.id} • Capacity: {currentHubSite.capacity || 'N/A'} kW
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleDirectPrintSite(currentHubSite)}
+                          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-xs flex items-center gap-2 shadow-sm cursor-pointer"
+                        >
+                          <Printer className="w-4 h-4" />
+                          <span>Print Official Slip</span>
+                        </button>
+                      </div>
+
+                      {/* Financial Breakdown Table */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                        {/* Income Section */}
+                        <div className="bg-white p-4 rounded-xl border border-slate-200 space-y-3">
+                          <h4 className="font-black text-emerald-800 border-b border-emerald-100 pb-1.5 uppercase text-[11px]">
+                            1. Inflow / Project Revenues
+                          </h4>
+                          <div className="space-y-1.5">
+                            <div className="flex justify-between py-1 border-b border-slate-100">
+                              <span className="text-slate-600">Bank / NBFC Loan Amount:</span>
+                              <span className="font-mono font-bold text-slate-900">{formatINR(currentHubSite.loanAmount)}</span>
+                            </div>
+                            <div className="flex justify-between py-1 border-b border-slate-100">
+                              <span className="text-slate-600">Customer Margin Amount:</span>
+                              <span className="font-mono font-bold text-slate-900">{formatINR(currentHubSite.customerMargin)}</span>
+                            </div>
+                            <div className="flex justify-between py-1 border-b border-slate-100">
+                              <span className="text-slate-600">Govt. Subsidy Component:</span>
+                              <span className="font-mono font-bold text-slate-900">{formatINR(currentHubSite.subsidyAmount)}</span>
+                            </div>
+                            <div className="flex justify-between pt-2 font-black text-emerald-700 text-sm">
+                              <span>Total Project Value:</span>
+                              <span className="font-mono">{formatINR(hubProjectValue)}</span>
+                            </div>
+                            <div className="flex justify-between pt-1 font-bold text-slate-700 text-xs">
+                              <span>Actual Cash Collected:</span>
+                              <span className="font-mono text-emerald-600">{formatINR(hubTotalPayments)}</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Expense Section */}
+                        <div className="bg-white p-4 rounded-xl border border-slate-200 space-y-3">
+                          <h4 className="font-black text-rose-800 border-b border-rose-100 pb-1.5 uppercase text-[11px]">
+                            2. Outflow / Site Expenses
+                          </h4>
+                          <div className="space-y-1.5">
+                            <div className="flex justify-between py-1 border-b border-slate-100">
+                              <span className="text-slate-600">Material Expenses:</span>
+                              <span className="font-mono font-bold text-slate-900">{formatINR(hubMaterialExp)}</span>
+                            </div>
+                            <div className="flex justify-between py-1 border-b border-slate-100">
+                              <span className="text-slate-600">Labour / Installation Cost:</span>
+                              <span className="font-mono font-bold text-slate-900">{formatINR(hubLabourExp)}</span>
+                            </div>
+                            <div className="flex justify-between py-1 border-b border-slate-100">
+                              <span className="text-slate-600">Transport & Freight:</span>
+                              <span className="font-mono font-bold text-slate-900">{formatINR(hubTransportExp)}</span>
+                            </div>
+                            <div className="flex justify-between py-1 border-b border-slate-100">
+                              <span className="text-slate-600">Miscellaneous & Overheads:</span>
+                              <span className="font-mono font-bold text-slate-900">{formatINR(hubMiscExp)}</span>
+                            </div>
+                            <div className="flex justify-between pt-2 font-black text-rose-700 text-sm">
+                              <span>Total Incurred Cost:</span>
+                              <span className="font-mono">{formatINR(hubTotalExpenses)}</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Net Bottom Line */}
+                      <div className="p-4 bg-gradient-to-r from-blue-900 to-indigo-900 text-white rounded-xl flex items-center justify-between flex-wrap gap-3">
+                        <div>
+                          <div className="text-xs text-blue-200 font-bold uppercase">Estimated Net Profit / Margin</div>
+                          <div className="text-xl sm:text-2xl font-black">{formatINR(hubNetProfit)}</div>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-xs text-blue-200 font-bold uppercase">Profit Margin %</div>
+                          <div className="text-lg font-black text-emerald-300">{hubProfitMargin.toFixed(1)}%</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -1973,7 +3876,7 @@ const ProjectManagement = ({ onShowToast }) => {
                             <div className="flex items-center justify-center gap-1.5">
                               <button
                                 type="button"
-                                onClick={() => setPrintingSite(st)}
+                                onClick={() => handleDirectPrintSite(st)}
                                 className="p-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 transition-colors cursor-pointer"
                                 title="Print Official Site Settlement Slip / Report"
                               >
@@ -2423,7 +4326,7 @@ const ProjectManagement = ({ onShowToast }) => {
                             <div className="flex items-center justify-center gap-1.5">
                               <button
                                 type="button"
-                                onClick={() => setPrintingExpense(exp)}
+                                onClick={() => handleDirectPrintExpense(exp)}
                                 className="p-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 transition-colors cursor-pointer"
                                 title="Print Official Expense Voucher"
                               >
@@ -2867,7 +4770,7 @@ const ProjectManagement = ({ onShowToast }) => {
                             <div className="flex items-center justify-center gap-1.5">
                               <button
                                 type="button"
-                                onClick={() => setPrintingPayment(pay)}
+                                onClick={() => handleDirectPrintPayment(pay)}
                                 className="p-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 transition-colors cursor-pointer"
                                 title="Print Official Money Receipt"
                               >
@@ -4159,19 +6062,43 @@ const ProjectManagement = ({ onShowToast }) => {
                       </div>
 
                       <div>
-                        <label className="text-slate-700 font-bold block mb-1">Select Project Site *</label>
-                        <select
-                          required
-                          value={newExpenseForm.siteId}
-                          onChange={(e) => setNewExpenseForm({ ...newExpenseForm, siteId: e.target.value })}
-                          className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-900 font-bold font-mono focus:outline-none focus:border-rose-500 cursor-pointer"
-                        >
-                          {sites.map((s) => (
-                            <option key={s.id} value={s.id}>
-                              #{s.id} - {s.customerName || s.name} ({s.capacity || '3kw'})
-                            </option>
-                          ))}
-                        </select>
+                        <div className="flex items-center justify-between mb-1">
+                          <label className="text-slate-700 font-bold block">Select Project Site *</label>
+                          {subTab === 'all_in_one' && (
+                            <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-md bg-amber-100 text-amber-800 border border-amber-200 flex items-center gap-1">
+                              <ShieldCheck className="w-3 h-3 text-amber-600" /> Locked to Selected Site
+                            </span>
+                          )}
+                        </div>
+                        {subTab === 'all_in_one' ? (
+                          <div className="w-full px-3.5 py-2.5 rounded-xl bg-slate-100 border-2 border-slate-300 text-slate-800 font-bold flex items-center justify-between shadow-inner">
+                            <div className="flex items-center gap-2 truncate">
+                              <Building className="w-4 h-4 text-blue-600 shrink-0" />
+                              <span className="truncate">
+                                {(() => {
+                                  const matched = sites.find((s) => normSiteId(s.id) === normSiteId(newExpenseForm.siteId));
+                                  return matched ? `👤 ${matched.customerName || matched.name} (🆔 ${matched.id})` : newExpenseForm.siteId;
+                                })()}
+                              </span>
+                            </div>
+                            <span className="text-[10px] font-mono bg-blue-200/80 text-blue-900 px-2 py-0.5 rounded font-black shrink-0">
+                              LOCKED
+                            </span>
+                          </div>
+                        ) : (
+                          <select
+                            required
+                            value={newExpenseForm.siteId}
+                            onChange={(e) => setNewExpenseForm({ ...newExpenseForm, siteId: e.target.value })}
+                            className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-900 font-bold font-mono focus:outline-none focus:border-rose-500 cursor-pointer"
+                          >
+                            {sites.map((s) => (
+                              <option key={s.id} value={s.id}>
+                                #{s.id} - {s.customerName || s.name} ({s.capacity || '3kw'})
+                              </option>
+                            ))}
+                          </select>
+                        )}
                       </div>
 
                       <div>
@@ -4768,27 +6695,51 @@ const ProjectManagement = ({ onShowToast }) => {
                       </div>
 
                       <div>
-                        <label className="text-slate-700 font-bold block mb-1">Select Project Site *</label>
-                        <select
-                          required
-                          value={newPaymentForm.siteId}
-                          onChange={(e) => {
-                            const sid = e.target.value;
-                            const matched = sites.find(s => normSiteId(s.id) === normSiteId(sid));
-                            setNewPaymentForm({
-                              ...newPaymentForm,
-                              siteId: sid,
-                              customerName: matched ? (matched.customerName || matched.name) : newPaymentForm.customerName
-                            });
-                          }}
-                          className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-900 font-bold font-mono focus:outline-none focus:border-emerald-500 cursor-pointer"
-                        >
-                          {sites.map((s) => (
-                            <option key={s.id} value={s.id}>
-                              #{s.id} - {s.customerName || s.name} ({s.capacity || '3kw'})
-                            </option>
-                          ))}
-                        </select>
+                        <div className="flex items-center justify-between mb-1">
+                          <label className="text-slate-700 font-bold block">Select Project Site *</label>
+                          {subTab === 'all_in_one' && (
+                            <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-md bg-amber-100 text-amber-800 border border-amber-200 flex items-center gap-1">
+                              <ShieldCheck className="w-3 h-3 text-amber-600" /> Locked to Selected Site
+                            </span>
+                          )}
+                        </div>
+                        {subTab === 'all_in_one' ? (
+                          <div className="w-full px-3.5 py-2.5 rounded-xl bg-slate-100 border-2 border-slate-300 text-slate-800 font-bold flex items-center justify-between shadow-inner">
+                            <div className="flex items-center gap-2 truncate">
+                              <Building className="w-4 h-4 text-emerald-600 shrink-0" />
+                              <span className="truncate">
+                                {(() => {
+                                  const matched = sites.find((s) => normSiteId(s.id) === normSiteId(newPaymentForm.siteId));
+                                  return matched ? `👤 ${matched.customerName || matched.name} (🆔 ${matched.id})` : newPaymentForm.siteId;
+                                })()}
+                              </span>
+                            </div>
+                            <span className="text-[10px] font-mono bg-emerald-200/80 text-emerald-900 px-2 py-0.5 rounded font-black shrink-0">
+                              LOCKED
+                            </span>
+                          </div>
+                        ) : (
+                          <select
+                            required
+                            value={newPaymentForm.siteId}
+                            onChange={(e) => {
+                              const sid = e.target.value;
+                              const matched = sites.find(s => normSiteId(s.id) === normSiteId(sid));
+                              setNewPaymentForm({
+                                ...newPaymentForm,
+                                siteId: sid,
+                                customerName: matched ? (matched.customerName || matched.name) : newPaymentForm.customerName
+                              });
+                            }}
+                            className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-900 font-bold font-mono focus:outline-none focus:border-emerald-500 cursor-pointer"
+                          >
+                            {sites.map((s) => (
+                              <option key={s.id} value={s.id}>
+                                #{s.id} - {s.customerName || s.name} ({s.capacity || '3kw'})
+                              </option>
+                            ))}
+                          </select>
+                        )}
                       </div>
 
                       <div>
@@ -5385,19 +7336,43 @@ const ProjectManagement = ({ onShowToast }) => {
                       </div>
 
                       <div>
-                        <label className="text-slate-700 font-bold block mb-1">Select Project Site *</label>
-                        <select
-                          required
-                          value={newBudgetItemForm.siteId}
-                          onChange={(e) => setNewBudgetItemForm({ ...newBudgetItemForm, siteId: e.target.value })}
-                          className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-900 font-bold font-mono focus:outline-none focus:border-indigo-500 cursor-pointer"
-                        >
-                          {sites.map((s) => (
-                            <option key={s.id} value={s.id}>
-                              #{s.id} - {s.customerName || s.name} ({s.capacity || '3kw'})
-                            </option>
-                          ))}
-                        </select>
+                        <div className="flex items-center justify-between mb-1">
+                          <label className="text-slate-700 font-bold block">Select Project Site *</label>
+                          {subTab === 'all_in_one' && (
+                            <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-md bg-amber-100 text-amber-800 border border-amber-200 flex items-center gap-1">
+                              <ShieldCheck className="w-3 h-3 text-amber-600" /> Locked to Selected Site
+                            </span>
+                          )}
+                        </div>
+                        {subTab === 'all_in_one' ? (
+                          <div className="w-full px-3.5 py-2.5 rounded-xl bg-slate-100 border-2 border-slate-300 text-slate-800 font-bold flex items-center justify-between shadow-inner">
+                            <div className="flex items-center gap-2 truncate">
+                              <Building className="w-4 h-4 text-indigo-600 shrink-0" />
+                              <span className="truncate">
+                                {(() => {
+                                  const matched = sites.find((s) => normSiteId(s.id) === normSiteId(newBudgetItemForm.siteId));
+                                  return matched ? `👤 ${matched.customerName || matched.name} (🆔 ${matched.id})` : newBudgetItemForm.siteId;
+                                })()}
+                              </span>
+                            </div>
+                            <span className="text-[10px] font-mono bg-indigo-200/80 text-indigo-900 px-2 py-0.5 rounded font-black shrink-0">
+                              LOCKED
+                            </span>
+                          </div>
+                        ) : (
+                          <select
+                            required
+                            value={newBudgetItemForm.siteId}
+                            onChange={(e) => setNewBudgetItemForm({ ...newBudgetItemForm, siteId: e.target.value })}
+                            className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-900 font-bold font-mono focus:outline-none focus:border-indigo-500 cursor-pointer"
+                          >
+                            {sites.map((s) => (
+                              <option key={s.id} value={s.id}>
+                                #{s.id} - {s.customerName || s.name} ({s.capacity || '3kw'})
+                              </option>
+                            ))}
+                          </select>
+                        )}
                       </div>
 
                       <div>
@@ -5989,31 +7964,32 @@ const ProjectManagement = ({ onShowToast }) => {
 
               return (
                 <div className="space-y-5 text-slate-800">
-                  {/* Company Header */}
+                  {/* Company Header with Official Website Logo & Brand Styling */}
                   <div className="border-b-2 border-slate-900 pb-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="w-8 h-8 rounded-lg bg-blue-700 text-white flex items-center justify-center font-black text-sm">
-                          P24
-                        </span>
-                        <div>
-                          <h1 className="text-base sm:text-lg font-black tracking-tight text-slate-900 uppercase font-mono leading-none">
-                            POWER24Solar Services Pvt Ltd
-                          </h1>
-                          <p className="text-[10px] text-slate-600 font-medium">
-                            Corporate Office: Gorakhpur HQ, Uttar Pradesh | Helpline: +91 94508 81224 | Web: www.power24.in
-                          </p>
-                        </div>
+                    <div className="flex items-center gap-3">
+                      <img src={p24Logo} alt="POWER24 Logo" className="h-12 w-auto object-contain" />
+                      <div>
+                        <h1 className="text-xl sm:text-2xl font-black tracking-tight leading-none">
+                          <span className="text-[#d91478]">POWER</span>
+                          <span className="text-[#16a34a]">24</span>{' '}
+                          <span className="bg-gradient-to-r from-[#0284c7] via-[#16a34a] to-[#d91478] bg-clip-text text-transparent font-extrabold text-base sm:text-lg">
+                            Solar Services Pvt Ltd
+                          </span>
+                        </h1>
+                        <p className="text-[10px] text-slate-600 font-semibold mt-1">
+                          Authorized Rooftop Solar Installation & EPC Partner • Gorakhpur HQ, Uttar Pradesh | Helpline: +91 94508 81224 | Web: www.power24.in
+                        </p>
                       </div>
                     </div>
-                    <div className="text-right font-mono text-xs">
+                    <div className="text-right font-mono text-xs border-l-2 border-slate-200 pl-3">
                       <p className="font-bold text-slate-900">DATE: {new Date().toLocaleDateString('en-IN')}</p>
-                      <p className="text-[10px] text-blue-700 font-bold">SITE ID: #{st.id}</p>
+                      <p className="text-[11px] text-[#0284c7] font-black">SITE ID: #{st.id}</p>
+                      <p className="text-[9px] text-slate-500 uppercase">OFFICIAL DOSSIER</p>
                     </div>
                   </div>
 
                   {/* Report Title */}
-                  <div className="text-center bg-blue-900 text-white py-2 rounded-lg font-black text-xs uppercase tracking-wider font-mono">
+                  <div className="text-center bg-gradient-to-r from-[#0f172a] via-[#0284c7] to-[#16a34a] text-white py-2 rounded-lg font-black text-xs uppercase tracking-wider font-mono shadow-sm">
                     SOLAR PROJECT SETTLEMENT & PROFIT / LOSS SUMMARY STATEMENT
                   </div>
 
@@ -6021,40 +7997,51 @@ const ProjectManagement = ({ onShowToast }) => {
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-slate-50 p-4 rounded-xl border border-slate-200 text-xs">
                     <div>
                       <span className="text-[10px] font-bold text-slate-400 uppercase block">Customer Name</span>
-                      <span className="font-bold text-slate-900 font-sans">{st.customerName || st.clientName || '-'}</span>
+                      <span className="font-bold text-slate-900 font-sans text-sm">{st.customerName || st.clientName || '-'}</span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] font-bold text-slate-400 uppercase block">Contact / Phone</span>
+                      <span className="font-mono text-slate-800">{st.customerPhone || st.phone || st.contact || '-'}</span>
                     </div>
                     <div>
                       <span className="text-[10px] font-bold text-slate-400 uppercase block">Site Location / District</span>
                       <span className="font-bold text-slate-900">{st.siteAddress || st.district || '-'}</span>
                     </div>
                     <div>
-                      <span className="text-[10px] font-bold text-slate-400 uppercase block">Solar Capacity (kW)</span>
-                      <span className="font-bold text-blue-800 font-mono">{st.capacity || '-'}</span>
+                      <span className="text-[10px] font-bold text-slate-400 uppercase block">Solar Capacity</span>
+                      <span className="font-black text-[#0284c7] font-mono text-sm">{st.capacity || '-'} kW</span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] font-bold text-slate-400 uppercase block">Consumer / CA No.</span>
+                      <span className="font-mono text-slate-700">{st.consumerNumber || st.caNumber || '-'}</span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] font-bold text-slate-400 uppercase block">DISCOM / Grid</span>
+                      <span className="font-mono text-slate-700">{st.discom || 'UPPCL'}</span>
                     </div>
                     <div>
                       <span className="text-[10px] font-bold text-slate-400 uppercase block">Site Status</span>
-                      <span className="font-black text-emerald-700 uppercase">{st.siteStatus || st.status || 'Running'}</span>
+                      <span className="font-black text-[#16a34a] uppercase">{st.siteStatus || st.status || 'Running'}</span>
                     </div>
                     <div>
-                      <span className="text-[10px] font-bold text-slate-400 uppercase block">Project Start Date</span>
-                      <span className="font-mono text-slate-700">{st.startDate || '-'}</span>
+                      <span className="text-[10px] font-bold text-slate-400 uppercase block">Project Date Range</span>
+                      <span className="font-mono text-slate-700">{st.startDate || '-'} → {st.completionDate || 'Ongoing'}</span>
                     </div>
-                    <div>
-                      <span className="text-[10px] font-bold text-slate-400 uppercase block">Completion Date</span>
-                      <span className="font-mono text-slate-700">{st.completionDate || '-'}</span>
-                    </div>
-                    <div className="col-span-2">
-                      <span className="text-[10px] font-bold text-slate-400 uppercase block">Remarks / Notes</span>
-                      <span className="text-slate-600 text-[11px]">{st.remarks || st.notes || '-'}</span>
-                    </div>
+                    {(st.remarks || st.notes) && (
+                      <div className="col-span-2 sm:col-span-4 border-t border-slate-200 pt-1.5 mt-0.5">
+                        <span className="text-[10px] font-bold text-slate-400 uppercase block">Project Notes / Remarks:</span>
+                        <span className="text-slate-700 text-[11px] italic">{st.remarks || st.notes}</span>
+                      </div>
+                    )}
                   </div>
 
                   {/* 2-Column Inflow vs Outflow Ledger */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {/* Left: Project Inflow */}
                     <div className="border border-blue-200 rounded-xl overflow-hidden text-xs">
-                      <div className="bg-blue-800 text-white font-black px-3.5 py-2 uppercase text-[11px] tracking-wider">
-                        1. Project Inflow (Revenue)
+                      <div className="bg-[#0284c7] text-white font-black px-3.5 py-2 uppercase text-[11px] tracking-wider flex items-center justify-between">
+                        <span>1. Project Inflow (Revenue)</span>
+                        <span className="font-mono text-[10px] opacity-90">CREDIT LEDGER</span>
                       </div>
                       <div className="divide-y divide-slate-100 p-3 bg-white space-y-1.5 font-medium">
                         <div className="flex justify-between">
@@ -6068,13 +8055,13 @@ const ProjectManagement = ({ onShowToast }) => {
                         {loan > 0 && (
                           <div className="pl-3 text-[10px] space-y-0.5 text-slate-500 font-mono bg-blue-50/50 p-1.5 rounded-lg border border-blue-100">
                             <div className="flex justify-between">
-                              <span className="text-slate-700">• Tranche 1 (Disb. 1):</span>
-                              <span className="text-blue-800 font-bold">{formatINR(
+                              <span className="text-slate-700">• Tranche 1 (Disb. 1 - 1st किश्त):</span>
+                              <span className="text-[#0284c7] font-bold">{formatINR(
                                 sitePayments.filter(p => normCategory(p.paymentType).includes('loan') && (p.disbursementStage === 'Disbursement 1' || (!p.disbursementStage && !String(p.paymentType).includes('2')))).reduce((a, c) => a + (Number(c.amount) || 0), 0)
                               )}</span>
                             </div>
                             <div className="flex justify-between">
-                              <span className="text-slate-700">• Tranche 2 (Disb. 2):</span>
+                              <span className="text-slate-700">• Tranche 2 (Disb. 2 - 2nd किश्त):</span>
                               <span className="text-indigo-800 font-bold">{formatINR(
                                 sitePayments.filter(p => normCategory(p.paymentType).includes('loan') && (p.disbursementStage === 'Disbursement 2' || String(p.paymentType).includes('2'))).reduce((a, c) => a + (Number(c.amount) || 0), 0)
                               )}</span>
@@ -6097,8 +8084,9 @@ const ProjectManagement = ({ onShowToast }) => {
 
                     {/* Right: Project Outflow */}
                     <div className="border border-rose-200 rounded-xl overflow-hidden text-xs">
-                      <div className="bg-rose-800 text-white font-black px-3.5 py-2 uppercase text-[11px] tracking-wider">
-                        2. Cost Outflow (Incurred Expenses)
+                      <div className="bg-[#d91478] text-white font-black px-3.5 py-2 uppercase text-[11px] tracking-wider flex items-center justify-between">
+                        <span>2. Cost Outflow (Incurred Expenses)</span>
+                        <span className="font-mono text-[10px] opacity-90">DEBIT LEDGER</span>
                       </div>
                       <div className="divide-y divide-slate-100 p-3 bg-white space-y-1.5 font-medium">
                         <div className="flex justify-between">
@@ -6129,10 +8117,10 @@ const ProjectManagement = ({ onShowToast }) => {
                   </div>
 
                   {/* Net Financial Position Bar */}
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-slate-900 text-white p-4 rounded-xl text-xs font-mono">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-slate-950 text-white p-4 rounded-xl text-xs font-mono shadow-md">
                     <div>
                       <span className="text-[10px] text-slate-400 block uppercase">NET PROFIT / LOSS</span>
-                      <span className={`text-base sm:text-lg font-black ${profit >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                      <span className={`text-base sm:text-lg font-black ${profit >= 0 ? 'text-[#16a34a]' : 'text-[#d91478]'}`}>
                         {formatINR(profit)}
                       </span>
                     </div>
@@ -6144,7 +8132,7 @@ const ProjectManagement = ({ onShowToast }) => {
                     </div>
                     <div>
                       <span className="text-[10px] text-slate-400 block uppercase">TOTAL RECEIVED</span>
-                      <span className="text-base sm:text-lg font-black text-emerald-400">
+                      <span className="text-base sm:text-lg font-black text-[#16a34a]">
                         {formatINR(totalReceived)}
                       </span>
                     </div>
@@ -6160,8 +8148,9 @@ const ProjectManagement = ({ onShowToast }) => {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-[11px]">
                     {/* Vouchers Table */}
                     <div className="border border-slate-200 rounded-xl p-3 bg-slate-50 space-y-2">
-                      <span className="font-black text-slate-800 uppercase block">
-                        Expense Vouchers Logged ({siteExpenses.length})
+                      <span className="font-black text-slate-800 uppercase block flex items-center justify-between">
+                        <span>Expense Vouchers Logged ({siteExpenses.length})</span>
+                        <span className="text-[10px] font-mono text-rose-700">Total: {formatINR(totExpense)}</span>
                       </span>
                       {siteExpenses.length === 0 ? (
                         <p className="text-slate-400 italic">No expense vouchers recorded for this site.</p>
@@ -6177,7 +8166,7 @@ const ProjectManagement = ({ onShowToast }) => {
                               </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100 font-mono">
-                              {siteExpenses.slice(0, 5).map((e, i) => (
+                              {siteExpenses.slice(0, 6).map((e, i) => (
                                 <tr key={i}>
                                   <td className="py-1 text-slate-600">{e.date || '-'}</td>
                                   <td className="py-1 font-bold text-slate-900 font-sans truncate max-w-[120px]">{e.vendor || e.description}</td>
@@ -6193,8 +8182,9 @@ const ProjectManagement = ({ onShowToast }) => {
 
                     {/* Receipts Table */}
                     <div className="border border-slate-200 rounded-xl p-3 bg-slate-50 space-y-2">
-                      <span className="font-black text-slate-800 uppercase block">
-                        Payment Receipts Logged ({sitePayments.length})
+                      <span className="font-black text-slate-800 uppercase block flex items-center justify-between">
+                        <span>Payment Receipts Logged ({sitePayments.length})</span>
+                        <span className="text-[10px] font-mono text-emerald-700">Total: {formatINR(totalReceived)}</span>
                       </span>
                       {sitePayments.length === 0 ? (
                         <p className="text-slate-400 italic">No payment receipts recorded for this site.</p>
@@ -6210,7 +8200,7 @@ const ProjectManagement = ({ onShowToast }) => {
                               </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100 font-mono">
-                              {sitePayments.slice(0, 5).map((p, i) => (
+                              {sitePayments.slice(0, 6).map((p, i) => (
                                 <tr key={i}>
                                   <td className="py-1 text-slate-600">{p.date || '-'}</td>
                                   <td className="py-1 font-bold text-slate-900 font-sans">
@@ -6251,7 +8241,7 @@ const ProjectManagement = ({ onShowToast }) => {
                     </div>
 
                     <div className="space-y-8">
-                      <div className="border-b border-dashed border-slate-400 pb-1 font-bold text-blue-900">
+                      <div className="border-b border-dashed border-slate-400 pb-1 font-bold text-[#0284c7]">
                         POWER24 Signatory
                       </div>
                       <span className="text-[10px] text-slate-500 uppercase font-bold">Authorized Signatory</span>
@@ -6303,19 +8293,26 @@ const ProjectManagement = ({ onShowToast }) => {
 
               return (
                 <div className="space-y-5 text-slate-800">
-                  {/* Company Header */}
+                  {/* Company Header with Official Website Logo & Brand Styling */}
                   <div className="border-b-2 border-slate-900 pb-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                    <div>
-                      <h1 className="text-base font-black text-slate-900 uppercase font-mono leading-none">
-                        POWER24Solar Services Pvt Ltd
-                      </h1>
-                      <p className="text-[10px] text-slate-600 font-medium mt-1">
-                        Gorakhpur HQ, Uttar Pradesh | Helpline: +91 94508 81224 | Web: www.power24.in
-                      </p>
+                    <div className="flex items-center gap-3">
+                      <img src={p24Logo} alt="POWER24 Logo" className="h-11 w-auto object-contain" />
+                      <div>
+                        <h1 className="text-lg sm:text-xl font-black tracking-tight leading-none">
+                          <span className="text-[#d91478]">POWER</span>
+                          <span className="text-[#16a34a]">24</span>{' '}
+                          <span className="bg-gradient-to-r from-[#0284c7] via-[#16a34a] to-[#d91478] bg-clip-text text-transparent font-extrabold text-sm sm:text-base">
+                            Solar Services Pvt Ltd
+                          </span>
+                        </h1>
+                        <p className="text-[10px] text-slate-600 font-semibold mt-1">
+                          Gorakhpur HQ, Uttar Pradesh | Helpline: +91 94508 81224 | Web: www.power24.in
+                        </p>
+                      </div>
                     </div>
-                    <div className="text-right font-mono text-xs">
+                    <div className="text-right font-mono text-xs border-l-2 border-slate-200 pl-3">
                       <p className="font-bold text-slate-900">DATE: {exp.date || new Date().toLocaleDateString('en-IN')}</p>
-                      <p className="text-[10px] text-rose-600 font-bold">VOUCHER NO: #{exp.id || '-'}</p>
+                      <p className="text-[10px] text-rose-600 font-black">VOUCHER NO: #{exp.id || '-'}</p>
                     </div>
                   </div>
 
@@ -6446,19 +8443,26 @@ const ProjectManagement = ({ onShowToast }) => {
 
               return (
                 <div className="space-y-5 text-slate-800">
-                  {/* Company Header */}
+                  {/* Company Header with Official Website Logo & Brand Styling */}
                   <div className="border-b-2 border-slate-900 pb-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                    <div>
-                      <h1 className="text-base font-black text-slate-900 uppercase font-mono leading-none">
-                        POWER24Solar Services Pvt Ltd
-                      </h1>
-                      <p className="text-[10px] text-slate-600 font-medium mt-1">
-                        Gorakhpur HQ, Uttar Pradesh | Helpline: +91 94508 81224 | Web: www.power24.in
-                      </p>
+                    <div className="flex items-center gap-3">
+                      <img src={p24Logo} alt="POWER24 Logo" className="h-11 w-auto object-contain" />
+                      <div>
+                        <h1 className="text-lg sm:text-xl font-black tracking-tight leading-none">
+                          <span className="text-[#d91478]">POWER</span>
+                          <span className="text-[#16a34a]">24</span>{' '}
+                          <span className="bg-gradient-to-r from-[#0284c7] via-[#16a34a] to-[#d91478] bg-clip-text text-transparent font-extrabold text-sm sm:text-base">
+                            Solar Services Pvt Ltd
+                          </span>
+                        </h1>
+                        <p className="text-[10px] text-slate-600 font-semibold mt-1">
+                          Gorakhpur HQ, Uttar Pradesh | Helpline: +91 94508 81224 | Web: www.power24.in
+                        </p>
+                      </div>
                     </div>
-                    <div className="text-right font-mono text-xs">
+                    <div className="text-right font-mono text-xs border-l-2 border-slate-200 pl-3">
                       <p className="font-bold text-slate-900">DATE: {pay.date || new Date().toLocaleDateString('en-IN')}</p>
-                      <p className="text-[10px] text-emerald-700 font-bold">RECEIPT NO: #{pay.id || '-'}</p>
+                      <p className="text-[10px] text-emerald-700 font-black">RECEIPT NO: #{pay.id || '-'}</p>
                     </div>
                   </div>
 
@@ -6552,6 +8556,112 @@ const ProjectManagement = ({ onShowToast }) => {
                 </div>
               );
             })()}
+          </div>
+        </div>
+      )}
+      {/* ============================================================ */}
+      {/* 9. UNIVERSAL ACTION CONFIRMATION MODAL (DATA SAFETY POPUP) */}
+      {/* ============================================================ */}
+      {pendingConfirm && (
+        <div className="fixed inset-0 z-[100] bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6 overflow-y-auto font-['Outfit',sans-serif]">
+          <div className="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-7 shadow-2xl border-2 border-slate-200 relative overflow-hidden animate-in fade-in zoom-in duration-200">
+            {/* Header / Brand Tag */}
+            <div className="flex items-center justify-between pb-4 border-b border-slate-100">
+              <div className="flex items-center gap-3">
+                <div className={`w-11 h-11 rounded-2xl flex items-center justify-center text-white shadow-md shrink-0 ${
+                  pendingConfirm.isDanger
+                    ? 'bg-rose-600 shadow-rose-600/30'
+                    : pendingConfirm.badgeColor === 'emerald'
+                    ? 'bg-emerald-600 shadow-emerald-600/30'
+                    : pendingConfirm.badgeColor === 'rose'
+                    ? 'bg-[#d91478] shadow-[#d91478]/30'
+                    : pendingConfirm.badgeColor === 'amber'
+                    ? 'bg-amber-600 shadow-amber-600/30'
+                    : 'bg-[#0284c7] shadow-[#0284c7]/30'
+                }`}>
+                  {pendingConfirm.isDanger ? (
+                    <AlertTriangle className="w-6 h-6" />
+                  ) : (
+                    <ShieldCheck className="w-6 h-6" />
+                  )}
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-slate-100 text-slate-700">
+                      {pendingConfirm.badgeText || 'Confirmation'}
+                    </span>
+                    <span className="text-[10px] font-bold text-slate-400 font-mono">POWER24 VERIFY</span>
+                  </div>
+                  <h3 className="text-base font-black text-slate-900 mt-0.5 leading-tight">
+                    {pendingConfirm.title}
+                  </h3>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setPendingConfirm(null)}
+                className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
+                title="Cancel"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Subtitle / Notice */}
+            <div className="mt-3 text-xs text-slate-600">
+              {pendingConfirm.subtitle}
+            </div>
+
+            {/* Structured Key-Value Details Grid */}
+            {pendingConfirm.details && pendingConfirm.details.length > 0 && (
+              <div className="mt-4 bg-slate-50 rounded-2xl p-4 border border-slate-200/80 space-y-2 text-xs">
+                {pendingConfirm.details.map((item, idx) => (
+                  <div key={idx} className="flex items-center justify-between gap-3 text-xs">
+                    <span className="text-slate-500 font-medium shrink-0">{item.label}:</span>
+                    <span className={`font-mono text-right truncate ${
+                      item.highlight
+                        ? 'font-black text-xs sm:text-sm text-slate-900 bg-white px-2 py-0.5 rounded-lg border border-slate-200 shadow-xs'
+                        : 'font-semibold text-slate-800'
+                    }`}>
+                      {item.value}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Action Buttons */}
+            <div className="mt-6 flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setPendingConfirm(null)}
+                className="px-4 sm:px-5 py-2.5 rounded-xl border border-slate-300 hover:bg-slate-100 text-slate-700 font-bold text-xs uppercase tracking-wider transition-colors cursor-pointer"
+              >
+                Cancel / Edit Again
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (pendingConfirm.onConfirm) {
+                    pendingConfirm.onConfirm();
+                  }
+                }}
+                className={`px-5 sm:px-6 py-2.5 rounded-xl text-white font-black text-xs uppercase tracking-wider flex items-center gap-2 shadow-lg transition-all transform active:scale-95 cursor-pointer ${
+                  pendingConfirm.isDanger
+                    ? 'bg-rose-600 hover:bg-rose-700 shadow-rose-600/30'
+                    : pendingConfirm.badgeColor === 'emerald'
+                    ? 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/30'
+                    : pendingConfirm.badgeColor === 'rose'
+                    ? 'bg-[#d91478] hover:bg-[#be0f67] shadow-[#d91478]/30'
+                    : pendingConfirm.badgeColor === 'amber'
+                    ? 'bg-amber-600 hover:bg-amber-700 shadow-amber-600/30'
+                    : 'bg-[#0284c7] hover:bg-[#0369a1] shadow-[#0284c7]/30'
+                }`}
+              >
+                <CheckCircle2 className="w-4 h-4" />
+                <span>{pendingConfirm.actionLabel || 'Confirm & Save'}</span>
+              </button>
+            </div>
           </div>
         </div>
       )}
