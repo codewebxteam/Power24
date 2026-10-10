@@ -229,6 +229,13 @@ const ProjectManagement = ({ onShowToast }) => {
   // Normalization Helpers
   const normSiteId = (id) => String(id || '').trim().toUpperCase();
   const normCategory = (cat) => String(cat || '').trim().toLowerCase();
+  const isSiteCompleted = (siteOrStatus) => {
+    if (!siteOrStatus) return false;
+    const statusStr = typeof siteOrStatus === 'string'
+      ? siteOrStatus
+      : (siteOrStatus.siteStatus || siteOrStatus.status || '');
+    return String(statusStr).trim().toLowerCase() === 'completed';
+  };
 
   // Load Initial Data
   const loadAllData = () => {
@@ -543,11 +550,11 @@ const ProjectManagement = ({ onShowToast }) => {
         <div class="kpi-bar mono">
           <div class="kpi-item">
             <span>NET PROFIT / LOSS</span>
-            <span class="${profit >= 0 ? 'c-green' : 'c-pink'}">${formatINR(profit)}</span>
+            <span class="${isSiteCompleted(st) ? (profit >= 0 ? 'c-green' : 'c-pink') : ''}">${isSiteCompleted(st) ? formatINR(profit) : 'Pending Completion'}</span>
           </div>
           <div class="kpi-item">
             <span>PROFIT MARGIN</span>
-            <span class="c-sky">${profitMargin.toFixed(2)}%</span>
+            <span class="c-sky">${isSiteCompleted(st) ? `${profitMargin.toFixed(2)}%` : '-'}</span>
           </div>
           <div class="kpi-item">
             <span>TOTAL RECEIVED</span>
@@ -953,12 +960,26 @@ const ProjectManagement = ({ onShowToast }) => {
     0
   );
 
-  // Profit / Loss = Total Income - Total Expense (Rule 7)
-  const totalProfitLoss = totalProjectIncome - totalExpensesAmount;
+  // Only completed sites have realized profit
+  const completedDashboardSites = filteredDashboardSites.filter(
+    (s) => isSiteCompleted(s)
+  );
+  const completedDashboardIncome = completedDashboardSites.reduce(
+    (acc, curr) => {
+      const loan = Number(curr.loanAmount) || 0;
+      const margin = Number(curr.customerMargin) || 0;
+      const income = (loan + margin) > 0 ? (loan + margin) : (Number(curr.projectIncome) || Number(curr.projectValue) || 0);
+      return acc + income;
+    },
+    0
+  );
+  const completedDashboardExpenses = activeDashboardExpenses
+    .filter((e) => completedDashboardSites.some((cs) => normSiteId(cs.id) === normSiteId(e.siteId)))
+    .reduce((acc, curr) => acc + (Number(curr.amount) || 0), 0);
 
-  // Profit % = (Profit / Total Income) * 100 (Rule 7)
-  const averageProfitPercent = totalProjectIncome > 0
-    ? ((totalProfitLoss / totalProjectIncome) * 100)
+  const totalCompletedProfitLoss = completedDashboardIncome - completedDashboardExpenses;
+  const averageCompletedProfitPercent = completedDashboardIncome > 0
+    ? ((totalCompletedProfitLoss / completedDashboardIncome) * 100)
     : 0;
 
   // Amount Received (Rule 5)
@@ -1357,8 +1378,8 @@ const ProjectManagement = ({ onShowToast }) => {
         siteTransport,
         siteMisc,
         siteTotalExpense,
-        siteProfit,
-        `"${siteProfitMargin.toFixed(2)}%"`,
+        isSiteCompleted(st) ? siteProfit : '""',
+        isSiteCompleted(st) ? `"${siteProfitMargin.toFixed(2)}%"` : '""',
         siteReceived,
         sitePending,
         `"${st.siteStatus || st.status || 'Running'}"`,
@@ -2488,26 +2509,40 @@ const ProjectManagement = ({ onShowToast }) => {
 
                   {/* Card 4: Net Profit / Loss */}
                   <div className={`bg-gradient-to-br ${
-                    hubNetProfit >= 0
-                      ? 'from-sky-50 to-blue-50/60 border-sky-200'
-                      : 'from-amber-50 to-rose-50/60 border-rose-300'
+                    isSiteCompleted(currentHubSite)
+                      ? (hubNetProfit >= 0
+                          ? 'from-sky-50 to-blue-50/60 border-sky-200'
+                          : 'from-amber-50 to-rose-50/60 border-rose-300')
+                      : 'from-slate-50 to-slate-100/80 border-slate-200'
                   } border rounded-2xl p-4 shadow-sm space-y-2`}>
                     <div className="flex items-center justify-between text-xs font-bold text-slate-800">
                       <span className="flex items-center gap-1.5">
-                        <TrendingUp className={`w-4 h-4 ${hubNetProfit >= 0 ? 'text-blue-600' : 'text-rose-600'}`} />
+                        <TrendingUp className={`w-4 h-4 ${isSiteCompleted(currentHubSite) ? (hubNetProfit >= 0 ? 'text-blue-600' : 'text-rose-600') : 'text-slate-400'}`} />
                         <span>Site Net Profit</span>
                       </span>
-                      <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${
-                        hubNetProfit >= 0 ? 'bg-blue-200 text-blue-900' : 'bg-rose-200 text-rose-900'
+                      {isSiteCompleted(currentHubSite) ? (
+                        <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${
+                          hubNetProfit >= 0 ? 'bg-blue-200 text-blue-900' : 'bg-rose-200 text-rose-900'
+                        }`}>
+                          {hubProfitMargin.toFixed(1)}% Margin
+                        </span>
+                      ) : (
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-200 text-slate-700">
+                          Pending Completion
+                        </span>
+                      )}
+                    </div>
+                    {isSiteCompleted(currentHubSite) ? (
+                      <div className={`text-xl sm:text-2xl font-black ${
+                        hubNetProfit >= 0 ? 'text-blue-900' : 'text-rose-700'
                       }`}>
-                        {hubProfitMargin.toFixed(1)}% Margin
-                      </span>
-                    </div>
-                    <div className={`text-xl sm:text-2xl font-black ${
-                      hubNetProfit >= 0 ? 'text-blue-900' : 'text-rose-700'
-                    }`}>
-                      {formatINR(hubNetProfit)}
-                    </div>
+                        {formatINR(hubNetProfit)}
+                      </div>
+                    ) : (
+                      <div className="text-sm sm:text-base font-bold text-slate-500 font-sans">
+                        Available on Completion
+                      </div>
+                    )}
                     <div className="pt-2 border-t border-slate-200 flex items-center justify-between text-[11px] text-slate-600 font-medium">
                       <span>BOQ Items: {hubSiteBudgets.length}</span>
                       <span>BOQ Est: {formatINR(hubBudgetEstTotal)}</span>
@@ -3116,16 +3151,30 @@ const ProjectManagement = ({ onShowToast }) => {
                       </div>
 
                       {/* Net Bottom Line */}
-                      <div className="p-4 bg-gradient-to-r from-blue-900 to-indigo-900 text-white rounded-xl flex items-center justify-between flex-wrap gap-3">
-                        <div>
-                          <div className="text-xs text-blue-200 font-bold uppercase">Estimated Net Profit / Margin</div>
-                          <div className="text-xl sm:text-2xl font-black">{formatINR(hubNetProfit)}</div>
+                      {isSiteCompleted(currentHubSite) ? (
+                        <div className="p-4 bg-gradient-to-r from-blue-900 to-indigo-900 text-white rounded-xl flex items-center justify-between flex-wrap gap-3">
+                          <div>
+                            <div className="text-xs text-blue-200 font-bold uppercase">Estimated Net Profit / Margin</div>
+                            <div className="text-xl sm:text-2xl font-black">{formatINR(hubNetProfit)}</div>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-xs text-blue-200 font-bold uppercase">Profit Margin %</div>
+                            <div className="text-lg font-black text-emerald-300">{hubProfitMargin.toFixed(1)}%</div>
+                          </div>
                         </div>
-                        <div className="text-right">
-                          <div className="text-xs text-blue-200 font-bold uppercase">Profit Margin %</div>
-                          <div className="text-lg font-black text-emerald-300">{hubProfitMargin.toFixed(1)}%</div>
+                      ) : (
+                        <div className="p-4 bg-slate-100 border border-slate-200 text-slate-700 rounded-xl flex items-center justify-between flex-wrap gap-3">
+                          <div>
+                            <div className="text-xs text-slate-500 font-bold uppercase">Estimated Net Profit / Margin</div>
+                            <div className="text-base font-bold text-slate-600">Pending Completion</div>
+                          </div>
+                          <div className="text-right">
+                            <span className="text-xs px-2.5 py-1 rounded-full font-bold bg-amber-100 text-amber-800 border border-amber-200">
+                              Status: {currentHubSite?.siteStatus || currentHubSite?.status || 'Running'} (Profit unlocks after completion)
+                            </span>
+                          </div>
                         </div>
-                      </div>
+                      )}
                     </div>
                   </div>
                 )}
@@ -3186,7 +3235,9 @@ const ProjectManagement = ({ onShowToast }) => {
                     </h3>
                   </div>
                   <span className="px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/40 text-xs font-mono font-bold">
-                    {averageProfitPercent.toFixed(2)}% Net Margin
+                    {completedDashboardSites.length > 0
+                      ? `${averageCompletedProfitPercent.toFixed(2)}% Net Margin`
+                      : 'Pending Completion'}
                   </span>
                 </div>
 
@@ -3227,12 +3278,14 @@ const ProjectManagement = ({ onShowToast }) => {
                   {/* Row 5: Total Profit / Loss (Rule 7) */}
                   <div className="grid grid-cols-12 px-6 py-3.5 bg-blue-50/80 hover:bg-blue-100/60 transition-colors border-t border-b border-blue-200">
                     <span className="col-span-7 font-extrabold text-blue-950 uppercase tracking-wide">
-                      Total Profit / Loss (Income - Expense)
+                      Total Profit / Loss ({completedDashboardSites.length} Completed)
                     </span>
                     <span className={`col-span-5 font-black text-right font-mono text-base sm:text-lg ${
-                      totalProfitLoss >= 0 ? 'text-emerald-700' : 'text-rose-600'
+                      completedDashboardSites.length === 0
+                        ? 'text-slate-400 font-sans text-xs sm:text-sm'
+                        : totalCompletedProfitLoss >= 0 ? 'text-emerald-700' : 'text-rose-600'
                     }`}>
-                      {formatINR(totalProfitLoss)}
+                      {completedDashboardSites.length > 0 ? formatINR(totalCompletedProfitLoss) : '-'}
                     </span>
                   </div>
 
@@ -3240,7 +3293,7 @@ const ProjectManagement = ({ onShowToast }) => {
                   <div className="grid grid-cols-12 px-6 py-3.5 bg-white hover:bg-blue-50/50 transition-colors">
                     <span className="col-span-7 font-bold text-slate-700">Profit %</span>
                     <span className="col-span-5 font-black text-right font-mono text-blue-700 text-base">
-                      {averageProfitPercent.toFixed(2)}%
+                      {completedDashboardSites.length > 0 ? `${averageCompletedProfitPercent.toFixed(2)}%` : '-'}
                     </span>
                   </div>
 
@@ -3873,14 +3926,18 @@ const ProjectManagement = ({ onShowToast }) => {
 
                           {/* 15. Profit / Loss (Rule 7) */}
                           <td className={`p-3 border-r border-blue-100 text-right font-mono font-black bg-blue-50/60 ${
-                            siteProfit >= 0 ? 'text-emerald-700' : 'text-rose-600'
+                            isSiteCompleted(st)
+                              ? (siteProfit >= 0 ? 'text-emerald-700' : 'text-rose-600')
+                              : 'text-slate-400'
                           }`}>
-                            {formatINR(siteProfit)}
+                            {isSiteCompleted(st) ? formatINR(siteProfit) : '-'}
                           </td>
 
                           {/* 16. Profit % (Rule 7) */}
-                          <td className="p-3 border-r border-blue-100 text-right font-mono font-bold text-blue-700 bg-blue-50/60">
-                            {siteProfitMargin.toFixed(2)}%
+                          <td className={`p-3 border-r border-blue-100 text-right font-mono font-bold bg-blue-50/60 ${
+                            isSiteCompleted(st) ? 'text-blue-700' : 'text-slate-400'
+                          }`}>
+                            {isSiteCompleted(st) ? `${siteProfitMargin.toFixed(2)}%` : '-'}
                           </td>
 
                           {/* 17. Amount Received (Rule 5) */}
@@ -4031,7 +4088,11 @@ const ProjectManagement = ({ onShowToast }) => {
                       acc.transport += tra;
                       acc.misc += mis;
                       acc.totalExpense += expTot;
-                      acc.profit += prof;
+                      if (isSiteCompleted(st)) {
+                        acc.profit += prof;
+                        acc.completedIncome += inc;
+                        acc.completedCount += 1;
+                      }
                       acc.received += rec;
                       acc.pending += pend;
                       return acc;
@@ -4047,12 +4108,14 @@ const ProjectManagement = ({ onShowToast }) => {
                       misc: 0,
                       totalExpense: 0,
                       profit: 0,
+                      completedIncome: 0,
+                      completedCount: 0,
                       received: 0,
                       pending: 0
                     }
                   );
 
-                  const smProfitPercent = smTotals.totalIncome > 0 ? ((smTotals.profit / smTotals.totalIncome) * 100) : 0;
+                  const smProfitPercent = smTotals.completedIncome > 0 ? ((smTotals.profit / smTotals.completedIncome) * 100) : 0;
 
                   return (
                     <tfoot className="sticky bottom-0 z-20 bg-blue-900 text-white font-mono font-black text-xs shadow-xl border-t-2 border-blue-950">
@@ -4069,10 +4132,12 @@ const ProjectManagement = ({ onShowToast }) => {
                         <td className="p-3 text-right text-blue-100 bg-blue-950">{formatINR(smTotals.transport)}</td>
                         <td className="p-3 text-right text-blue-100 bg-blue-950">{formatINR(smTotals.misc)}</td>
                         <td className="p-3 text-right text-rose-300 bg-blue-950">{formatINR(smTotals.totalExpense)}</td>
-                        <td className={`p-3 text-right bg-blue-950 ${smTotals.profit >= 0 ? 'text-emerald-300' : 'text-rose-400'}`}>
-                          {formatINR(smTotals.profit)}
+                        <td className={`p-3 text-right bg-blue-950 ${smTotals.completedCount > 0 ? (smTotals.profit >= 0 ? 'text-emerald-300' : 'text-rose-400') : 'text-slate-400'}`}>
+                          {smTotals.completedCount > 0 ? formatINR(smTotals.profit) : '-'}
                         </td>
-                        <td className="p-3 text-right text-sky-300 bg-blue-950">{smProfitPercent.toFixed(2)}%</td>
+                        <td className="p-3 text-right text-sky-300 bg-blue-950">
+                          {smTotals.completedCount > 0 ? `${smProfitPercent.toFixed(2)}%` : '-'}
+                        </td>
                         <td className="p-3 text-right text-emerald-300 bg-blue-950">{formatINR(smTotals.received)}</td>
                         <td className="p-3 text-right text-amber-300 bg-blue-950">{formatINR(smTotals.pending)}</td>
                         <td colSpan={4} className="p-3 text-center text-blue-200 font-sans text-[11px]">
@@ -8153,14 +8218,14 @@ const ProjectManagement = ({ onShowToast }) => {
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-slate-950 text-white p-4 rounded-xl text-xs font-mono shadow-md">
                     <div>
                       <span className="text-[10px] text-slate-400 block uppercase">NET PROFIT / LOSS</span>
-                      <span className={`text-base sm:text-lg font-black ${profit >= 0 ? 'text-[#16a34a]' : 'text-[#d91478]'}`}>
-                        {formatINR(profit)}
+                      <span className={`text-base sm:text-lg font-black ${isSiteCompleted(st) ? (profit >= 0 ? 'text-[#16a34a]' : 'text-[#d91478]') : 'text-slate-400'}`}>
+                        {isSiteCompleted(st) ? formatINR(profit) : 'Pending Completion'}
                       </span>
                     </div>
                     <div>
                       <span className="text-[10px] text-slate-400 block uppercase">PROFIT MARGIN</span>
                       <span className="text-base sm:text-lg font-black text-sky-300">
-                        {profitMargin.toFixed(2)}%
+                        {isSiteCompleted(st) ? `${profitMargin.toFixed(2)}%` : '-'}
                       </span>
                     </div>
                     <div>

@@ -1079,9 +1079,20 @@ const AdminDashboard = () => {
     return acc + inc;
   }, 0);
 
-  const mgmtTotalExpenses = mgmtExpenses.reduce((acc, curr) => acc + (Number(curr.amount) || 0), 0);
-  const mgmtNetProfit = mgmtTotalIncome - mgmtTotalExpenses;
-  const mgmtProfitPercent = mgmtTotalIncome > 0 ? ((mgmtNetProfit / mgmtTotalIncome) * 100) : 0;
+  const mgmtCompletedSites = mgmtSites.filter(
+    (s) => normMgmtCategory(s.siteStatus || s.status) === 'completed'
+  );
+  const mgmtCompletedIncome = mgmtCompletedSites.reduce((acc, curr) => {
+    const loan = Number(curr.loanAmount) || 0;
+    const margin = Number(curr.customerMargin) || 0;
+    const inc = (loan + margin) > 0 ? (loan + margin) : (Number(curr.projectIncome) || Number(curr.projectValue) || 0);
+    return acc + inc;
+  }, 0);
+  const mgmtCompletedExpenses = mgmtExpenses
+    .filter((e) => mgmtCompletedSites.some((cs) => normMgmtSiteId(cs.id) === normMgmtSiteId(e.siteId)))
+    .reduce((acc, curr) => acc + (Number(curr.amount) || 0), 0);
+  const mgmtNetProfit = mgmtCompletedIncome - mgmtCompletedExpenses;
+  const mgmtProfitPercent = mgmtCompletedIncome > 0 ? ((mgmtNetProfit / mgmtCompletedIncome) * 100) : 0;
 
   const mgmtTotalReceived = mgmtPayments.reduce((acc, curr) => acc + (Number(curr.amount) || 0), 0);
   const mgmtTotalPending = mgmtTotalIncome - mgmtTotalReceived;
@@ -1668,10 +1679,14 @@ const AdminDashboard = () => {
                     <div>
                       <p className={`text-xl sm:text-2xl font-black font-mono ${mgmtNetProfit >= 0 ? 'text-emerald-700' : 'text-rose-600'
                         }`}>
-                        {formatINR(mgmtNetProfit)}
+                        {mgmtCompletedSitesCount > 0 ? formatINR(mgmtNetProfit) : '-'}
                       </p>
                       <p className="text-[11px] text-slate-500 font-medium mt-0.5">
-                        Profit Margin: <strong className={`font-mono font-bold ${mgmtNetProfit >= 0 ? 'text-emerald-700' : 'text-rose-600'}`}>{mgmtProfitPercent.toFixed(1)}%</strong>
+                        {mgmtCompletedSitesCount > 0 ? (
+                          <>Profit Margin: <strong className={`font-mono font-bold ${mgmtNetProfit >= 0 ? 'text-emerald-700' : 'text-rose-600'}`}>{mgmtProfitPercent.toFixed(1)}%</strong> ({mgmtCompletedSitesCount} Completed)</>
+                        ) : (
+                          <span className="text-amber-700">Available after site completion</span>
+                        )}
                       </p>
                     </div>
                     <div className={`h-1 rounded-full w-full opacity-60 ${mgmtNetProfit >= 0 ? 'bg-emerald-500' : 'bg-rose-500'
