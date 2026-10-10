@@ -5475,7 +5475,23 @@ const ProjectManagement = ({ onShowToast }) => {
                           required
                           placeholder="Enter Project Value (₹)"
                           value={newSiteForm.projectValue}
-                          onChange={(e) => setNewSiteForm({ ...newSiteForm, projectValue: e.target.value })}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            const pv = parseFloat(val);
+                            const loan = parseFloat(newSiteForm.loanAmount);
+                            let margin = newSiteForm.customerMargin;
+                            if (!isNaN(pv)) {
+                              const lVal = !isNaN(loan) ? loan : 0;
+                              margin = String(Math.max(0, pv - lVal));
+                            } else if (val === '') {
+                              margin = '';
+                            }
+                            setNewSiteForm({
+                              ...newSiteForm,
+                              projectValue: val,
+                              customerMargin: margin,
+                            });
+                          }}
                           className="w-full px-3 py-2 rounded-xl bg-white border border-slate-300 text-slate-900 font-mono font-bold focus:outline-none focus:border-blue-500"
                         />
                       </div>
@@ -5486,7 +5502,21 @@ const ProjectManagement = ({ onShowToast }) => {
                           type="number"
                           placeholder="Enter Loan Amount (₹)"
                           value={newSiteForm.loanAmount}
-                          onChange={(e) => setNewSiteForm({ ...newSiteForm, loanAmount: e.target.value })}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            const loan = parseFloat(val);
+                            const pv = parseFloat(newSiteForm.projectValue);
+                            let margin = newSiteForm.customerMargin;
+                            if (!isNaN(pv)) {
+                              const lVal = !isNaN(loan) ? loan : 0;
+                              margin = String(Math.max(0, pv - lVal));
+                            }
+                            setNewSiteForm({
+                              ...newSiteForm,
+                              loanAmount: val,
+                              customerMargin: margin,
+                            });
+                          }}
                           className="w-full px-3 py-2 rounded-xl bg-white border border-slate-300 text-slate-900 font-mono font-bold focus:outline-none focus:border-blue-500"
                         />
                       </div>
@@ -5829,7 +5859,23 @@ const ProjectManagement = ({ onShowToast }) => {
                         <input
                           type="number"
                           value={editingSite.projectValue || ''}
-                          onChange={(e) => setEditingSite({ ...editingSite, projectValue: e.target.value })}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            const pv = parseFloat(val);
+                            const loan = parseFloat(editingSite.loanAmount);
+                            let margin = editingSite.customerMargin;
+                            if (!isNaN(pv)) {
+                              const lVal = !isNaN(loan) ? loan : 0;
+                              margin = String(Math.max(0, pv - lVal));
+                            } else if (val === '') {
+                              margin = '';
+                            }
+                            setEditingSite({
+                              ...editingSite,
+                              projectValue: val,
+                              customerMargin: margin,
+                            });
+                          }}
                           className="w-full px-3 py-2 rounded-xl bg-white border border-slate-300 text-slate-900 font-mono font-bold focus:outline-none focus:border-blue-500"
                         />
                       </div>
@@ -5839,7 +5885,21 @@ const ProjectManagement = ({ onShowToast }) => {
                         <input
                           type="number"
                           value={editingSite.loanAmount || ''}
-                          onChange={(e) => setEditingSite({ ...editingSite, loanAmount: e.target.value })}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            const loan = parseFloat(val);
+                            const pv = parseFloat(editingSite.projectValue);
+                            let margin = editingSite.customerMargin;
+                            if (!isNaN(pv)) {
+                              const lVal = !isNaN(loan) ? loan : 0;
+                              margin = String(Math.max(0, pv - lVal));
+                            }
+                            setEditingSite({
+                              ...editingSite,
+                              loanAmount: val,
+                              customerMargin: margin,
+                            });
+                          }}
                           className="w-full px-3 py-2 rounded-xl bg-white border border-slate-300 text-slate-900 font-mono font-bold focus:outline-none focus:border-blue-500"
                         />
                       </div>
