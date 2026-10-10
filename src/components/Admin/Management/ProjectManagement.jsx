@@ -419,7 +419,7 @@ const ProjectManagement = ({ onShowToast }) => {
           </div>
           <div class="doc-tag mono">
             <div><strong>DATE:</strong> ${new Date().toLocaleDateString('en-IN')}</div>
-            <div style="color: #0284c7; font-weight: 900;">SITE ID: #${st.id}</div>
+            <div style="color: #0284c7; font-weight: 900;">CONSUMER NO: #${st.id}</div>
             <div style="font-size: 8px; color: #64748b;">OFFICIAL DOSSIER</div>
           </div>
         </div>
@@ -702,7 +702,7 @@ const ProjectManagement = ({ onShowToast }) => {
 
         <div class="grid-3">
           <div>
-            <span class="field-label">Site ID</span>
+            <span class="field-label">Consumer No.</span>
             <span class="field-val mono" style="color: #0284c7;">${exp.siteId || '-'}</span>
           </div>
           <div>
@@ -846,7 +846,7 @@ const ProjectManagement = ({ onShowToast }) => {
 
         <div class="grid-3">
           <div>
-            <span class="field-label">Site ID</span>
+            <span class="field-label">Consumer No.</span>
             <span class="field-val mono" style="color: #0284c7;">${pay.siteId || '-'}</span>
           </div>
           <div>
@@ -1109,13 +1109,21 @@ const ProjectManagement = ({ onShowToast }) => {
     const profitMargin = calcIncome > 0 ? ((profit / calcIncome) * 100) : 0;
     const pending = calcIncome - rec;
 
-    const generatedId = newSiteForm.id && newSiteForm.id.trim()
-      ? newSiteForm.id.trim()
-      : `P24-${String(sites.length + 1).padStart(3, '0')}`;
+    const consumerNo = newSiteForm.id && newSiteForm.id.trim();
+    if (!consumerNo) {
+      toast('Consumer No. is mandatory! Please enter Consumer Number.');
+      return;
+    }
+
+    const duplicate = sites.find((s) => normSiteId(s.id) === normSiteId(consumerNo));
+    if (duplicate) {
+      toast(`Consumer No. "${consumerNo}" already exists! Please enter a unique Consumer Number.`);
+      return;
+    }
 
     const siteObj = {
       ...newSiteForm,
-      id: generatedId,
+      id: consumerNo,
       customerName: customer,
       clientName: customer,
       name: `${customer} ${newSiteForm.capacity ? newSiteForm.capacity + ' ' : ''}Solar`.trim(),
@@ -1150,7 +1158,7 @@ const ProjectManagement = ({ onShowToast }) => {
       badgeText: 'New Project Site',
       badgeColor: 'blue',
       details: [
-        { label: 'Site ID', value: generatedId, highlight: true },
+        { label: 'Consumer No.', value: consumerNo, highlight: true },
         { label: 'Customer Name', value: customer },
         { label: 'Solar Capacity', value: `${newSiteForm.capacity || '-'} kW` },
         { label: 'District / Location', value: newSiteForm.district || newSiteForm.siteAddress || '-' },
@@ -1165,7 +1173,7 @@ const ProjectManagement = ({ onShowToast }) => {
         setShowAddSiteModal(false);
         setNewSiteForm(getEmptySiteForm());
         setPendingConfirm(null);
-        toast(`Solar Project Site ${generatedId} created successfully!`);
+        toast(`Solar Project for Consumer No. ${consumerNo} created successfully!`);
       }
     });
   };
@@ -1218,13 +1226,13 @@ const ProjectManagement = ({ onShowToast }) => {
     };
 
     setPendingConfirm({
-      title: `Confirm Update for Site #${editingSite.id}`,
+      title: `Confirm Update for Consumer No. #${editingSite.id}`,
       subtitle: 'Are you sure you want to update this solar project site details?',
       actionLabel: 'Yes, Update Site',
       badgeText: 'Update Site',
       badgeColor: 'blue',
       details: [
-        { label: 'Site ID', value: editingSite.id, highlight: true },
+        { label: 'Consumer No.', value: editingSite.id, highlight: true },
         { label: 'Customer Name', value: customer },
         { label: 'Solar Capacity', value: `${editingSite.capacity || '-'} kW` },
         { label: 'Total Income', value: formatINR(calcIncome) },
@@ -1237,21 +1245,21 @@ const ProjectManagement = ({ onShowToast }) => {
         setShowEditSiteModal(false);
         setEditingSite(null);
         setPendingConfirm(null);
-        toast(`Site ${editingSite.id} updated!`);
+        toast(`Consumer No. ${editingSite.id} updated!`);
       }
     });
   };
 
   const handleDeleteSite = (id) => {
     setPendingConfirm({
-      title: `Confirm Deletion of Site #${id}`,
+      title: `Confirm Deletion for Consumer No. #${id}`,
       subtitle: 'This will permanently remove the project site and all associated financial records.',
       actionLabel: 'Yes, Delete Site Permanently',
       badgeText: 'Permanent Deletion',
       badgeColor: 'rose',
       isDanger: true,
       details: [
-        { label: 'Site ID', value: id, highlight: true },
+        { label: 'Consumer No.', value: id, highlight: true },
         { label: 'Warning', value: 'All expenses, payments and BOQ items for this site will be lost.' }
       ],
       onConfirm: () => {
@@ -1269,7 +1277,7 @@ const ProjectManagement = ({ onShowToast }) => {
       return;
     }
     const headers = [
-      'Site ID',
+      'Consumer No.',
       'Customer Name',
       'Site Address',
       'District',
@@ -1369,7 +1377,7 @@ const ProjectManagement = ({ onShowToast }) => {
   const handleAddExpense = (e) => {
     e.preventDefault();
     if (!newExpenseForm.siteId) {
-      toast('Please select or specify a Site ID');
+      toast('Please select or specify a Consumer No.');
       return;
     }
     const targetSite = sites.find((s) => normSiteId(s.id) === normSiteId(newExpenseForm.siteId));
@@ -1467,7 +1475,7 @@ const ProjectManagement = ({ onShowToast }) => {
       badgeColor: 'rose',
       details: [
         { label: 'Voucher ID', value: editingExpense.id },
-        { label: 'Site ID', value: editingExpense.siteId },
+        { label: 'Consumer No.', value: editingExpense.siteId },
         { label: 'Category', value: expenseObj.category },
         { label: 'Updated Amount', value: formatINR(finalAmount), highlight: true },
         { label: 'Paid To', value: expenseObj.vendor || '-' },
@@ -1513,7 +1521,7 @@ const ProjectManagement = ({ onShowToast }) => {
     const headers = [
       'Row',
       'Expense ID',
-      'Site ID',
+      'Consumer No.',
       'Site Name',
       'Date',
       'Expense Category',
@@ -1570,7 +1578,7 @@ const ProjectManagement = ({ onShowToast }) => {
   const handleAddPayment = (e) => {
     e.preventDefault();
     if (!newPaymentForm.siteId) {
-      toast('Please select or specify a Site ID');
+      toast('Please select or specify a Consumer No.');
       return;
     }
     const targetSite = sites.find((s) => normSiteId(s.id) === normSiteId(newPaymentForm.siteId));
@@ -1707,7 +1715,7 @@ const ProjectManagement = ({ onShowToast }) => {
     const headers = [
       'Row',
       'Payment ID',
-      'Site ID',
+      'Consumer No.',
       'Customer / Payer',
       'Date',
       'Payment Type',
@@ -1750,7 +1758,7 @@ const ProjectManagement = ({ onShowToast }) => {
   const handleAddBudgetItem = (e) => {
     e.preventDefault();
     if (!newBudgetItemForm.siteId || !newBudgetItemForm.material) {
-      toast('Please enter Site ID and Material name');
+      toast('Please enter Consumer No. and Material name');
       return;
     }
     const generatedId = newBudgetItemForm.id && newBudgetItemForm.id.trim()
@@ -1790,7 +1798,7 @@ const ProjectManagement = ({ onShowToast }) => {
       badgeColor: 'amber',
       details: [
         { label: 'BOQ Item ID', value: generatedId },
-        { label: 'Site ID', value: budgetObj.siteId },
+        { label: 'Consumer No.', value: budgetObj.siteId },
         { label: 'Material', value: budgetObj.material, highlight: true },
         { label: 'Category', value: budgetObj.category },
         { label: 'Quantity', value: `${budgetObj.qty} ${budgetObj.unit}` },
@@ -1882,7 +1890,7 @@ const ProjectManagement = ({ onShowToast }) => {
     const headers = [
       'Row',
       'Budget / BOQ ID',
-      'Site ID',
+      'Consumer No.',
       'Material Name',
       'Category',
       'Brand / Make',
@@ -2032,10 +2040,10 @@ const ProjectManagement = ({ onShowToast }) => {
             <div className="p-3 bg-white rounded-2xl border border-blue-100 space-y-1">
               <div className="flex items-center gap-2 text-blue-800 font-bold">
                 <span className="w-5 h-5 rounded-full bg-blue-100 flex items-center justify-center text-[11px] font-black shrink-0">1</span>
-                <span>Unique Site ID (जैसे P24-001)</span>
+                <span>Unique Consumer No.</span>
               </div>
               <p className="text-slate-600 text-[11px] leading-relaxed">
-                SITE MASTER में प्रत्येक सोलर प्रोजेक्ट साइट को एक यूनिक आईडी जैसे <strong>P24-001</strong> दी जाती है जो सभी फॉर्म्स में ऑटो-लिंक्ड है।
+                SITE MASTER में प्रत्येक सोलर प्रोजेक्ट साइट को एक कंज्यूमर नंबर (Consumer No.) दिया जाता है जो सभी फॉर्म्स में लिंक्ड है।
               </p>
             </div>
 
@@ -2065,10 +2073,10 @@ const ProjectManagement = ({ onShowToast }) => {
             <div className="p-3 bg-white rounded-2xl border border-blue-100 space-y-1">
               <div className="flex items-center gap-2 text-blue-800 font-bold">
                 <span className="w-5 h-5 rounded-full bg-blue-100 flex items-center justify-center text-[11px] font-black shrink-0">4</span>
-                <span>Auto-Sum Expenses by Site ID</span>
+                <span>Auto-Sum Expenses by Consumer No.</span>
               </div>
               <p className="text-slate-600 text-[11px] leading-relaxed">
-                SITE MASTER में Material, Labour, Transport और Misc लागत Site ID के आधार पर <strong>अपने-आप (Real-time)</strong> जुड़ती है।
+                SITE MASTER में Material, Labour, Transport और Misc लागत Consumer No. के आधार पर <strong>अपने-आप (Real-time)</strong> जुड़ती है।
               </p>
             </div>
 
@@ -2177,7 +2185,7 @@ const ProjectManagement = ({ onShowToast }) => {
                 <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
                 <input
                   type="text"
-                  placeholder="Filter customer, site ID, mobile..."
+                  placeholder="Filter customer, Consumer No., mobile..."
                   value={hubSearchQuery}
                   onChange={(e) => setHubSearchQuery(e.target.value)}
                   className="w-full pl-9 pr-8 py-2.5 bg-slate-900/90 border border-slate-700 rounded-xl text-xs text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -2192,7 +2200,7 @@ const ProjectManagement = ({ onShowToast }) => {
                 )}
               </div>
 
-              {/* Master Dropdown with Customer Name + Site ID + Capacity */}
+              {/* Master Dropdown with Customer Name + Consumer No. + Capacity */}
               <div className="md:col-span-8 flex items-center gap-2">
                 <div className="relative flex-1">
                   <Building className="w-4 h-4 text-blue-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
@@ -2202,11 +2210,11 @@ const ProjectManagement = ({ onShowToast }) => {
                     className="w-full pl-9 pr-9 py-2.5 bg-slate-900/90 border-2 border-blue-500/60 rounded-xl text-xs sm:text-sm font-bold text-white focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 cursor-pointer appearance-none shadow-inner"
                   >
                     <option value="" className="bg-slate-900 text-slate-400 py-2">
-                      -- Select Customer / Site ID (ग्राहक या साइट चुनें) --
+                      -- Select Customer / Consumer No. (ग्राहक या Consumer No. चुनें) --
                     </option>
                     {filteredHubDropdownSites.map((s) => (
                       <option key={s.id} value={s.id} className="bg-slate-900 text-white py-2">
-                        👤 {s.customerName || s.clientName || 'Customer'} — 🆔 {s.id} ({s.capacity ? `${s.capacity} kW` : 'kW'} • {s.district || s.siteAddress || 'Site'} • {s.siteStatus || s.status || 'Active'})
+                        👤 {s.customerName || s.clientName || 'Customer'} — No: {s.id} ({s.capacity ? `${s.capacity} kW` : 'kW'} • {s.district || s.siteAddress || 'Site'} • {s.siteStatus || s.status || 'Active'})
                       </option>
                     ))}
                   </select>
@@ -2253,9 +2261,9 @@ const ProjectManagement = ({ onShowToast }) => {
                 <Building className="w-8 h-8" />
               </div>
               <div className="max-w-md mx-auto space-y-1">
-                <h3 className="text-lg font-black text-slate-900">Please Select a Customer or Site ID</h3>
+                <h3 className="text-lg font-black text-slate-900">Please Select a Customer or Consumer No.</h3>
                 <p className="text-xs text-slate-500">
-                  Entry karne ya records dekhne ke liye pehle upar dropdown se Customer Name ya Site ID select karein.
+                  Entry karne ya records dekhne ke liye pehle upar dropdown se Customer Name ya Consumer No. select karein.
                 </p>
               </div>
               <button
@@ -3027,7 +3035,7 @@ const ProjectManagement = ({ onShowToast }) => {
                             Site Profit & Loss Summary Statement
                           </h3>
                           <p className="text-xs text-slate-500">
-                            Customer: {currentHubSite.customerName} • Site ID: {currentHubSite.id} • Capacity: {currentHubSite.capacity || 'N/A'} kW
+                            Customer: {currentHubSite.customerName} • Consumer No: {currentHubSite.id} • Capacity: {currentHubSite.capacity || 'N/A'} kW
                           </p>
                         </div>
                         <button
@@ -3509,7 +3517,7 @@ const ProjectManagement = ({ onShowToast }) => {
               <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
               <input
                 type="text"
-                placeholder="Search Site ID (P24-001...), Customer, Address, District..."
+                placeholder="Search Consumer No., Customer, Address, District..."
                 value={siteSearch}
                 onChange={(e) => setSiteSearch(e.target.value)}
                 className="w-full pl-9 pr-4 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:bg-white focus:border-blue-500 font-medium"
@@ -3565,7 +3573,7 @@ const ProjectManagement = ({ onShowToast }) => {
                   <tr className="bg-blue-800 text-white text-[11px] font-black uppercase tracking-wider border-b border-blue-900">
                     <th className="p-3 border-r border-blue-700 whitespace-nowrap min-w-[130px]">
                       <div className="flex items-center justify-between gap-1">
-                        <span>Site ID</span>
+                        <span>Consumer No.</span>
                         <ChevronDown className="w-3 h-3 text-blue-200" />
                       </div>
                     </th>
@@ -4153,7 +4161,7 @@ const ProjectManagement = ({ onShowToast }) => {
               <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
               <input
                 type="text"
-                placeholder="Search Expense ID, Site ID, Vendor, Description..."
+                placeholder="Search Expense ID, Consumer No., Vendor, Description..."
                 value={expenseSearch}
                 onChange={(e) => setExpenseSearch(e.target.value)}
                 className="w-full pl-9 pr-4 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:bg-white focus:border-blue-500 font-medium"
@@ -4162,7 +4170,7 @@ const ProjectManagement = ({ onShowToast }) => {
 
             <div className="flex items-center gap-2 w-full sm:w-auto flex-wrap">
               <div className="flex items-center gap-1.5">
-                <span className="text-xs font-bold text-slate-600">Site ID:</span>
+                <span className="text-xs font-bold text-slate-600">Consumer No.:</span>
                 <select
                   value={expenseSiteFilter}
                   onChange={(e) => setExpenseSiteFilter(e.target.value)}
@@ -4171,7 +4179,7 @@ const ProjectManagement = ({ onShowToast }) => {
                   <option value="ALL">All Project Sites</option>
                   {sites.map((s) => (
                     <option key={s.id} value={s.id}>
-                      #{s.id} - {s.customerName || s.name}
+                      No: {s.id} - {s.customerName || s.name}
                     </option>
                   ))}
                 </select>
@@ -4231,7 +4239,7 @@ const ProjectManagement = ({ onShowToast }) => {
                     </th>
                     <th className="p-3 border-r border-blue-700 whitespace-nowrap min-w-[140px]">
                       <div className="flex items-center justify-between gap-1">
-                        <span>Site ID</span>
+                        <span>Consumer No.</span>
                         <ChevronDown className="w-3 h-3 text-blue-200" />
                       </div>
                     </th>
@@ -4583,7 +4591,7 @@ const ProjectManagement = ({ onShowToast }) => {
               <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
               <input
                 type="text"
-                placeholder="Search Payment ID, Site ID, Type, Mode, Remarks..."
+                placeholder="Search Payment ID, Consumer No., Type, Mode, Remarks..."
                 value={paymentSearch}
                 onChange={(e) => setPaymentSearch(e.target.value)}
                 className="w-full pl-9 pr-4 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:bg-white focus:border-blue-500 font-medium"
@@ -4592,7 +4600,7 @@ const ProjectManagement = ({ onShowToast }) => {
 
             <div className="flex items-center gap-2 w-full sm:w-auto flex-wrap">
               <div className="flex items-center gap-1.5">
-                <span className="text-xs font-bold text-slate-600">Site ID:</span>
+                <span className="text-xs font-bold text-slate-600">Consumer No.:</span>
                 <select
                   value={paymentSiteFilter}
                   onChange={(e) => setPaymentSiteFilter(e.target.value)}
@@ -4601,7 +4609,7 @@ const ProjectManagement = ({ onShowToast }) => {
                   <option value="ALL">All Project Sites</option>
                   {sites.map((s) => (
                     <option key={s.id} value={s.id}>
-                      #{s.id} - {s.customerName || s.name}
+                      No: {s.id} - {s.customerName || s.name}
                     </option>
                   ))}
                 </select>
@@ -4665,7 +4673,7 @@ const ProjectManagement = ({ onShowToast }) => {
                     </th>
                     <th className="p-3 border-r border-blue-700 whitespace-nowrap min-w-[140px]">
                       <div className="flex items-center justify-between gap-1">
-                        <span>Site ID</span>
+                        <span>Consumer No.</span>
                         <ChevronDown className="w-3 h-3 text-blue-200" />
                       </div>
                     </th>
@@ -5024,7 +5032,7 @@ const ProjectManagement = ({ onShowToast }) => {
               <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
               <input
                 type="text"
-                placeholder="Search Site ID, Material, Brand, Unit, Remarks..."
+                placeholder="Search Consumer No., Material, Brand, Unit, Remarks..."
                 value={budgetSearch}
                 onChange={(e) => setBudgetSearch(e.target.value)}
                 className="w-full pl-9 pr-4 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:bg-white focus:border-blue-500 font-medium"
@@ -5033,7 +5041,7 @@ const ProjectManagement = ({ onShowToast }) => {
 
             <div className="flex items-center gap-2 w-full sm:w-auto flex-wrap">
               <div className="flex items-center gap-1.5">
-                <span className="text-xs font-bold text-slate-600">Site ID:</span>
+                <span className="text-xs font-bold text-slate-600">Consumer No.:</span>
                 <select
                   value={budgetSiteFilter}
                   onChange={(e) => setBudgetSiteFilter(e.target.value)}
@@ -5042,7 +5050,7 @@ const ProjectManagement = ({ onShowToast }) => {
                   <option value="ALL">All Project Sites</option>
                   {sites.map((s) => (
                     <option key={s.id} value={s.id}>
-                      #{s.id} - {s.customerName || s.name}
+                      No: {s.id} - {s.customerName || s.name}
                     </option>
                   ))}
                 </select>
@@ -5084,7 +5092,7 @@ const ProjectManagement = ({ onShowToast }) => {
                     </th>
                     <th className="p-3 border-r border-blue-700 whitespace-nowrap min-w-[130px]">
                       <div className="flex items-center justify-between gap-1">
-                        <span>Site ID</span>
+                        <span>Consumer No.</span>
                         <ChevronDown className="w-3 h-3 text-blue-200" />
                       </div>
                     </th>
@@ -5398,14 +5406,15 @@ const ProjectManagement = ({ onShowToast }) => {
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                       <div>
                         <label className="text-slate-700 font-bold block mb-1">
-                          Site ID (e.g. P24-001)
+                          Consumer No. *
                         </label>
                         <input
                           type="text"
-                          placeholder={`e.g. P24-${String(sites.length + 1).padStart(3, '0')} (leave blank for auto)`}
+                          required
+                          placeholder="Enter Consumer Number *"
                           value={newSiteForm.id}
                           onChange={(e) => setNewSiteForm({ ...newSiteForm, id: e.target.value })}
-                          className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-900 font-mono focus:outline-none focus:border-blue-500"
+                          className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-900 font-mono font-bold focus:outline-none focus:border-blue-500"
                         />
                       </div>
 
@@ -5666,7 +5675,7 @@ const ProjectManagement = ({ onShowToast }) => {
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                       <div>
-                        <label className="text-slate-700 font-bold block mb-1">Site ID</label>
+                        <label className="text-slate-700 font-bold block mb-1">Consumer No.</label>
                         <input
                           type="text"
                           disabled
@@ -6053,7 +6062,7 @@ const ProjectManagement = ({ onShowToast }) => {
 
                       <div>
                         <div className="flex items-center justify-between mb-1">
-                          <label className="text-slate-700 font-bold block">Select Project Site *</label>
+                          <label className="text-slate-700 font-bold block">Select Consumer No. / Site *</label>
                           {subTab === 'all_in_one' && (
                             <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-md bg-amber-100 text-amber-800 border border-amber-200 flex items-center gap-1">
                               <ShieldCheck className="w-3 h-3 text-amber-600" /> Locked to Selected Site
@@ -6067,7 +6076,7 @@ const ProjectManagement = ({ onShowToast }) => {
                               <span className="truncate">
                                 {(() => {
                                   const matched = sites.find((s) => normSiteId(s.id) === normSiteId(newExpenseForm.siteId));
-                                  return matched ? `👤 ${matched.customerName || matched.name} (🆔 ${matched.id})` : newExpenseForm.siteId;
+                                  return matched ? `👤 ${matched.customerName || matched.name} (No: ${matched.id})` : newExpenseForm.siteId;
                                 })()}
                               </span>
                             </div>
@@ -6084,7 +6093,7 @@ const ProjectManagement = ({ onShowToast }) => {
                           >
                             {sites.map((s) => (
                               <option key={s.id} value={s.id}>
-                                #{s.id} - {s.customerName || s.name} ({s.capacity || '3kw'})
+                                No: {s.id} - {s.customerName || s.name} ({s.capacity || '3kw'})
                               </option>
                             ))}
                           </select>
@@ -6396,7 +6405,7 @@ const ProjectManagement = ({ onShowToast }) => {
                       </div>
 
                       <div>
-                        <label className="text-slate-700 font-bold block mb-1">Site ID *</label>
+                        <label className="text-slate-700 font-bold block mb-1">Consumer No. *</label>
                         <select
                           required
                           value={editingExpense.siteId}
@@ -6405,7 +6414,7 @@ const ProjectManagement = ({ onShowToast }) => {
                         >
                           {sites.map((s) => (
                             <option key={s.id} value={s.id}>
-                              #{s.id} - {s.customerName || s.name} ({s.capacity || '3kw'})
+                              No: {s.id} - {s.customerName || s.name} ({s.capacity || '3kw'})
                             </option>
                           ))}
                         </select>
@@ -6696,7 +6705,7 @@ const ProjectManagement = ({ onShowToast }) => {
 
                       <div>
                         <div className="flex items-center justify-between mb-1">
-                          <label className="text-slate-700 font-bold block">Select Project Site *</label>
+                          <label className="text-slate-700 font-bold block">Select Consumer No. / Site *</label>
                           {subTab === 'all_in_one' && (
                             <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-md bg-amber-100 text-amber-800 border border-amber-200 flex items-center gap-1">
                               <ShieldCheck className="w-3 h-3 text-amber-600" /> Locked to Selected Site
@@ -6710,7 +6719,7 @@ const ProjectManagement = ({ onShowToast }) => {
                               <span className="truncate">
                                 {(() => {
                                   const matched = sites.find((s) => normSiteId(s.id) === normSiteId(newPaymentForm.siteId));
-                                  return matched ? `👤 ${matched.customerName || matched.name} (🆔 ${matched.id})` : newPaymentForm.siteId;
+                                  return matched ? `👤 ${matched.customerName || matched.name} (No: ${matched.id})` : newPaymentForm.siteId;
                                 })()}
                               </span>
                             </div>
@@ -6735,7 +6744,7 @@ const ProjectManagement = ({ onShowToast }) => {
                           >
                             {sites.map((s) => (
                               <option key={s.id} value={s.id}>
-                                #{s.id} - {s.customerName || s.name} ({s.capacity || '3kw'})
+                                No: {s.id} - {s.customerName || s.name} ({s.capacity || '3kw'})
                               </option>
                             ))}
                           </select>
@@ -7069,7 +7078,7 @@ const ProjectManagement = ({ onShowToast }) => {
                   </div>
 
                   <div>
-                    <label className="text-slate-700 font-bold block mb-1">Site ID *</label>
+                    <label className="text-slate-700 font-bold block mb-1">Consumer No. *</label>
                     <select
                       required
                       value={editingPayment.siteId}
@@ -7347,7 +7356,7 @@ const ProjectManagement = ({ onShowToast }) => {
 
                       <div>
                         <div className="flex items-center justify-between mb-1">
-                          <label className="text-slate-700 font-bold block">Select Project Site *</label>
+                          <label className="text-slate-700 font-bold block">Select Consumer No. / Site *</label>
                           {subTab === 'all_in_one' && (
                             <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-md bg-amber-100 text-amber-800 border border-amber-200 flex items-center gap-1">
                               <ShieldCheck className="w-3 h-3 text-amber-600" /> Locked to Selected Site
@@ -7361,7 +7370,7 @@ const ProjectManagement = ({ onShowToast }) => {
                               <span className="truncate">
                                 {(() => {
                                   const matched = sites.find((s) => normSiteId(s.id) === normSiteId(newBudgetItemForm.siteId));
-                                  return matched ? `👤 ${matched.customerName || matched.name} (🆔 ${matched.id})` : newBudgetItemForm.siteId;
+                                  return matched ? `👤 ${matched.customerName || matched.name} (No: ${matched.id})` : newBudgetItemForm.siteId;
                                 })()}
                               </span>
                             </div>
@@ -7378,7 +7387,7 @@ const ProjectManagement = ({ onShowToast }) => {
                           >
                             {sites.map((s) => (
                               <option key={s.id} value={s.id}>
-                                #{s.id} - {s.customerName || s.name} ({s.capacity || '3kw'})
+                                No: {s.id} - {s.customerName || s.name} ({s.capacity || '3kw'})
                               </option>
                             ))}
                           </select>
@@ -7696,7 +7705,7 @@ const ProjectManagement = ({ onShowToast }) => {
                       </div>
 
                       <div>
-                        <label className="text-slate-700 font-bold block mb-1">Site ID *</label>
+                        <label className="text-slate-700 font-bold block mb-1">Consumer No. *</label>
                         <select
                           required
                           value={editingBudgetItem.siteId}
@@ -7705,7 +7714,7 @@ const ProjectManagement = ({ onShowToast }) => {
                         >
                           {sites.map((s) => (
                             <option key={s.id} value={s.id}>
-                              #{s.id} - {s.customerName || s.name} ({s.capacity || '3kw'})
+                              No: {s.id} - {s.customerName || s.name} ({s.capacity || '3kw'})
                             </option>
                           ))}
                         </select>
@@ -7993,7 +8002,7 @@ const ProjectManagement = ({ onShowToast }) => {
                     </div>
                     <div className="text-right font-mono text-xs border-l-2 border-slate-200 pl-3">
                       <p className="font-bold text-slate-900">DATE: {new Date().toLocaleDateString('en-IN')}</p>
-                      <p className="text-[11px] text-[#0284c7] font-black">SITE ID: #{st.id}</p>
+                      <p className="text-[11px] text-[#0284c7] font-black">CONSUMER NO: #{st.id}</p>
                       <p className="text-[9px] text-slate-500 uppercase">OFFICIAL DOSSIER</p>
                     </div>
                   </div>
@@ -8334,7 +8343,7 @@ const ProjectManagement = ({ onShowToast }) => {
                   {/* Voucher Fields */}
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 bg-slate-50 p-4 rounded-xl border border-slate-200 text-xs">
                     <div>
-                      <span className="text-[10px] font-bold text-slate-400 uppercase block">Site ID</span>
+                      <span className="text-[10px] font-bold text-slate-400 uppercase block">Consumer No.</span>
                       <span className="font-bold text-blue-900 font-mono text-sm">{exp.siteId || '-'}</span>
                     </div>
                     <div>
@@ -8484,7 +8493,7 @@ const ProjectManagement = ({ onShowToast }) => {
                   {/* Receipt Fields */}
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 bg-slate-50 p-4 rounded-xl border border-slate-200 text-xs">
                     <div>
-                      <span className="text-[10px] font-bold text-slate-400 uppercase block">Site ID</span>
+                      <span className="text-[10px] font-bold text-slate-400 uppercase block">Consumer No.</span>
                       <span className="font-bold text-blue-900 font-mono text-sm">{pay.siteId || '-'}</span>
                     </div>
                     <div>

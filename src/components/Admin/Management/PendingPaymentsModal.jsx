@@ -193,7 +193,7 @@ export default function PendingPaymentsModal({
               <tr>
                 <th style="width: 25px; text-align: center;">#</th>
                 <th style="text-align: left;">Customer Name</th>
-                <th style="text-align: left;">Site ID</th>
+                <th style="text-align: left;">Consumer No.</th>
                 <th style="text-align: left;">City</th>
                 <th style="text-align: center;">Status</th>
                 <th style="text-align: right;">Total Income</th>
@@ -362,7 +362,7 @@ export default function PendingPaymentsModal({
             <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
             <input
               type="text"
-              placeholder="Search by customer name, site ID, phone, city..."
+              placeholder="Search by customer name, Consumer No., phone, city..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-9 pr-8 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 text-xs font-semibold focus:outline-none focus:border-blue-500 focus:bg-white transition-all"
