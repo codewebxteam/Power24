@@ -91,6 +91,7 @@ import {
 } from '../../firebase/firestoreService';
 import { uploadImageToCDN } from '../../utils/imagekit';
 import ProjectManagement from '../../components/Admin/Management/ProjectManagement.jsx';
+import PendingPaymentsModal from '../../components/Admin/Management/PendingPaymentsModal.jsx';
 import { auth } from '../../firebase/firebase';
 import { signOut } from 'firebase/auth';
 const solarHeroImg = 'https://ik.imagekit.io/qvztwdsij/solar%20hero%20-%20Copy.png?updatedAt=1790432262362';
@@ -169,6 +170,7 @@ const AdminDashboard = () => {
   const [mgmtSites, setMgmtSites] = useState([]);
   const [mgmtExpenses, setMgmtExpenses] = useState([]);
   const [mgmtPayments, setMgmtPayments] = useState([]);
+  const [showPendingModal, setShowPendingModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
 
@@ -1677,9 +1679,18 @@ const AdminDashboard = () => {
                   </div>
 
                   {/* Card 4: Payments Received & Pending */}
-                  <div className="bg-gradient-to-br from-amber-50/60 via-white to-amber-50/30 p-4 rounded-2xl border border-amber-100/80 shadow-xs flex flex-col justify-between space-y-2">
+                  <div
+                    onClick={() => setShowPendingModal(true)}
+                    className="bg-gradient-to-br from-amber-50/60 via-white to-amber-50/30 p-4 rounded-2xl border border-amber-200/80 shadow-xs flex flex-col justify-between space-y-2 cursor-pointer hover:shadow-md hover:border-amber-400/80 transition-all active:scale-[0.99] group relative"
+                    title="Click to view which customers have pending payments"
+                  >
                     <div className="flex items-center justify-between text-amber-900">
-                      <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500">PAYMENTS & PENDING</span>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500">PAYMENTS & PENDING</span>
+                        <span className="text-[9px] bg-amber-100 text-amber-800 font-bold px-1.5 py-0.5 rounded group-hover:bg-amber-500 group-hover:text-white transition-colors">
+                          View Due ↗
+                        </span>
+                      </div>
                       <span className="w-6 h-6 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center text-xs font-bold font-mono">
                         {mgmtCollectionPercent}%
                       </span>
@@ -1691,7 +1702,7 @@ const AdminDashboard = () => {
                       </div>
                       <div className="flex items-baseline justify-between mt-0.5">
                         <span className="text-xs text-slate-500 font-bold">Pending:</span>
-                        <span className="text-base font-black text-amber-700 font-mono">{formatINR(mgmtTotalPending)}</span>
+                        <span className="text-base font-black text-amber-700 font-mono underline decoration-amber-300 decoration-2 underline-offset-2">{formatINR(mgmtTotalPending)}</span>
                       </div>
                     </div>
                     <div className="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden">
@@ -5313,6 +5324,18 @@ const AdminDashboard = () => {
           </div>
         </div>
       )}
+
+      {/* Pending Payments Details Modal */}
+      <PendingPaymentsModal
+        isOpen={showPendingModal}
+        onClose={() => setShowPendingModal(false)}
+        sites={mgmtSites}
+        payments={mgmtPayments}
+        formatINR={formatINR}
+        onSelectSite={(siteId) => {
+          setActiveTab('management');
+        }}
+      />
 
     </div>
   );

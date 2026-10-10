@@ -66,11 +66,13 @@ import {
   deleteManagementBudgetItem,
   saveManagementMaterialBudget
 } from '../../../utils/storage';
+import PendingPaymentsModal from './PendingPaymentsModal.jsx';
 
 const ProjectManagement = ({ onShowToast }) => {
   // Sub-tabs: 'all_in_one' | 'dashboard' | 'site_master' | 'expense_entry' | 'payment_entry' | 'material_budget'
   const [subTab, setSubTab] = useState('all_in_one');
   const [showLogicRulesGuide, setShowLogicRulesGuide] = useState(false);
+  const [showPendingBreakdownModal, setShowPendingBreakdownModal] = useState(false);
 
   // State
   const [sites, setSites] = useState([]);
@@ -2437,7 +2439,16 @@ const ProjectManagement = ({ onShowToast }) => {
                       </div>
                       <div className="flex items-center justify-between text-[11px] text-slate-600 font-medium">
                         <span>{hubSitePayments.length} Payment(s)</span>
-                        <span className="text-amber-700 font-bold">Pending: {formatINR(hubPendingPayment)}</span>
+                        <span
+                          onClick={() => setShowPendingBreakdownModal(true)}
+                          className="text-amber-700 font-bold hover:underline cursor-pointer flex items-center gap-1 group"
+                          title="Click to view all pending payments by customer"
+                        >
+                          <span>Pending: {formatINR(hubPendingPayment)}</span>
+                          <span className="text-[9px] bg-amber-100 text-amber-800 px-1 py-0.2 rounded group-hover:bg-amber-500 group-hover:text-white transition-colors">
+                            LIST ↗
+                          </span>
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -3231,8 +3242,17 @@ const ProjectManagement = ({ onShowToast }) => {
                   </div>
 
                   {/* Row 8: Amount Pending (Rule 5) */}
-                  <div className="grid grid-cols-12 px-6 py-3.5 bg-white hover:bg-blue-50/50 transition-colors">
-                    <span className="col-span-7 font-bold text-slate-700">Amount Pending (Income - Received)</span>
+                  <div
+                    onClick={() => setShowPendingBreakdownModal(true)}
+                    className="grid grid-cols-12 px-6 py-3.5 bg-amber-50/20 hover:bg-amber-100/70 transition-all cursor-pointer border-l-4 border-amber-400 group"
+                    title="Click to see pending balance breakdown for all customers"
+                  >
+                    <div className="col-span-7 flex items-center gap-2">
+                      <span className="font-bold text-slate-800">Amount Pending (Income - Received)</span>
+                      <span className="text-[10px] font-bold bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full border border-amber-200 group-hover:bg-amber-500 group-hover:text-white transition-all shadow-2xs">
+                        Click for Details ↗
+                      </span>
+                    </div>
                     <span className={`col-span-5 font-black text-right font-mono text-base ${
                       totalAmountPending < 0 ? 'text-blue-700' : totalAmountPending === 0 ? 'text-slate-500' : 'text-amber-700'
                     }`}>
@@ -3648,10 +3668,16 @@ const ProjectManagement = ({ onShowToast }) => {
                         <ChevronDown className="w-3 h-3 text-blue-200" />
                       </div>
                     </th>
-                    <th className="p-3 border-r border-blue-700 whitespace-nowrap text-right min-w-[140px] bg-blue-900">
-                      <div className="flex items-center justify-end gap-1">
+                    <th
+                      onClick={() => setShowPendingBreakdownModal(true)}
+                      className="p-3 border-r border-blue-700 whitespace-nowrap text-right min-w-[140px] bg-blue-900 cursor-pointer hover:bg-blue-800 transition-colors group"
+                      title="Click to view customer-wise pending breakdown"
+                    >
+                      <div className="flex items-center justify-end gap-1.5">
                         <span>Amount Pending</span>
-                        <ChevronDown className="w-3 h-3 text-blue-200" />
+                        <span className="text-[9px] bg-amber-400 text-slate-900 font-black px-1.5 py-0.5 rounded shadow-2xs">
+                          LIST ↗
+                        </span>
                       </div>
                     </th>
                     <th className="p-3 border-r border-blue-700 whitespace-nowrap text-center min-w-[120px]">
@@ -3855,9 +3881,13 @@ const ProjectManagement = ({ onShowToast }) => {
                           </td>
 
                           {/* 18. Amount Pending (Rule 5) */}
-                          <td className={`p-3 border-r border-blue-100 text-right font-mono font-bold bg-blue-50/60 ${
-                            sitePending < 0 ? 'text-blue-700' : sitePending === 0 ? 'text-slate-500' : 'text-amber-700'
-                          }`}>
+                          <td
+                            onClick={() => setShowPendingBreakdownModal(true)}
+                            className={`p-3 border-r border-blue-100 text-right font-mono font-bold bg-blue-50/60 cursor-pointer hover:bg-amber-100/60 transition-colors ${
+                              sitePending < 0 ? 'text-blue-700' : sitePending === 0 ? 'text-slate-500' : 'text-amber-700'
+                            }`}
+                            title="Click to view customer pending breakdown"
+                          >
                             {formatINR(sitePending)}
                           </td>
 
@@ -8783,6 +8813,19 @@ const ProjectManagement = ({ onShowToast }) => {
           </div>
         </div>
       )}
+
+      {/* Customer-wise Pending Payments Breakdown Modal */}
+      <PendingPaymentsModal
+        isOpen={showPendingBreakdownModal}
+        onClose={() => setShowPendingBreakdownModal(false)}
+        sites={sites}
+        payments={payments}
+        formatINR={formatINR}
+        onSelectSite={(siteId) => {
+          setSelectedHubSiteId(siteId);
+          setSubTab('all_in_one');
+        }}
+      />
     </div>
   );
 };
