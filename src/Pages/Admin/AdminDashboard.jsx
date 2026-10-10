@@ -1079,6 +1079,8 @@ const AdminDashboard = () => {
     return acc + inc;
   }, 0);
 
+  const mgmtTotalExpenses = mgmtExpenses.reduce((acc, curr) => acc + (Number(curr.amount) || 0), 0);
+
   const mgmtCompletedSites = mgmtSites.filter(
     (s) => normMgmtCategory(s.siteStatus || s.status) === 'completed'
   );
