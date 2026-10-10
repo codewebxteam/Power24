@@ -122,6 +122,24 @@ const ProjectManagement = ({ onShowToast }) => {
   const [printingExpense, setPrintingExpense] = useState(null);
   const [printingPayment, setPrintingPayment] = useState(null);
 
+  // Date helper for HTML5 Date Inputs
+  const getTodayDateStr = () => new Date().toISOString().split('T')[0];
+  const formatForDateInput = (val) => {
+    if (!val) return '';
+    const str = String(val).trim();
+    if (/^\d{4}-\d{2}-\d{2}$/.test(str)) return str;
+    const parts = str.split(/[./-]/);
+    if (parts.length === 3) {
+      if (parts[0].length === 4) {
+        return `${parts[0]}-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`;
+      }
+      if (parts[2].length === 4) {
+        return `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+      }
+    }
+    return str;
+  };
+
   // Forms & Empty Generators
   const getEmptySiteForm = () => ({
     id: '',
@@ -138,7 +156,7 @@ const ProjectManagement = ({ onShowToast }) => {
     miscCost: '',
     amountReceived: '',
     siteStatus: 'Running',
-    startDate: '',
+    startDate: getTodayDateStr(),
     completionDate: '',
     remarks: '',
     phone: ''
@@ -147,7 +165,7 @@ const ProjectManagement = ({ onShowToast }) => {
   const getEmptyExpenseForm = (currentSites = []) => ({
     id: '',
     siteId: currentSites.length > 0 ? currentSites[0].id : '',
-    date: '',
+    date: getTodayDateStr(),
     vendor: '',
     vendorContact: '',
     itemType: '',
@@ -169,7 +187,7 @@ const ProjectManagement = ({ onShowToast }) => {
     id: '',
     siteId: currentSites.length > 0 ? currentSites[0].id : '',
     customerName: '',
-    date: '',
+    date: getTodayDateStr(),
     paymentType: 'Loan - Disbursement 1',
     disbursementStage: 'Disbursement 1',
     amount: '',
@@ -5615,25 +5633,35 @@ const ProjectManagement = ({ onShowToast }) => {
                   {/* 6. Dates & Remarks */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
-                      <label className="text-slate-700 font-bold block mb-1">Start Date</label>
-                      <input
-                        type="text"
-                        placeholder="DD.MM.YYYY"
-                        value={newSiteForm.startDate}
-                        onChange={(e) => setNewSiteForm({ ...newSiteForm, startDate: e.target.value })}
-                        className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-300 text-slate-900 font-mono focus:outline-none focus:bg-white focus:border-blue-500"
-                      />
+                      <label className="text-slate-700 font-bold block mb-1 flex items-center gap-1.5">
+                        <Calendar className="w-3.5 h-3.5 text-blue-600" />
+                        <span>Start Date</span>
+                      </label>
+                      <div className="relative">
+                        <input
+                          type="date"
+                          value={formatForDateInput(newSiteForm.startDate)}
+                          onChange={(e) => setNewSiteForm({ ...newSiteForm, startDate: e.target.value })}
+                          onClick={(e) => e.target.showPicker && e.target.showPicker()}
+                          className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-300 text-slate-900 font-mono focus:outline-none focus:bg-white focus:border-blue-500 cursor-pointer"
+                        />
+                      </div>
                     </div>
 
                     <div>
-                      <label className="text-slate-700 font-bold block mb-1">Completion Date</label>
-                      <input
-                        type="text"
-                        placeholder="DD.MM.YYYY (or leave blank)"
-                        value={newSiteForm.completionDate}
-                        onChange={(e) => setNewSiteForm({ ...newSiteForm, completionDate: e.target.value })}
-                        className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-300 text-slate-900 font-mono focus:outline-none focus:bg-white focus:border-blue-500"
-                      />
+                      <label className="text-slate-700 font-bold block mb-1 flex items-center gap-1.5">
+                        <Calendar className="w-3.5 h-3.5 text-blue-600" />
+                        <span>Completion Date</span>
+                      </label>
+                      <div className="relative">
+                        <input
+                          type="date"
+                          value={formatForDateInput(newSiteForm.completionDate)}
+                          onChange={(e) => setNewSiteForm({ ...newSiteForm, completionDate: e.target.value })}
+                          onClick={(e) => e.target.showPicker && e.target.showPicker()}
+                          className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-300 text-slate-900 font-mono focus:outline-none focus:bg-white focus:border-blue-500 cursor-pointer"
+                        />
+                      </div>
                     </div>
                   </div>
 
@@ -5957,25 +5985,35 @@ const ProjectManagement = ({ onShowToast }) => {
                   {/* 6. Dates & Remarks */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
-                      <label className="text-slate-700 font-bold block mb-1">Start Date</label>
-                      <input
-                        type="text"
-                        placeholder="DD.MM.YYYY"
-                        value={editingSite.startDate || ''}
-                        onChange={(e) => setEditingSite({ ...editingSite, startDate: e.target.value })}
-                        className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-300 text-slate-900 font-mono focus:outline-none focus:bg-white focus:border-blue-500"
-                      />
+                      <label className="text-slate-700 font-bold block mb-1 flex items-center gap-1.5">
+                        <Calendar className="w-3.5 h-3.5 text-blue-600" />
+                        <span>Start Date</span>
+                      </label>
+                      <div className="relative">
+                        <input
+                          type="date"
+                          value={formatForDateInput(editingSite.startDate)}
+                          onChange={(e) => setEditingSite({ ...editingSite, startDate: e.target.value })}
+                          onClick={(e) => e.target.showPicker && e.target.showPicker()}
+                          className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-300 text-slate-900 font-mono focus:outline-none focus:bg-white focus:border-blue-500 cursor-pointer"
+                        />
+                      </div>
                     </div>
 
                     <div>
-                      <label className="text-slate-700 font-bold block mb-1">Completion Date</label>
-                      <input
-                        type="text"
-                        placeholder="DD.MM.YYYY (or leave blank)"
-                        value={editingSite.completionDate || ''}
-                        onChange={(e) => setEditingSite({ ...editingSite, completionDate: e.target.value })}
-                        className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-300 text-slate-900 font-mono focus:outline-none focus:bg-white focus:border-blue-500"
-                      />
+                      <label className="text-slate-700 font-bold block mb-1 flex items-center gap-1.5">
+                        <Calendar className="w-3.5 h-3.5 text-blue-600" />
+                        <span>Completion Date</span>
+                      </label>
+                      <div className="relative">
+                        <input
+                          type="date"
+                          value={formatForDateInput(editingSite.completionDate)}
+                          onChange={(e) => setEditingSite({ ...editingSite, completionDate: e.target.value })}
+                          onClick={(e) => e.target.showPicker && e.target.showPicker()}
+                          className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-300 text-slate-900 font-mono focus:outline-none focus:bg-white focus:border-blue-500 cursor-pointer"
+                        />
+                      </div>
                     </div>
                   </div>
 
@@ -6102,15 +6140,20 @@ const ProjectManagement = ({ onShowToast }) => {
                       </div>
 
                       <div>
-                        <label className="text-slate-700 font-bold block mb-1">Expense Date *</label>
-                        <input
-                          type="text"
-                          required
-                          placeholder="DD.MM.YYYY"
-                          value={newExpenseForm.date}
-                          onChange={(e) => setNewExpenseForm({ ...newExpenseForm, date: e.target.value })}
-                          className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-900 font-mono focus:outline-none focus:border-rose-500"
-                        />
+                        <label className="text-slate-700 font-bold block mb-1 flex items-center gap-1.5">
+                          <Calendar className="w-3.5 h-3.5 text-rose-600" />
+                          <span>Expense Date *</span>
+                        </label>
+                        <div className="relative">
+                          <input
+                            type="date"
+                            required
+                            value={formatForDateInput(newExpenseForm.date)}
+                            onChange={(e) => setNewExpenseForm({ ...newExpenseForm, date: e.target.value })}
+                            onClick={(e) => e.target.showPicker && e.target.showPicker()}
+                            className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-900 font-mono focus:outline-none focus:border-rose-500 cursor-pointer"
+                          />
+                        </div>
                       </div>
                     </div>
 
@@ -6417,15 +6460,20 @@ const ProjectManagement = ({ onShowToast }) => {
                       </div>
 
                       <div>
-                        <label className="text-slate-700 font-bold block mb-1">Date *</label>
-                        <input
-                          type="text"
-                          required
-                          placeholder="DD.MM.YYYY"
-                          value={editingExpense.date || ''}
-                          onChange={(e) => setEditingExpense({ ...editingExpense, date: e.target.value })}
-                          className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-900 font-mono focus:outline-none focus:border-rose-500"
-                        />
+                        <label className="text-slate-700 font-bold block mb-1 flex items-center gap-1.5">
+                          <Calendar className="w-3.5 h-3.5 text-rose-600" />
+                          <span>Date *</span>
+                        </label>
+                        <div className="relative">
+                          <input
+                            type="date"
+                            required
+                            value={formatForDateInput(editingExpense.date)}
+                            onChange={(e) => setEditingExpense({ ...editingExpense, date: e.target.value })}
+                            onClick={(e) => e.target.showPicker && e.target.showPicker()}
+                            className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-900 font-mono focus:outline-none focus:border-rose-500 cursor-pointer"
+                          />
+                        </div>
                       </div>
                     </div>
 
@@ -6756,15 +6804,20 @@ const ProjectManagement = ({ onShowToast }) => {
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div>
-                        <label className="text-slate-700 font-bold block mb-1">Receipt Date *</label>
-                        <input
-                          type="text"
-                          required
-                          placeholder="DD.MM.YYYY"
-                          value={newPaymentForm.date}
-                          onChange={(e) => setNewPaymentForm({ ...newPaymentForm, date: e.target.value })}
-                          className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-900 font-mono focus:outline-none focus:border-emerald-500"
-                        />
+                        <label className="text-slate-700 font-bold block mb-1 flex items-center gap-1.5">
+                          <Calendar className="w-3.5 h-3.5 text-emerald-600" />
+                          <span>Receipt Date *</span>
+                        </label>
+                        <div className="relative">
+                          <input
+                            type="date"
+                            required
+                            value={formatForDateInput(newPaymentForm.date)}
+                            onChange={(e) => setNewPaymentForm({ ...newPaymentForm, date: e.target.value })}
+                            onClick={(e) => e.target.showPicker && e.target.showPicker()}
+                            className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-900 font-mono focus:outline-none focus:border-emerald-500 cursor-pointer"
+                          />
+                        </div>
                       </div>
 
                       <div>
@@ -7092,15 +7145,20 @@ const ProjectManagement = ({ onShowToast }) => {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="text-slate-700 font-bold block mb-1">Date *</label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="DD.MM.YYYY"
-                      value={editingPayment.date || ''}
-                      onChange={(e) => setEditingPayment({ ...editingPayment, date: e.target.value })}
-                      className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-900 font-mono focus:outline-none focus:border-emerald-500"
-                    />
+                    <label className="text-slate-700 font-bold block mb-1 flex items-center gap-1.5">
+                      <Calendar className="w-3.5 h-3.5 text-emerald-600" />
+                      <span>Date *</span>
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="date"
+                        required
+                        value={formatForDateInput(editingPayment.date)}
+                        onChange={(e) => setEditingPayment({ ...editingPayment, date: e.target.value })}
+                        onClick={(e) => e.target.showPicker && e.target.showPicker()}
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-900 font-mono focus:outline-none focus:border-emerald-500 cursor-pointer"
+                      />
+                    </div>
                   </div>
 
                   <div>
