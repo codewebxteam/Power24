@@ -67,6 +67,7 @@ import {
   saveManagementMaterialBudget
 } from '../../../utils/storage';
 import PendingPaymentsModal from './PendingPaymentsModal.jsx';
+import { UP_DISTRICTS } from '../../../utils/districts';
 
 const ProjectManagement = ({ onShowToast }) => {
   // Sub-tabs: 'all_in_one' | 'dashboard' | 'site_master' | 'expense_entry' | 'payment_entry' | 'material_budget'
@@ -1112,6 +1113,11 @@ const ProjectManagement = ({ onShowToast }) => {
     const consumerNo = newSiteForm.id && newSiteForm.id.trim();
     if (!consumerNo) {
       toast('Consumer No. is mandatory! Please enter Consumer Number.');
+      return;
+    }
+
+    if (!newSiteForm.district || !newSiteForm.district.trim()) {
+      toast('Please select a District from the dropdown!');
       return;
     }
 
@@ -3532,15 +3538,12 @@ const ProjectManagement = ({ onShowToast }) => {
                   onChange={(e) => setSiteDistrictFilter(e.target.value)}
                   className="py-1.5 px-3 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-700 focus:outline-none focus:border-blue-500 cursor-pointer"
                 >
-                  <option value="ALL">All Districts</option>
-                  <option value="Gorakhpur">Gorakhpur</option>
-                  <option value="Deoria">Deoria</option>
-                  <option value="Maharajganj">Maharajganj</option>
-                  <option value="Kushinagar">Kushinagar</option>
-                  <option value="Basti">Basti</option>
-                  <option value="Sant Kabir Nagar">Sant Kabir Nagar</option>
-                  <option value="Varanasi">Varanasi</option>
-                  <option value="Lucknow">Lucknow</option>
+                  <option value="ALL">All UP Districts</option>
+                  {UP_DISTRICTS.map((d) => (
+                    <option key={d} value={d}>
+                      {d}
+                    </option>
+                  ))}
                 </select>
               </div>
 
@@ -5446,14 +5449,19 @@ const ProjectManagement = ({ onShowToast }) => {
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                       <div>
                         <label className="text-slate-700 font-bold block mb-1">District *</label>
-                        <input
-                          type="text"
+                        <select
                           required
-                          placeholder="e.g. District / City"
                           value={newSiteForm.district}
                           onChange={(e) => setNewSiteForm({ ...newSiteForm, district: e.target.value })}
-                          className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-900 font-bold focus:outline-none focus:border-blue-500"
-                        />
+                          className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-900 font-bold focus:outline-none focus:border-blue-500 cursor-pointer"
+                        >
+                          <option value="">-- Select UP District * --</option>
+                          {UP_DISTRICTS.map((d) => (
+                            <option key={d} value={d}>
+                              {d}
+                            </option>
+                          ))}
+                        </select>
                       </div>
 
                       <div>
@@ -5710,12 +5718,18 @@ const ProjectManagement = ({ onShowToast }) => {
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                       <div>
                         <label className="text-slate-700 font-bold block mb-1">District</label>
-                        <input
-                          type="text"
+                        <select
                           value={editingSite.district || ''}
                           onChange={(e) => setEditingSite({ ...editingSite, district: e.target.value })}
-                          className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-900 font-bold focus:outline-none focus:border-blue-500"
-                        />
+                          className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-900 font-bold focus:outline-none focus:border-blue-500 cursor-pointer"
+                        >
+                          <option value="">-- Select UP District --</option>
+                          {UP_DISTRICTS.map((d) => (
+                            <option key={d} value={d}>
+                              {d}
+                            </option>
+                          ))}
+                        </select>
                       </div>
 
                       <div>
