@@ -154,7 +154,7 @@ const ProjectManagement = ({ onShowToast, isStaff = false }) => {
     customerName: '',
     siteAddress: '',
     district: '',
-    siteType: 'On-Grid',
+    siteType: '',
     capacity: '',
     projectValue: '',
     loanAmount: '',
@@ -171,9 +171,9 @@ const ProjectManagement = ({ onShowToast, isStaff = false }) => {
     phone: ''
   });
 
-  const getEmptyExpenseForm = (currentSites = []) => ({
+  const getEmptyExpenseForm = () => ({
     id: '',
-    siteId: currentSites.length > 0 ? currentSites[0].id : '',
+    siteId: '',
     date: getTodayDateStr(),
     vendor: '',
     vendorContact: '',
@@ -192,9 +192,9 @@ const ProjectManagement = ({ onShowToast, isStaff = false }) => {
     remarks: ''
   });
 
-  const getEmptyPaymentForm = (currentSites = []) => ({
+  const getEmptyPaymentForm = () => ({
     id: '',
-    siteId: currentSites.length > 0 ? currentSites[0].id : '',
+    siteId: '',
     customerName: '',
     date: getTodayDateStr(),
     paymentType: 'Loan - Disbursement 1',
@@ -208,9 +208,9 @@ const ProjectManagement = ({ onShowToast, isStaff = false }) => {
     remarks: ''
   });
 
-  const getEmptyBudgetItemForm = (currentSites = []) => ({
+  const getEmptyBudgetItemForm = () => ({
     id: '',
-    siteId: currentSites.length > 0 ? currentSites[0].id : '',
+    siteId: '',
     material: '',
     category: 'Solar Modules',
     brand: '',
@@ -1161,6 +1161,11 @@ const ProjectManagement = ({ onShowToast, isStaff = false }) => {
 
     if (!newSiteForm.district || !newSiteForm.district.trim()) {
       toast('Please select a District from the dropdown!');
+      return;
+    }
+
+    if (!newSiteForm.siteType || !newSiteForm.siteType.trim()) {
+      toast('Please select a Site Type (On-Grid / Off-Grid / Hybrid)!');
       return;
     }
 
@@ -4321,7 +4326,7 @@ const ProjectManagement = ({ onShowToast, isStaff = false }) => {
                   <option value="ALL">All Project Sites</option>
                   {sortedSitesByCustomer.map((s) => (
                     <option key={s.id} value={s.id}>
-                      👤 {s.customerName || s.name} (No: {s.id})
+                      👤 {s.customerName || s.clientName || s.name || 'Customer'} (No: {s.id})
                     </option>
                   ))}
                 </select>
@@ -4751,7 +4756,7 @@ const ProjectManagement = ({ onShowToast, isStaff = false }) => {
                   <option value="ALL">All Project Sites</option>
                   {sortedSitesByCustomer.map((s) => (
                     <option key={s.id} value={s.id}>
-                      👤 {s.customerName || s.name} (No: {s.id})
+                      👤 {s.customerName || s.clientName || s.name || 'Customer'} (No: {s.id})
                     </option>
                   ))}
                 </select>
@@ -5192,7 +5197,7 @@ const ProjectManagement = ({ onShowToast, isStaff = false }) => {
                   <option value="ALL">All Project Sites</option>
                   {sortedSitesByCustomer.map((s) => (
                     <option key={s.id} value={s.id}>
-                      👤 {s.customerName || s.name} (No: {s.id})
+                      👤 {s.customerName || s.clientName || s.name || 'Customer'} (No: {s.id})
                     </option>
                   ))}
                 </select>
@@ -5607,10 +5612,11 @@ const ProjectManagement = ({ onShowToast, isStaff = false }) => {
                         <label className="text-slate-700 font-bold block mb-1">Site Type *</label>
                         <select
                           required
-                          value={newSiteForm.siteType || 'On-Grid'}
+                          value={newSiteForm.siteType || ''}
                           onChange={(e) => setNewSiteForm({ ...newSiteForm, siteType: e.target.value })}
                           className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-900 font-bold focus:outline-none focus:border-blue-500 cursor-pointer"
                         >
+                          <option value="">-- Select Site Type * --</option>
                           <option value="On-Grid">On-Grid</option>
                           <option value="Off-Grid">Off-Grid</option>
                           <option value="Hybrid">Hybrid</option>
@@ -5888,10 +5894,11 @@ const ProjectManagement = ({ onShowToast, isStaff = false }) => {
                       <div>
                         <label className="text-slate-700 font-bold block mb-1">Site Type</label>
                         <select
-                          value={editingSite.siteType || 'On-Grid'}
+                          value={editingSite.siteType || ''}
                           onChange={(e) => setEditingSite({ ...editingSite, siteType: e.target.value })}
                           className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-900 font-bold focus:outline-none focus:border-blue-500 cursor-pointer"
                         >
+                          <option value="">-- Select Site Type --</option>
                           <option value="On-Grid">On-Grid</option>
                           <option value="Off-Grid">Off-Grid</option>
                           <option value="Hybrid">Hybrid</option>
@@ -6241,43 +6248,28 @@ const ProjectManagement = ({ onShowToast, isStaff = false }) => {
                       </div>
 
                       <div>
-                        <div className="flex items-center justify-between mb-1">
-                          <label className="text-slate-700 font-bold block">Select Consumer No. / Site *</label>
-                          {subTab === 'all_in_one' && (
-                            <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-md bg-amber-100 text-amber-800 border border-amber-200 flex items-center gap-1">
-                              <ShieldCheck className="w-3 h-3 text-amber-600" /> Locked to Selected Site
-                            </span>
-                          )}
-                        </div>
-                        {subTab === 'all_in_one' ? (
-                          <div className="w-full px-3.5 py-2.5 rounded-xl bg-slate-100 border-2 border-slate-300 text-slate-800 font-bold flex items-center justify-between shadow-inner">
-                            <div className="flex items-center gap-2 truncate">
-                              <Building className="w-4 h-4 text-blue-600 shrink-0" />
-                              <span className="truncate">
-                                {(() => {
-                                  const matched = sites.find((s) => normSiteId(s.id) === normSiteId(newExpenseForm.siteId));
-                                  return matched ? `👤 ${matched.customerName || matched.name} (No: ${matched.id})` : newExpenseForm.siteId;
-                                })()}
-                              </span>
-                            </div>
-                            <span className="text-[10px] font-mono bg-blue-200/80 text-blue-900 px-2 py-0.5 rounded font-black shrink-0">
-                              LOCKED
-                            </span>
-                          </div>
-                        ) : (
-                          <select
-                            required
-                            value={newExpenseForm.siteId}
-                            onChange={(e) => setNewExpenseForm({ ...newExpenseForm, siteId: e.target.value })}
-                            className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-900 font-bold font-mono focus:outline-none focus:border-rose-500 cursor-pointer"
-                          >
-                            {sortedSitesByCustomer.map((s) => (
-                              <option key={s.id} value={s.id}>
-                                👤 {s.customerName || s.name} (No: {s.id} • {s.capacity || '3kW'})
-                              </option>
-                            ))}
-                          </select>
-                        )}
+                        <label className="text-slate-700 font-bold block mb-1">Select Consumer No. / Site *</label>
+                        <select
+                          required
+                          value={newExpenseForm.siteId || ''}
+                          onChange={(e) => {
+                            const sid = e.target.value;
+                            const matched = sites.find((s) => normSiteId(s.id) === normSiteId(sid));
+                            setNewExpenseForm({
+                              ...newExpenseForm,
+                              siteId: sid,
+                              siteName: matched ? (matched.customerName || matched.clientName || matched.name) : ''
+                            });
+                          }}
+                          className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-900 font-bold font-mono focus:outline-none focus:border-rose-500 cursor-pointer"
+                        >
+                          <option value="">-- Select Consumer No. / Customer (ग्राहक चुनें) * --</option>
+                          {sortedSitesByCustomer.map((s) => (
+                            <option key={s.id} value={s.id}>
+                              👤 {s.customerName || s.clientName || s.name || 'Customer'} — No: {s.id} ({s.capacity ? `${s.capacity} kW` : 'kW'} • {s.siteType || 'Solar'})
+                            </option>
+                          ))}
+                        </select>
                       </div>
 
                       <div>
@@ -6585,16 +6577,25 @@ const ProjectManagement = ({ onShowToast, isStaff = false }) => {
                       </div>
 
                       <div>
-                        <label className="text-slate-700 font-bold block mb-1">Consumer No. *</label>
+                        <label className="text-slate-700 font-bold block mb-1">Select Consumer No. / Site *</label>
                         <select
                           required
-                          value={editingExpense.siteId}
-                          onChange={(e) => setEditingExpense({ ...editingExpense, siteId: e.target.value })}
+                          value={editingExpense.siteId || ''}
+                          onChange={(e) => {
+                            const sid = e.target.value;
+                            const matched = sites.find((s) => normSiteId(s.id) === normSiteId(sid));
+                            setEditingExpense({
+                              ...editingExpense,
+                              siteId: sid,
+                              siteName: matched ? (matched.customerName || matched.clientName || matched.name) : editingExpense.siteName
+                            });
+                          }}
                           className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-900 font-bold font-mono focus:outline-none focus:border-rose-500 cursor-pointer"
                         >
+                          <option value="">-- Select Consumer No. / Customer (ग्राहक चुनें) * --</option>
                           {sortedSitesByCustomer.map((s) => (
                             <option key={s.id} value={s.id}>
-                              👤 {s.customerName || s.name} (No: {s.id} • {s.capacity || '3kW'})
+                              👤 {s.customerName || s.clientName || s.name || 'Customer'} — No: {s.id} ({s.capacity ? `${s.capacity} kW` : 'kW'} • {s.siteType || 'Solar'})
                             </option>
                           ))}
                         </select>
@@ -6884,51 +6885,28 @@ const ProjectManagement = ({ onShowToast, isStaff = false }) => {
                       </div>
 
                       <div>
-                        <div className="flex items-center justify-between mb-1">
-                          <label className="text-slate-700 font-bold block">Select Consumer No. / Site *</label>
-                          {subTab === 'all_in_one' && (
-                            <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-md bg-amber-100 text-amber-800 border border-amber-200 flex items-center gap-1">
-                              <ShieldCheck className="w-3 h-3 text-amber-600" /> Locked to Selected Site
-                            </span>
-                          )}
-                        </div>
-                        {subTab === 'all_in_one' ? (
-                          <div className="w-full px-3.5 py-2.5 rounded-xl bg-slate-100 border-2 border-slate-300 text-slate-800 font-bold flex items-center justify-between shadow-inner">
-                            <div className="flex items-center gap-2 truncate">
-                              <Building className="w-4 h-4 text-emerald-600 shrink-0" />
-                              <span className="truncate">
-                                {(() => {
-                                  const matched = sites.find((s) => normSiteId(s.id) === normSiteId(newPaymentForm.siteId));
-                                  return matched ? `👤 ${matched.customerName || matched.name} (No: ${matched.id})` : newPaymentForm.siteId;
-                                })()}
-                              </span>
-                            </div>
-                            <span className="text-[10px] font-mono bg-emerald-200/80 text-emerald-900 px-2 py-0.5 rounded font-black shrink-0">
-                              LOCKED
-                            </span>
-                          </div>
-                        ) : (
-                          <select
-                            required
-                            value={newPaymentForm.siteId}
-                            onChange={(e) => {
-                              const sid = e.target.value;
-                              const matched = sites.find(s => normSiteId(s.id) === normSiteId(sid));
-                              setNewPaymentForm({
-                                ...newPaymentForm,
-                                siteId: sid,
-                                customerName: matched ? (matched.customerName || matched.name) : newPaymentForm.customerName
-                              });
-                            }}
-                            className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-900 font-bold font-mono focus:outline-none focus:border-emerald-500 cursor-pointer"
-                          >
-                            {sortedSitesByCustomer.map((s) => (
-                              <option key={s.id} value={s.id}>
-                                👤 {s.customerName || s.name} (No: {s.id} • {s.capacity || '3kW'})
-                              </option>
-                            ))}
-                          </select>
-                        )}
+                        <label className="text-slate-700 font-bold block mb-1">Select Consumer No. / Site *</label>
+                        <select
+                          required
+                          value={newPaymentForm.siteId || ''}
+                          onChange={(e) => {
+                            const sid = e.target.value;
+                            const matched = sites.find((s) => normSiteId(s.id) === normSiteId(sid));
+                            setNewPaymentForm({
+                              ...newPaymentForm,
+                              siteId: sid,
+                              customerName: matched ? (matched.customerName || matched.clientName || matched.name) : ''
+                            });
+                          }}
+                          className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-900 font-bold font-mono focus:outline-none focus:border-emerald-500 cursor-pointer"
+                        >
+                          <option value="">-- Select Consumer No. / Customer (ग्राहक चुनें) * --</option>
+                          {sortedSitesByCustomer.map((s) => (
+                            <option key={s.id} value={s.id}>
+                              👤 {s.customerName || s.clientName || s.name || 'Customer'} — No: {s.id} ({s.capacity ? `${s.capacity} kW` : 'kW'} • {s.siteType || 'Solar'})
+                            </option>
+                          ))}
+                        </select>
                       </div>
 
                       <div>
@@ -7258,16 +7236,25 @@ const ProjectManagement = ({ onShowToast, isStaff = false }) => {
                   </div>
 
                   <div>
-                    <label className="text-slate-700 font-bold block mb-1">Consumer No. *</label>
+                    <label className="text-slate-700 font-bold block mb-1">Select Consumer No. / Site *</label>
                     <select
                       required
-                      value={editingPayment.siteId}
-                      onChange={(e) => setEditingPayment({ ...editingPayment, siteId: e.target.value })}
+                      value={editingPayment.siteId || ''}
+                      onChange={(e) => {
+                        const sid = e.target.value;
+                        const matched = sites.find(s => normSiteId(s.id) === normSiteId(sid));
+                        setEditingPayment({
+                          ...editingPayment,
+                          siteId: sid,
+                          customerName: matched ? (matched.customerName || matched.clientName || matched.name) : editingPayment.customerName
+                        });
+                      }}
                       className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-900 font-bold font-mono focus:outline-none focus:border-emerald-500 cursor-pointer"
                     >
+                      <option value="">-- Select Consumer No. / Customer (ग्राहक चुनें) * --</option>
                       {sortedSitesByCustomer.map((s) => (
                         <option key={s.id} value={s.id}>
-                          👤 {s.customerName || s.name} (No: {s.id} • {s.capacity || '3kW'})
+                          👤 {s.customerName || s.clientName || s.name || 'Customer'} — No: {s.id} ({s.capacity ? `${s.capacity} kW` : 'kW'} • {s.siteType || 'Solar'})
                         </option>
                       ))}
                     </select>
@@ -7535,43 +7522,20 @@ const ProjectManagement = ({ onShowToast, isStaff = false }) => {
                       </div>
 
                       <div>
-                        <div className="flex items-center justify-between mb-1">
-                          <label className="text-slate-700 font-bold block">Select Consumer No. / Site *</label>
-                          {subTab === 'all_in_one' && (
-                            <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-md bg-amber-100 text-amber-800 border border-amber-200 flex items-center gap-1">
-                              <ShieldCheck className="w-3 h-3 text-amber-600" /> Locked to Selected Site
-                            </span>
-                          )}
-                        </div>
-                        {subTab === 'all_in_one' ? (
-                          <div className="w-full px-3.5 py-2.5 rounded-xl bg-slate-100 border-2 border-slate-300 text-slate-800 font-bold flex items-center justify-between shadow-inner">
-                            <div className="flex items-center gap-2 truncate">
-                              <Building className="w-4 h-4 text-indigo-600 shrink-0" />
-                              <span className="truncate">
-                                {(() => {
-                                  const matched = sites.find((s) => normSiteId(s.id) === normSiteId(newBudgetItemForm.siteId));
-                                  return matched ? `👤 ${matched.customerName || matched.name} (No: ${matched.id})` : newBudgetItemForm.siteId;
-                                })()}
-                              </span>
-                            </div>
-                            <span className="text-[10px] font-mono bg-indigo-200/80 text-indigo-900 px-2 py-0.5 rounded font-black shrink-0">
-                              LOCKED
-                            </span>
-                          </div>
-                        ) : (
-                          <select
-                            required
-                            value={newBudgetItemForm.siteId}
-                            onChange={(e) => setNewBudgetItemForm({ ...newBudgetItemForm, siteId: e.target.value })}
-                            className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-900 font-bold font-mono focus:outline-none focus:border-indigo-500 cursor-pointer"
-                          >
-                            {sortedSitesByCustomer.map((s) => (
-                              <option key={s.id} value={s.id}>
-                                👤 {s.customerName || s.name} (No: {s.id} • {s.capacity || '3kW'})
-                              </option>
-                            ))}
-                          </select>
-                        )}
+                        <label className="text-slate-700 font-bold block mb-1">Select Consumer No. / Site *</label>
+                        <select
+                          required
+                          value={newBudgetItemForm.siteId || ''}
+                          onChange={(e) => setNewBudgetItemForm({ ...newBudgetItemForm, siteId: e.target.value })}
+                          className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-900 font-bold font-mono focus:outline-none focus:border-indigo-500 cursor-pointer"
+                        >
+                          <option value="">-- Select Consumer No. / Customer (ग्राहक चुनें) * --</option>
+                          {sortedSitesByCustomer.map((s) => (
+                            <option key={s.id} value={s.id}>
+                              👤 {s.customerName || s.clientName || s.name || 'Customer'} — No: {s.id} ({s.capacity ? `${s.capacity} kW` : 'kW'} • {s.siteType || 'Solar'})
+                            </option>
+                          ))}
+                        </select>
                       </div>
 
                       <div>
@@ -7885,16 +7849,17 @@ const ProjectManagement = ({ onShowToast, isStaff = false }) => {
                       </div>
 
                       <div>
-                        <label className="text-slate-700 font-bold block mb-1">Consumer No. *</label>
+                        <label className="text-slate-700 font-bold block mb-1">Select Consumer No. / Site *</label>
                         <select
                           required
-                          value={editingBudgetItem.siteId}
+                          value={editingBudgetItem.siteId || ''}
                           onChange={(e) => setEditingBudgetItem({ ...editingBudgetItem, siteId: e.target.value })}
                           className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-900 font-bold font-mono focus:outline-none focus:border-indigo-500 cursor-pointer"
                         >
+                          <option value="">-- Select Consumer No. / Customer (ग्राहक चुनें) * --</option>
                           {sortedSitesByCustomer.map((s) => (
                             <option key={s.id} value={s.id}>
-                              👤 {s.customerName || s.name} (No: {s.id} • {s.capacity || '3kW'})
+                              👤 {s.customerName || s.clientName || s.name || 'Customer'} — No: {s.id} ({s.capacity ? `${s.capacity} kW` : 'kW'} • {s.siteType || 'Solar'})
                             </option>
                           ))}
                         </select>
