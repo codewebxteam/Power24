@@ -1019,17 +1019,31 @@ const ProjectManagement = ({ onShowToast, isStaff = false }) => {
   // =========================================================
   // CALCULATIONS FOR ALL-IN-ONE OPERATIONS HUB
   // =========================================================
-  const filteredHubDropdownSites = sites.filter((s) => {
-    if (!hubSearchQuery.trim()) return true;
-    const q = hubSearchQuery.toLowerCase();
-    return (
-      (s.customerName && s.customerName.toLowerCase().includes(q)) ||
-      (s.id && s.id.toLowerCase().includes(q)) ||
-      (s.phone && s.phone.toLowerCase().includes(q)) ||
-      (s.district && s.district.toLowerCase().includes(q)) ||
-      (s.siteAddress && s.siteAddress.toLowerCase().includes(q))
-    );
+  // Alphabetically sorted sites by customer name (A -> B -> C ...)
+  const sortedSitesByCustomer = [...sites].sort((a, b) => {
+    const nameA = (a.customerName || a.clientName || a.name || '').trim();
+    const nameB = (b.customerName || b.clientName || b.name || '').trim();
+    return nameA.localeCompare(nameB, 'en', { sensitivity: 'base' });
   });
+
+  const filteredHubDropdownSites = sites
+    .filter((s) => {
+      if (!hubSearchQuery.trim()) return true;
+      const q = hubSearchQuery.toLowerCase();
+      return (
+        (s.customerName && s.customerName.toLowerCase().includes(q)) ||
+        (s.clientName && s.clientName.toLowerCase().includes(q)) ||
+        (s.id && s.id.toLowerCase().includes(q)) ||
+        (s.phone && s.phone.toLowerCase().includes(q)) ||
+        (s.district && s.district.toLowerCase().includes(q)) ||
+        (s.siteAddress && s.siteAddress.toLowerCase().includes(q))
+      );
+    })
+    .sort((a, b) => {
+      const nameA = (a.customerName || a.clientName || a.name || '').trim();
+      const nameB = (b.customerName || b.clientName || b.name || '').trim();
+      return nameA.localeCompare(nameB, 'en', { sensitivity: 'base' });
+    });
 
   const currentHubSite = selectedHubSiteId
     ? (sites.find((s) => normSiteId(s.id) === normSiteId(selectedHubSiteId)) || null)
@@ -2261,13 +2275,13 @@ const ProjectManagement = ({ onShowToast, isStaff = false }) => {
               </div>
             </div>
 
-            {/* Quick-Pills for Fast Switching (Shows top 8 sites) */}
-            {sites.length > 0 && (
+            {/* Quick-Pills for Fast Switching (Shows top 8 sites sorted A-Z) */}
+            {sortedSitesByCustomer.length > 0 && (
               <div className="mt-3 flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none text-[11px]">
                 <span className="text-slate-400 shrink-0 font-medium mr-1 flex items-center gap-1">
                   <Sparkles className="w-3 h-3 text-amber-400" /> Quick Select:
                 </span>
-                {sites.slice(0, 8).map((s) => {
+                {sortedSitesByCustomer.slice(0, 8).map((s) => {
                   const isSel = currentHubSite && normSiteId(s.id) === normSiteId(currentHubSite.id);
                   return (
                     <button
@@ -3219,9 +3233,9 @@ const ProjectManagement = ({ onShowToast, isStaff = false }) => {
                 className="py-2 px-3.5 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 text-xs font-bold text-white focus:outline-none focus:bg-blue-950 cursor-pointer w-full md:w-64"
               >
                 <option value="ALL" className="text-slate-900">All Solar Projects ({sites.length})</option>
-                {sites.map((s) => (
+                {sortedSitesByCustomer.map((s) => (
                   <option key={s.id} value={s.id} className="text-slate-900">
-                    #{s.id} - {s.customerName || s.name} ({s.capacity || '3kW'})
+                    👤 {s.customerName || s.name} — No: {s.id} ({s.capacity || '3kW'})
                   </option>
                 ))}
               </select>
@@ -4254,9 +4268,9 @@ const ProjectManagement = ({ onShowToast, isStaff = false }) => {
                   className="py-1.5 px-3 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-700 focus:outline-none focus:border-blue-500 cursor-pointer"
                 >
                   <option value="ALL">All Project Sites</option>
-                  {sites.map((s) => (
+                  {sortedSitesByCustomer.map((s) => (
                     <option key={s.id} value={s.id}>
-                      No: {s.id} - {s.customerName || s.name}
+                      👤 {s.customerName || s.name} (No: {s.id})
                     </option>
                   ))}
                 </select>
@@ -4684,9 +4698,9 @@ const ProjectManagement = ({ onShowToast, isStaff = false }) => {
                   className="py-1.5 px-3 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-700 focus:outline-none focus:border-blue-500 cursor-pointer"
                 >
                   <option value="ALL">All Project Sites</option>
-                  {sites.map((s) => (
+                  {sortedSitesByCustomer.map((s) => (
                     <option key={s.id} value={s.id}>
-                      No: {s.id} - {s.customerName || s.name}
+                      👤 {s.customerName || s.name} (No: {s.id})
                     </option>
                   ))}
                 </select>
@@ -5125,9 +5139,9 @@ const ProjectManagement = ({ onShowToast, isStaff = false }) => {
                   className="py-1.5 px-3 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-700 focus:outline-none focus:border-blue-500 cursor-pointer"
                 >
                   <option value="ALL">All Project Sites</option>
-                  {sites.map((s) => (
+                  {sortedSitesByCustomer.map((s) => (
                     <option key={s.id} value={s.id}>
-                      No: {s.id} - {s.customerName || s.name}
+                      👤 {s.customerName || s.name} (No: {s.id})
                     </option>
                   ))}
                 </select>
@@ -6179,9 +6193,9 @@ const ProjectManagement = ({ onShowToast, isStaff = false }) => {
                             onChange={(e) => setNewExpenseForm({ ...newExpenseForm, siteId: e.target.value })}
                             className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-900 font-bold font-mono focus:outline-none focus:border-rose-500 cursor-pointer"
                           >
-                            {sites.map((s) => (
+                            {sortedSitesByCustomer.map((s) => (
                               <option key={s.id} value={s.id}>
-                                No: {s.id} - {s.customerName || s.name} ({s.capacity || '3kw'})
+                                👤 {s.customerName || s.name} (No: {s.id} • {s.capacity || '3kW'})
                               </option>
                             ))}
                           </select>
@@ -6500,9 +6514,9 @@ const ProjectManagement = ({ onShowToast, isStaff = false }) => {
                           onChange={(e) => setEditingExpense({ ...editingExpense, siteId: e.target.value })}
                           className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-900 font-bold font-mono focus:outline-none focus:border-rose-500 cursor-pointer"
                         >
-                          {sites.map((s) => (
+                          {sortedSitesByCustomer.map((s) => (
                             <option key={s.id} value={s.id}>
-                              No: {s.id} - {s.customerName || s.name} ({s.capacity || '3kw'})
+                              👤 {s.customerName || s.name} (No: {s.id} • {s.capacity || '3kW'})
                             </option>
                           ))}
                         </select>
@@ -6830,9 +6844,9 @@ const ProjectManagement = ({ onShowToast, isStaff = false }) => {
                             }}
                             className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-900 font-bold font-mono focus:outline-none focus:border-emerald-500 cursor-pointer"
                           >
-                            {sites.map((s) => (
+                            {sortedSitesByCustomer.map((s) => (
                               <option key={s.id} value={s.id}>
-                                No: {s.id} - {s.customerName || s.name} ({s.capacity || '3kw'})
+                                👤 {s.customerName || s.name} (No: {s.id} • {s.capacity || '3kW'})
                               </option>
                             ))}
                           </select>
@@ -7173,9 +7187,9 @@ const ProjectManagement = ({ onShowToast, isStaff = false }) => {
                       onChange={(e) => setEditingPayment({ ...editingPayment, siteId: e.target.value })}
                       className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-900 font-bold font-mono focus:outline-none focus:border-emerald-500 cursor-pointer"
                     >
-                      {sites.map((s) => (
+                      {sortedSitesByCustomer.map((s) => (
                         <option key={s.id} value={s.id}>
-                          #{s.id} - {s.customerName || s.name} ({s.capacity || '3kw'})
+                          👤 {s.customerName || s.name} (No: {s.id} • {s.capacity || '3kW'})
                         </option>
                       ))}
                     </select>
@@ -7473,9 +7487,9 @@ const ProjectManagement = ({ onShowToast, isStaff = false }) => {
                             onChange={(e) => setNewBudgetItemForm({ ...newBudgetItemForm, siteId: e.target.value })}
                             className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-900 font-bold font-mono focus:outline-none focus:border-indigo-500 cursor-pointer"
                           >
-                            {sites.map((s) => (
+                            {sortedSitesByCustomer.map((s) => (
                               <option key={s.id} value={s.id}>
-                                No: {s.id} - {s.customerName || s.name} ({s.capacity || '3kw'})
+                                👤 {s.customerName || s.name} (No: {s.id} • {s.capacity || '3kW'})
                               </option>
                             ))}
                           </select>
@@ -7800,9 +7814,9 @@ const ProjectManagement = ({ onShowToast, isStaff = false }) => {
                           onChange={(e) => setEditingBudgetItem({ ...editingBudgetItem, siteId: e.target.value })}
                           className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-900 font-bold font-mono focus:outline-none focus:border-indigo-500 cursor-pointer"
                         >
-                          {sites.map((s) => (
+                          {sortedSitesByCustomer.map((s) => (
                             <option key={s.id} value={s.id}>
-                              No: {s.id} - {s.customerName || s.name} ({s.capacity || '3kw'})
+                              👤 {s.customerName || s.name} (No: {s.id} • {s.capacity || '3kW'})
                             </option>
                           ))}
                         </select>
