@@ -174,6 +174,7 @@ const ProjectManagement = ({ onShowToast, isStaff = false }) => {
   const getEmptyExpenseForm = () => ({
     id: '',
     siteId: '',
+    siteStatus: '',
     date: getTodayDateStr(),
     vendor: '',
     vendorContact: '',
@@ -196,6 +197,7 @@ const ProjectManagement = ({ onShowToast, isStaff = false }) => {
     id: '',
     siteId: '',
     customerName: '',
+    siteStatus: '',
     date: getTodayDateStr(),
     paymentType: 'Loan - Disbursement 1',
     disbursementStage: 'Disbursement 1',
@@ -211,6 +213,7 @@ const ProjectManagement = ({ onShowToast, isStaff = false }) => {
   const getEmptyBudgetItemForm = () => ({
     id: '',
     siteId: '',
+    siteStatus: '',
     material: '',
     category: 'Solar Modules',
     brand: '',
@@ -1094,8 +1097,10 @@ const ProjectManagement = ({ onShowToast, isStaff = false }) => {
       return;
     }
     setNewExpenseForm({
-      ...getEmptyExpenseForm(sites),
+      ...getEmptyExpenseForm(),
       siteId: currentHubSite.id,
+      siteName: currentHubSite.customerName || currentHubSite.clientName || currentHubSite.name || '',
+      siteStatus: currentHubSite.siteStatus || currentHubSite.status || 'Running',
       date: new Date().toISOString().split('T')[0]
     });
     setShowAddExpenseModal(true);
@@ -1107,9 +1112,10 @@ const ProjectManagement = ({ onShowToast, isStaff = false }) => {
       return;
     }
     setNewPaymentForm({
-      ...getEmptyPaymentForm(sites),
+      ...getEmptyPaymentForm(),
       siteId: currentHubSite.id,
-      customerName: currentHubSite.customerName || '',
+      customerName: currentHubSite.customerName || currentHubSite.clientName || currentHubSite.name || '',
+      siteStatus: currentHubSite.siteStatus || currentHubSite.status || 'Running',
       date: new Date().toISOString().split('T')[0]
     });
     setShowAddPaymentModal(true);
@@ -1121,8 +1127,9 @@ const ProjectManagement = ({ onShowToast, isStaff = false }) => {
       return;
     }
     setNewBudgetItemForm({
-      ...getEmptyBudgetItemForm(sites),
-      siteId: currentHubSite.id
+      ...getEmptyBudgetItemForm(),
+      siteId: currentHubSite.id,
+      siteStatus: currentHubSite.siteStatus || currentHubSite.status || 'Running'
     });
     setShowAddBudgetItemModal(true);
   };
@@ -1493,6 +1500,7 @@ const ProjectManagement = ({ onShowToast, isStaff = false }) => {
         { label: 'Site / Customer', value: `${newExpenseForm.siteId} - ${expenseObj.siteName || 'Site'}` },
         { label: 'Category', value: expenseObj.category, highlight: true },
         { label: 'Paid Amount', value: formatINR(finalAmount), highlight: true },
+        { label: 'Site Status', value: newExpenseForm.siteStatus || targetSite?.siteStatus || 'Running', highlight: newExpenseForm.siteStatus === 'Completed' },
         { label: 'Paid To / Vendor', value: expenseObj.vendor || '-' },
         { label: 'Payment Mode', value: expenseObj.paymentMode },
         { label: 'Bill / Voucher Ref', value: expenseObj.billNo || '-' },
@@ -1501,8 +1509,23 @@ const ProjectManagement = ({ onShowToast, isStaff = false }) => {
       onConfirm: () => {
         const updated = addManagementExpense(expenseObj);
         setExpenses(updated);
+
+        // Update Site Status if specified and changed
+        if (newExpenseForm.siteStatus && targetSite) {
+          const currentStatus = targetSite.siteStatus || targetSite.status || 'Running';
+          if (newExpenseForm.siteStatus !== currentStatus) {
+            const updatedSites = updateManagementSite(targetSite.id, {
+              siteStatus: newExpenseForm.siteStatus,
+              status: newExpenseForm.siteStatus,
+              ...(newExpenseForm.siteStatus === 'Completed' && !targetSite.completionDate ? { completionDate: getTodayDateStr() } : {})
+            });
+            setSites(updatedSites);
+            toast(`Site #${targetSite.id} status updated to "${newExpenseForm.siteStatus}"!`);
+          }
+        }
+
         setShowAddExpenseModal(false);
-        setNewExpenseForm(getEmptyExpenseForm(sites));
+        setNewExpenseForm(getEmptyExpenseForm());
         setPendingConfirm(null);
         toast(`Expense voucher ${generatedId} recorded successfully!`);
       }
@@ -1542,12 +1565,28 @@ const ProjectManagement = ({ onShowToast, isStaff = false }) => {
         { label: 'Consumer No.', value: editingExpense.siteId },
         { label: 'Category', value: expenseObj.category },
         { label: 'Updated Amount', value: formatINR(finalAmount), highlight: true },
+        { label: 'Site Status', value: editingExpense.siteStatus || targetSite?.siteStatus || 'Running', highlight: editingExpense.siteStatus === 'Completed' },
         { label: 'Paid To', value: expenseObj.vendor || '-' },
         { label: 'Payment Mode', value: expenseObj.paymentMode }
       ],
       onConfirm: () => {
         const updated = updateManagementExpense(editingExpense.id, expenseObj);
         setExpenses(updated);
+
+        // Update Site Status if specified and changed
+        if (editingExpense.siteStatus && targetSite) {
+          const currentStatus = targetSite.siteStatus || targetSite.status || 'Running';
+          if (editingExpense.siteStatus !== currentStatus) {
+            const updatedSites = updateManagementSite(targetSite.id, {
+              siteStatus: editingExpense.siteStatus,
+              status: editingExpense.siteStatus,
+              ...(editingExpense.siteStatus === 'Completed' && !targetSite.completionDate ? { completionDate: getTodayDateStr() } : {})
+            });
+            setSites(updatedSites);
+            toast(`Site #${targetSite.id} status updated to "${editingExpense.siteStatus}"!`);
+          }
+        }
+
         setShowEditExpenseModal(false);
         setEditingExpense(null);
         setPendingConfirm(null);
@@ -1690,6 +1729,7 @@ const ProjectManagement = ({ onShowToast, isStaff = false }) => {
         { label: 'Site / Customer', value: `${newPaymentForm.siteId} - ${cust}` },
         { label: 'Payment Type', value: payObj.disbursementStage ? `Bank Loan (${payObj.disbursementStage})` : payObj.paymentType, highlight: true },
         { label: 'Amount Received', value: formatINR(payObj.amount), highlight: true },
+        { label: 'Site Status', value: newPaymentForm.siteStatus || targetSite?.siteStatus || 'Running', highlight: newPaymentForm.siteStatus === 'Completed' },
         { label: 'Payment Mode', value: payObj.paymentMode },
         { label: 'UTR / Ref No.', value: payObj.refNo || '-' },
         { label: 'Date', value: payObj.date || new Date().toLocaleDateString('en-IN') }
@@ -1697,8 +1737,23 @@ const ProjectManagement = ({ onShowToast, isStaff = false }) => {
       onConfirm: () => {
         const updated = addManagementPayment(payObj);
         setPayments(updated);
+
+        // Update Site Status if specified and changed
+        if (newPaymentForm.siteStatus && targetSite) {
+          const currentStatus = targetSite.siteStatus || targetSite.status || 'Running';
+          if (newPaymentForm.siteStatus !== currentStatus) {
+            const updatedSites = updateManagementSite(targetSite.id, {
+              siteStatus: newPaymentForm.siteStatus,
+              status: newPaymentForm.siteStatus,
+              ...(newPaymentForm.siteStatus === 'Completed' && !targetSite.completionDate ? { completionDate: getTodayDateStr() } : {})
+            });
+            setSites(updatedSites);
+            toast(`Site #${targetSite.id} status updated to "${newPaymentForm.siteStatus}"!`);
+          }
+        }
+
         setShowAddPaymentModal(false);
-        setNewPaymentForm(getEmptyPaymentForm(sites));
+        setNewPaymentForm(getEmptyPaymentForm());
         setPendingConfirm(null);
         toast(`Payment receipt ${generatedId} recorded successfully!`);
       }
@@ -1737,11 +1792,27 @@ const ProjectManagement = ({ onShowToast, isStaff = false }) => {
         { label: 'Site / Customer', value: `${editingPayment.siteId} (${cust})` },
         { label: 'Updated Amount', value: formatINR(payObj.amount), highlight: true },
         { label: 'Payment Type', value: payObj.paymentType },
+        { label: 'Site Status', value: editingPayment.siteStatus || targetSite?.siteStatus || 'Running', highlight: editingPayment.siteStatus === 'Completed' },
         { label: 'Payment Mode', value: payObj.paymentMode }
       ],
       onConfirm: () => {
         const updated = updateManagementPayment(editingPayment.id, payObj);
         setPayments(updated);
+
+        // Update Site Status if specified and changed
+        if (editingPayment.siteStatus && targetSite) {
+          const currentStatus = targetSite.siteStatus || targetSite.status || 'Running';
+          if (editingPayment.siteStatus !== currentStatus) {
+            const updatedSites = updateManagementSite(targetSite.id, {
+              siteStatus: editingPayment.siteStatus,
+              status: editingPayment.siteStatus,
+              ...(editingPayment.siteStatus === 'Completed' && !targetSite.completionDate ? { completionDate: getTodayDateStr() } : {})
+            });
+            setSites(updatedSites);
+            toast(`Site #${targetSite.id} status updated to "${editingPayment.siteStatus}"!`);
+          }
+        }
+
         setShowEditPaymentModal(false);
         setEditingPayment(null);
         setPendingConfirm(null);
@@ -1867,13 +1938,29 @@ const ProjectManagement = ({ onShowToast, isStaff = false }) => {
         { label: 'Category', value: budgetObj.category },
         { label: 'Quantity', value: `${budgetObj.qty} ${budgetObj.unit}` },
         { label: 'Budget Amount', value: formatINR(bAmt), highlight: true },
+        { label: 'Site Status', value: newBudgetItemForm.siteStatus || targetSite?.siteStatus || 'Running', highlight: newBudgetItemForm.siteStatus === 'Completed' },
         { label: 'Procurement Status', value: budgetObj.procurementStatus }
       ],
       onConfirm: () => {
         const updated = addManagementBudgetItem(budgetObj);
         setBudgets(updated);
+
+        // Update Site Status if specified and changed
+        if (newBudgetItemForm.siteStatus && targetSite) {
+          const currentStatus = targetSite.siteStatus || targetSite.status || 'Running';
+          if (newBudgetItemForm.siteStatus !== currentStatus) {
+            const updatedSites = updateManagementSite(targetSite.id, {
+              siteStatus: newBudgetItemForm.siteStatus,
+              status: newBudgetItemForm.siteStatus,
+              ...(newBudgetItemForm.siteStatus === 'Completed' && !targetSite.completionDate ? { completionDate: getTodayDateStr() } : {})
+            });
+            setSites(updatedSites);
+            toast(`Site #${targetSite.id} status updated to "${newBudgetItemForm.siteStatus}"!`);
+          }
+        }
+
         setShowAddBudgetItemModal(false);
-        setNewBudgetItemForm(getEmptyBudgetItemForm(sites));
+        setNewBudgetItemForm(getEmptyBudgetItemForm());
         setPendingConfirm(null);
         toast(`Material budget item ${generatedId} added!`);
       }
@@ -1883,6 +1970,7 @@ const ProjectManagement = ({ onShowToast, isStaff = false }) => {
   const handleEditBudgetItemSave = (e) => {
     e.preventDefault();
     if (!editingBudgetItem) return;
+    const targetSite = sites.find((s) => normSiteId(s.id) === normSiteId(editingBudgetItem.siteId));
     const q = Number(editingBudgetItem.qty) || 1;
     const bRate = Number(editingBudgetItem.budgetRate) || 0;
     const bAmt = Number(editingBudgetItem.budgetAmount) > 0 ? Number(editingBudgetItem.budgetAmount) : (q * bRate);
@@ -1910,13 +1998,30 @@ const ProjectManagement = ({ onShowToast, isStaff = false }) => {
       badgeColor: 'amber',
       details: [
         { label: 'Item ID', value: editingBudgetItem.id },
+        { label: 'Consumer No.', value: editingBudgetItem.siteId },
         { label: 'Material', value: budgetObj.material },
         { label: 'Budget Amount', value: formatINR(bAmt), highlight: true },
+        { label: 'Site Status', value: editingBudgetItem.siteStatus || targetSite?.siteStatus || 'Running', highlight: editingBudgetItem.siteStatus === 'Completed' },
         { label: 'Actual Amount', value: formatINR(aAmt) }
       ],
       onConfirm: () => {
         const updated = updateManagementBudgetItem(editingBudgetItem.id, budgetObj);
         setBudgets(updated);
+
+        // Update Site Status if specified and changed
+        if (editingBudgetItem.siteStatus && targetSite) {
+          const currentStatus = targetSite.siteStatus || targetSite.status || 'Running';
+          if (editingBudgetItem.siteStatus !== currentStatus) {
+            const updatedSites = updateManagementSite(targetSite.id, {
+              siteStatus: editingBudgetItem.siteStatus,
+              status: editingBudgetItem.siteStatus,
+              ...(editingBudgetItem.siteStatus === 'Completed' && !targetSite.completionDate ? { completionDate: getTodayDateStr() } : {})
+            });
+            setSites(updatedSites);
+            toast(`Site #${targetSite.id} status updated to "${editingBudgetItem.siteStatus}"!`);
+          }
+        }
+
         setShowEditBudgetItemModal(false);
         setEditingBudgetItem(null);
         setPendingConfirm(null);
@@ -6235,7 +6340,7 @@ const ProjectManagement = ({ onShowToast, isStaff = false }) => {
                       1. Site & Vendor Information (साइट व वेंडर विवरण)
                     </span>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
                       <div>
                         <label className="text-slate-700 font-bold block mb-1">Expense ID (Auto/Manual)</label>
                         <input
@@ -6258,7 +6363,8 @@ const ProjectManagement = ({ onShowToast, isStaff = false }) => {
                             setNewExpenseForm({
                               ...newExpenseForm,
                               siteId: sid,
-                              siteName: matched ? (matched.customerName || matched.clientName || matched.name) : ''
+                              siteName: matched ? (matched.customerName || matched.clientName || matched.name) : '',
+                              siteStatus: matched ? (matched.siteStatus || matched.status || 'Running') : ''
                             });
                           }}
                           className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-900 font-bold font-mono focus:outline-none focus:border-rose-500 cursor-pointer"
@@ -6269,6 +6375,38 @@ const ProjectManagement = ({ onShowToast, isStaff = false }) => {
                               👤 {s.customerName || s.clientName || s.name || 'Customer'} — No: {s.id} ({s.capacity ? `${s.capacity} kW` : 'kW'} • {s.siteType || 'Solar'})
                             </option>
                           ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <div className="flex items-center justify-between mb-1">
+                          <label className="text-slate-700 font-bold block">Site Status (साइट स्थिति)</label>
+                          {newExpenseForm.siteStatus && (
+                            <span className={`text-[10px] font-black uppercase px-1.5 py-0.5 rounded border ${
+                              newExpenseForm.siteStatus === 'Completed'
+                                ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
+                                : newExpenseForm.siteStatus === 'On Hold'
+                                ? 'bg-amber-100 text-amber-800 border-amber-300'
+                                : 'bg-blue-100 text-blue-800 border-blue-300'
+                            }`}>
+                              {newExpenseForm.siteStatus === 'Completed' ? '✅ Completed' : newExpenseForm.siteStatus}
+                            </span>
+                          )}
+                        </div>
+                        <select
+                          value={newExpenseForm.siteStatus || 'Running'}
+                          onChange={(e) => setNewExpenseForm({ ...newExpenseForm, siteStatus: e.target.value })}
+                          className={`w-full px-3.5 py-2.5 rounded-xl border text-xs sm:text-sm font-bold cursor-pointer transition-colors ${
+                            newExpenseForm.siteStatus === 'Completed'
+                              ? 'bg-emerald-50/80 border-emerald-400 text-emerald-900 focus:border-emerald-500'
+                              : newExpenseForm.siteStatus === 'On Hold'
+                              ? 'bg-amber-50/80 border-amber-400 text-amber-900 focus:border-amber-500'
+                              : 'bg-white border-slate-300 text-slate-800 focus:border-rose-500'
+                          }`}
+                        >
+                          <option value="Running">Running (काम चालू है)</option>
+                          <option value="Completed">Completed (साइट पूरा हो गया)</option>
+                          <option value="On Hold">On Hold (काम रुका हुआ है)</option>
                         </select>
                       </div>
 
@@ -6565,7 +6703,7 @@ const ProjectManagement = ({ onShowToast, isStaff = false }) => {
                       1. Site & Vendor Information
                     </span>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
                       <div>
                         <label className="text-slate-700 font-bold block mb-1">Expense ID</label>
                         <input
@@ -6587,7 +6725,8 @@ const ProjectManagement = ({ onShowToast, isStaff = false }) => {
                             setEditingExpense({
                               ...editingExpense,
                               siteId: sid,
-                              siteName: matched ? (matched.customerName || matched.clientName || matched.name) : editingExpense.siteName
+                              siteName: matched ? (matched.customerName || matched.clientName || matched.name) : editingExpense.siteName,
+                              siteStatus: matched ? (matched.siteStatus || matched.status || 'Running') : (editingExpense.siteStatus || 'Running')
                             });
                           }}
                           className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-900 font-bold font-mono focus:outline-none focus:border-rose-500 cursor-pointer"
@@ -6598,6 +6737,41 @@ const ProjectManagement = ({ onShowToast, isStaff = false }) => {
                               👤 {s.customerName || s.clientName || s.name || 'Customer'} — No: {s.id} ({s.capacity ? `${s.capacity} kW` : 'kW'} • {s.siteType || 'Solar'})
                             </option>
                           ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <div className="flex items-center justify-between mb-1">
+                          <label className="text-slate-700 font-bold block">Site Status (साइट स्थिति)</label>
+                          {(() => {
+                            const currSt = editingExpense.siteStatus || targetSite?.siteStatus || 'Running';
+                            return (
+                              <span className={`text-[10px] font-black uppercase px-1.5 py-0.5 rounded border ${
+                                currSt === 'Completed'
+                                  ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
+                                  : currSt === 'On Hold'
+                                  ? 'bg-amber-100 text-amber-800 border-amber-300'
+                                  : 'bg-blue-100 text-blue-800 border-blue-300'
+                              }`}>
+                                {currSt === 'Completed' ? '✅ Completed' : currSt}
+                              </span>
+                            );
+                          })()}
+                        </div>
+                        <select
+                          value={editingExpense.siteStatus || targetSite?.siteStatus || 'Running'}
+                          onChange={(e) => setEditingExpense({ ...editingExpense, siteStatus: e.target.value })}
+                          className={`w-full px-3.5 py-2.5 rounded-xl border text-xs sm:text-sm font-bold cursor-pointer transition-colors ${
+                            (editingExpense.siteStatus || targetSite?.siteStatus) === 'Completed'
+                              ? 'bg-emerald-50/80 border-emerald-400 text-emerald-900 focus:border-emerald-500'
+                              : (editingExpense.siteStatus || targetSite?.siteStatus) === 'On Hold'
+                              ? 'bg-amber-50/80 border-amber-400 text-amber-900 focus:border-amber-500'
+                              : 'bg-white border-slate-300 text-slate-800 focus:border-rose-500'
+                          }`}
+                        >
+                          <option value="Running">Running (काम चालू है)</option>
+                          <option value="Completed">Completed (साइट पूरा हो गया)</option>
+                          <option value="On Hold">On Hold (काम रुका हुआ है)</option>
                         </select>
                       </div>
 
@@ -6872,7 +7046,7 @@ const ProjectManagement = ({ onShowToast, isStaff = false }) => {
                       1. Site & Payer Information (साइट व भुगतानकर्ता विवरण)
                     </span>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
                       <div>
                         <label className="text-slate-700 font-bold block mb-1">Payment ID (Auto/Manual)</label>
                         <input
@@ -6895,7 +7069,8 @@ const ProjectManagement = ({ onShowToast, isStaff = false }) => {
                             setNewPaymentForm({
                               ...newPaymentForm,
                               siteId: sid,
-                              customerName: matched ? (matched.customerName || matched.clientName || matched.name) : ''
+                              customerName: matched ? (matched.customerName || matched.clientName || matched.name) : '',
+                              siteStatus: matched ? (matched.siteStatus || matched.status || 'Running') : ''
                             });
                           }}
                           className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-900 font-bold font-mono focus:outline-none focus:border-emerald-500 cursor-pointer"
@@ -6918,6 +7093,38 @@ const ProjectManagement = ({ onShowToast, isStaff = false }) => {
                           onChange={(e) => setNewPaymentForm({ ...newPaymentForm, customerName: e.target.value })}
                           className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-900 font-bold focus:outline-none focus:border-emerald-500"
                         />
+                      </div>
+
+                      <div>
+                        <div className="flex items-center justify-between mb-1">
+                          <label className="text-slate-700 font-bold block">Site Status (साइट स्थिति)</label>
+                          {newPaymentForm.siteStatus && (
+                            <span className={`text-[10px] font-black uppercase px-1.5 py-0.5 rounded border ${
+                              newPaymentForm.siteStatus === 'Completed'
+                                ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
+                                : newPaymentForm.siteStatus === 'On Hold'
+                                ? 'bg-amber-100 text-amber-800 border-amber-300'
+                                : 'bg-blue-100 text-blue-800 border-blue-300'
+                            }`}>
+                              {newPaymentForm.siteStatus === 'Completed' ? '✅ Completed' : newPaymentForm.siteStatus}
+                            </span>
+                          )}
+                        </div>
+                        <select
+                          value={newPaymentForm.siteStatus || 'Running'}
+                          onChange={(e) => setNewPaymentForm({ ...newPaymentForm, siteStatus: e.target.value })}
+                          className={`w-full px-3.5 py-2.5 rounded-xl border text-xs sm:text-sm font-bold cursor-pointer transition-colors ${
+                            newPaymentForm.siteStatus === 'Completed'
+                              ? 'bg-emerald-50/80 border-emerald-400 text-emerald-900 focus:border-emerald-500'
+                              : newPaymentForm.siteStatus === 'On Hold'
+                              ? 'bg-amber-50/80 border-amber-400 text-amber-900 focus:border-amber-500'
+                              : 'bg-white border-slate-300 text-slate-800 focus:border-emerald-500'
+                          }`}
+                        >
+                          <option value="Running">Running (काम चालू है)</option>
+                          <option value="Completed">Completed (साइट पूरा हो गया - Mark Completed)</option>
+                          <option value="On Hold">On Hold (काम रुका हुआ है)</option>
+                        </select>
                       </div>
                     </div>
 
@@ -7224,7 +7431,7 @@ const ProjectManagement = ({ onShowToast, isStaff = false }) => {
 
             <form onSubmit={handleEditPaymentSave} className="space-y-4 text-xs">
               <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-3">
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
                   <div>
                     <label className="text-slate-700 font-bold block mb-1">Payment ID</label>
                     <input
@@ -7246,7 +7453,8 @@ const ProjectManagement = ({ onShowToast, isStaff = false }) => {
                         setEditingPayment({
                           ...editingPayment,
                           siteId: sid,
-                          customerName: matched ? (matched.customerName || matched.clientName || matched.name) : editingPayment.customerName
+                          customerName: matched ? (matched.customerName || matched.clientName || matched.name) : editingPayment.customerName,
+                          siteStatus: matched ? (matched.siteStatus || matched.status || 'Running') : (editingPayment.siteStatus || 'Running')
                         });
                       }}
                       className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-900 font-bold font-mono focus:outline-none focus:border-emerald-500 cursor-pointer"
@@ -7268,6 +7476,42 @@ const ProjectManagement = ({ onShowToast, isStaff = false }) => {
                       onChange={(e) => setEditingPayment({ ...editingPayment, customerName: e.target.value, payerName: e.target.value })}
                       className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-900 font-bold focus:outline-none focus:border-emerald-500"
                     />
+                  </div>
+
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="text-slate-700 font-bold block">Site Status (साइट स्थिति)</label>
+                      {(() => {
+                        const matched = sites.find(s => normSiteId(s.id) === normSiteId(editingPayment.siteId));
+                        const currSt = editingPayment.siteStatus || matched?.siteStatus || 'Running';
+                        return (
+                          <span className={`text-[10px] font-black uppercase px-1.5 py-0.5 rounded border ${
+                            currSt === 'Completed'
+                              ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
+                              : currSt === 'On Hold'
+                              ? 'bg-amber-100 text-amber-800 border-amber-300'
+                              : 'bg-blue-100 text-blue-800 border-blue-300'
+                          }`}>
+                            {currSt === 'Completed' ? '✅ Completed' : currSt}
+                          </span>
+                        );
+                      })()}
+                    </div>
+                    <select
+                      value={editingPayment.siteStatus || (sites.find(s => normSiteId(s.id) === normSiteId(editingPayment.siteId))?.siteStatus) || 'Running'}
+                      onChange={(e) => setEditingPayment({ ...editingPayment, siteStatus: e.target.value })}
+                      className={`w-full px-3.5 py-2.5 rounded-xl border text-xs sm:text-sm font-bold cursor-pointer transition-colors ${
+                        (editingPayment.siteStatus || (sites.find(s => normSiteId(s.id) === normSiteId(editingPayment.siteId))?.siteStatus)) === 'Completed'
+                          ? 'bg-emerald-50/80 border-emerald-400 text-emerald-900 focus:border-emerald-500'
+                          : (editingPayment.siteStatus || (sites.find(s => normSiteId(s.id) === normSiteId(editingPayment.siteId))?.siteStatus)) === 'On Hold'
+                          ? 'bg-amber-50/80 border-amber-400 text-amber-900 focus:border-amber-500'
+                          : 'bg-white border-slate-300 text-slate-800 focus:border-emerald-500'
+                      }`}
+                    >
+                      <option value="Running">Running (काम चालू है)</option>
+                      <option value="Completed">Completed (साइट पूरा हो गया - Mark Completed)</option>
+                      <option value="On Hold">On Hold (काम रुका हुआ है)</option>
+                    </select>
                   </div>
                 </div>
 
@@ -7509,7 +7753,7 @@ const ProjectManagement = ({ onShowToast, isStaff = false }) => {
                       1. Equipment & Site Specifications (उपकरण एवं साइट विवरण)
                     </span>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
                       <div>
                         <label className="text-slate-700 font-bold block mb-1">Budget Item ID (Auto/Manual)</label>
                         <input
@@ -7526,7 +7770,15 @@ const ProjectManagement = ({ onShowToast, isStaff = false }) => {
                         <select
                           required
                           value={newBudgetItemForm.siteId || ''}
-                          onChange={(e) => setNewBudgetItemForm({ ...newBudgetItemForm, siteId: e.target.value })}
+                          onChange={(e) => {
+                            const sid = e.target.value;
+                            const matched = sites.find((s) => normSiteId(s.id) === normSiteId(sid));
+                            setNewBudgetItemForm({
+                              ...newBudgetItemForm,
+                              siteId: sid,
+                              siteStatus: matched ? (matched.siteStatus || matched.status || 'Running') : ''
+                            });
+                          }}
                           className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-900 font-bold font-mono focus:outline-none focus:border-indigo-500 cursor-pointer"
                         >
                           <option value="">-- Select Consumer No. / Customer (ग्राहक चुनें) * --</option>
@@ -7535,6 +7787,38 @@ const ProjectManagement = ({ onShowToast, isStaff = false }) => {
                               👤 {s.customerName || s.clientName || s.name || 'Customer'} — No: {s.id} ({s.capacity ? `${s.capacity} kW` : 'kW'} • {s.siteType || 'Solar'})
                             </option>
                           ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <div className="flex items-center justify-between mb-1">
+                          <label className="text-slate-700 font-bold block">Site Status (साइट स्थिति)</label>
+                          {newBudgetItemForm.siteStatus && (
+                            <span className={`text-[10px] font-black uppercase px-1.5 py-0.5 rounded border ${
+                              newBudgetItemForm.siteStatus === 'Completed'
+                                ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
+                                : newBudgetItemForm.siteStatus === 'On Hold'
+                                ? 'bg-amber-100 text-amber-800 border-amber-300'
+                                : 'bg-blue-100 text-blue-800 border-blue-300'
+                            }`}>
+                              {newBudgetItemForm.siteStatus === 'Completed' ? '✅ Completed' : newBudgetItemForm.siteStatus}
+                            </span>
+                          )}
+                        </div>
+                        <select
+                          value={newBudgetItemForm.siteStatus || 'Running'}
+                          onChange={(e) => setNewBudgetItemForm({ ...newBudgetItemForm, siteStatus: e.target.value })}
+                          className={`w-full px-3.5 py-2.5 rounded-xl border text-xs sm:text-sm font-bold cursor-pointer transition-colors ${
+                            newBudgetItemForm.siteStatus === 'Completed'
+                              ? 'bg-emerald-50/80 border-emerald-400 text-emerald-900 focus:border-emerald-500'
+                              : newBudgetItemForm.siteStatus === 'On Hold'
+                              ? 'bg-amber-50/80 border-amber-400 text-amber-900 focus:border-amber-500'
+                              : 'bg-white border-slate-300 text-slate-800 focus:border-indigo-500'
+                          }`}
+                        >
+                          <option value="Running">Running (काम चालू है)</option>
+                          <option value="Completed">Completed (साइट पूरा हो गया - Mark Completed)</option>
+                          <option value="On Hold">On Hold (काम रुका हुआ है)</option>
                         </select>
                       </div>
 
@@ -7837,7 +8121,7 @@ const ProjectManagement = ({ onShowToast, isStaff = false }) => {
               return (
                 <form onSubmit={handleEditBudgetItemSave} className="space-y-4 text-xs">
                   <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-3">
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
                       <div>
                         <label className="text-slate-700 font-bold block mb-1">Budget ID</label>
                         <input
@@ -7853,7 +8137,15 @@ const ProjectManagement = ({ onShowToast, isStaff = false }) => {
                         <select
                           required
                           value={editingBudgetItem.siteId || ''}
-                          onChange={(e) => setEditingBudgetItem({ ...editingBudgetItem, siteId: e.target.value })}
+                          onChange={(e) => {
+                            const sid = e.target.value;
+                            const matched = sites.find(s => normSiteId(s.id) === normSiteId(sid));
+                            setEditingBudgetItem({
+                              ...editingBudgetItem,
+                              siteId: sid,
+                              siteStatus: matched ? (matched.siteStatus || matched.status || 'Running') : (editingBudgetItem.siteStatus || 'Running')
+                            });
+                          }}
                           className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-900 font-bold font-mono focus:outline-none focus:border-indigo-500 cursor-pointer"
                         >
                           <option value="">-- Select Consumer No. / Customer (ग्राहक चुनें) * --</option>
@@ -7862,6 +8154,42 @@ const ProjectManagement = ({ onShowToast, isStaff = false }) => {
                               👤 {s.customerName || s.clientName || s.name || 'Customer'} — No: {s.id} ({s.capacity ? `${s.capacity} kW` : 'kW'} • {s.siteType || 'Solar'})
                             </option>
                           ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <div className="flex items-center justify-between mb-1">
+                          <label className="text-slate-700 font-bold block">Site Status (साइट स्थिति)</label>
+                          {(() => {
+                            const matched = sites.find(s => normSiteId(s.id) === normSiteId(editingBudgetItem.siteId));
+                            const currSt = editingBudgetItem.siteStatus || matched?.siteStatus || 'Running';
+                            return (
+                              <span className={`text-[10px] font-black uppercase px-1.5 py-0.5 rounded border ${
+                                currSt === 'Completed'
+                                  ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
+                                  : currSt === 'On Hold'
+                                  ? 'bg-amber-100 text-amber-800 border-amber-300'
+                                  : 'bg-blue-100 text-blue-800 border-blue-300'
+                              }`}>
+                                {currSt === 'Completed' ? '✅ Completed' : currSt}
+                              </span>
+                            );
+                          })()}
+                        </div>
+                        <select
+                          value={editingBudgetItem.siteStatus || (sites.find(s => normSiteId(s.id) === normSiteId(editingBudgetItem.siteId))?.siteStatus) || 'Running'}
+                          onChange={(e) => setEditingBudgetItem({ ...editingBudgetItem, siteStatus: e.target.value })}
+                          className={`w-full px-3.5 py-2.5 rounded-xl border text-xs sm:text-sm font-bold cursor-pointer transition-colors ${
+                            (editingBudgetItem.siteStatus || (sites.find(s => normSiteId(s.id) === normSiteId(editingBudgetItem.siteId))?.siteStatus)) === 'Completed'
+                              ? 'bg-emerald-50/80 border-emerald-400 text-emerald-900 focus:border-emerald-500'
+                              : (editingBudgetItem.siteStatus || (sites.find(s => normSiteId(s.id) === normSiteId(editingBudgetItem.siteId))?.siteStatus)) === 'On Hold'
+                              ? 'bg-amber-50/80 border-amber-400 text-amber-900 focus:border-amber-500'
+                              : 'bg-white border-slate-300 text-slate-800 focus:border-indigo-500'
+                          }`}
+                        >
+                          <option value="Running">Running (काम चालू है)</option>
+                          <option value="Completed">Completed (साइट पूरा हो गया - Mark Completed)</option>
+                          <option value="On Hold">On Hold (काम रुका हुआ है)</option>
                         </select>
                       </div>
 
