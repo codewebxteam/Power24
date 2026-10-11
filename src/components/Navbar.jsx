@@ -43,7 +43,7 @@ const Navbar = ({ onOpenCustomKit }) => {
           <Link to="/" className="flex items-center gap-2 sm:gap-2.5 group shrink-0 py-1">
             <img
               src={p24Logo}
-              alt="Power24 & Solar Services Pvt Ltd"
+              alt="POWER24 & Solar Services Pvt. Ltd."
               className="h-9 sm:h-11 w-auto object-contain group-hover:scale-105 transition-transform duration-300 shrink-0"
             />
             <div className="flex items-center">
@@ -51,7 +51,7 @@ const Navbar = ({ onOpenCustomKit }) => {
                 <span className="text-[#d91478]">POWER</span>
                 <span className="text-[#16a34a]">24</span>
                 <span className="bg-gradient-to-r from-[#0284c7] via-[#16a34a] to-[#d91478] bg-clip-text text-transparent font-extrabold text-xs sm:text-sm lg:text-base ml-1">
-                  &amp; Solar Services Pvt Ltd
+                  &amp; Solar Services Pvt. Ltd.
                 </span>
               </span>
             </div>

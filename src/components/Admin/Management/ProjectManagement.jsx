@@ -96,6 +96,8 @@ const ProjectManagement = ({ onShowToast, isStaff = false }) => {
   const [siteSearch, setSiteSearch] = useState('');
   const [siteStatusFilter, setSiteStatusFilter] = useState('ALL');
   const [siteDistrictFilter, setSiteDistrictFilter] = useState('ALL');
+  const [siteTypeFilter, setSiteTypeFilter] = useState('ALL');
+  const [hubSiteTypeFilter, setHubSiteTypeFilter] = useState('ALL');
   const [expenseSearch, setExpenseSearch] = useState('');
   const [expenseCategoryFilter, setExpenseCategoryFilter] = useState('ALL');
   const [expenseSiteFilter, setExpenseSiteFilter] = useState('ALL');
@@ -422,7 +424,7 @@ const ProjectManagement = ({ onShowToast, isStaff = false }) => {
             <img src="${logoUrl}" alt="POWER24" onerror="this.style.display='none'">
             <div>
               <div class="brand-title">
-                <span class="p-pink">POWER</span><span class="p-green">24</span> <span class="p-blue">Solar Services Pvt Ltd</span>
+                <span class="p-pink">POWER</span><span class="p-green">24</span> <span class="p-blue">& Solar Services Pvt. Ltd.</span>
               </div>
               <div class="sub-text">
                 Authorized Rooftop Solar Installation & EPC Partner • Gorakhpur HQ, UP | Helpline: +91 94508 81224 | Web: www.power24.in
@@ -699,7 +701,7 @@ const ProjectManagement = ({ onShowToast, isStaff = false }) => {
             <img src="${logoUrl}" alt="POWER24" onerror="this.style.display='none'">
             <div>
               <div class="brand-title">
-                <span class="p-pink">POWER</span><span class="p-green">24</span> <span class="p-blue">Solar Services Pvt Ltd</span>
+                <span class="p-pink">POWER</span><span class="p-green">24</span> <span class="p-blue">& Solar Services Pvt. Ltd.</span>
               </div>
               <div style="font-size: 9px; color: #64748b; margin-top: 2px;">Gorakhpur HQ, UP | Helpline: +91 94508 81224 | Web: www.power24.in</div>
             </div>
@@ -843,7 +845,7 @@ const ProjectManagement = ({ onShowToast, isStaff = false }) => {
             <img src="${logoUrl}" alt="POWER24" onerror="this.style.display='none'">
             <div>
               <div class="brand-title">
-                <span class="p-pink">POWER</span><span class="p-green">24</span> <span class="p-blue">Solar Services Pvt Ltd</span>
+                <span class="p-pink">POWER</span><span class="p-green">24</span> <span class="p-blue">& Solar Services Pvt. Ltd.</span>
               </div>
               <div style="font-size: 9px; color: #64748b; margin-top: 2px;">Gorakhpur HQ, UP | Helpline: +91 94508 81224 | Web: www.power24.in</div>
             </div>
@@ -1029,6 +1031,8 @@ const ProjectManagement = ({ onShowToast, isStaff = false }) => {
 
   const filteredHubDropdownSites = sites
     .filter((s) => {
+      const matchType = hubSiteTypeFilter === 'ALL' || (s.siteType || 'On-Grid') === hubSiteTypeFilter;
+      if (!matchType) return false;
       if (!hubSearchQuery.trim()) return true;
       const q = hubSearchQuery.toLowerCase();
       return (
@@ -2236,11 +2240,11 @@ const ProjectManagement = ({ onShowToast, isStaff = false }) => {
             {/* Customer & Site Selector Combo Box */}
             <div className="mt-5 pt-5 border-t border-slate-700/60 grid grid-cols-1 md:grid-cols-12 gap-3 items-center">
               {/* Search Bar */}
-              <div className="md:col-span-4 relative">
+              <div className="md:col-span-3 relative">
                 <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
                 <input
                   type="text"
-                  placeholder="Filter customer, Consumer No., mobile..."
+                  placeholder="Filter customer, Consumer No...."
                   value={hubSearchQuery}
                   onChange={(e) => setHubSearchQuery(e.target.value)}
                   className="w-full pl-9 pr-8 py-2.5 bg-slate-900/90 border border-slate-700 rounded-xl text-xs text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -2255,8 +2259,23 @@ const ProjectManagement = ({ onShowToast, isStaff = false }) => {
                 )}
               </div>
 
+              {/* Site Type Dropdown Filter for Hub */}
+              <div className="md:col-span-2">
+                <select
+                  value={hubSiteTypeFilter}
+                  onChange={(e) => setHubSiteTypeFilter(e.target.value)}
+                  className="w-full py-2.5 px-3 bg-slate-900/90 border border-slate-700 rounded-xl text-xs font-bold text-white focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+                  title="Filter by Site Type"
+                >
+                  <option value="ALL">All Site Types</option>
+                  <option value="On-Grid">On-Grid</option>
+                  <option value="Off-Grid">Off-Grid</option>
+                  <option value="Hybrid">Hybrid</option>
+                </select>
+              </div>
+
               {/* Master Dropdown with Customer Name + Consumer No. + Capacity */}
-              <div className="md:col-span-8 flex items-center gap-2">
+              <div className="md:col-span-7 flex items-center gap-2">
                 <div className="relative flex-1">
                   <Building className="w-4 h-4 text-blue-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                   <select
@@ -3556,7 +3575,7 @@ const ProjectManagement = ({ onShowToast, isStaff = false }) => {
                 <span className="text-xs text-blue-200 font-mono">POWER24 ADVANCED ENTERPRISE</span>
               </div>
               <h2 className="text-base sm:text-lg font-black text-white tracking-wide uppercase font-mono mt-1">
-                POWER24Solar Services Pvt Ltd
+                POWER24 & Solar Services Pvt. Ltd.
               </h2>
               <h3 className="text-xs sm:text-sm font-bold text-sky-300 tracking-wider uppercase font-mono">
                 ADVANCED SOLAR SITE-WISE PROJECT PROFIT & LOSS — SITE MASTER
@@ -3625,6 +3644,20 @@ const ProjectManagement = ({ onShowToast, isStaff = false }) => {
                       {d}
                     </option>
                   ))}
+                </select>
+              </div>
+
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs font-bold text-slate-600">Site Type:</span>
+                <select
+                  value={siteTypeFilter}
+                  onChange={(e) => setSiteTypeFilter(e.target.value)}
+                  className="py-1.5 px-3 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-700 focus:outline-none focus:border-blue-500 cursor-pointer"
+                >
+                  <option value="ALL">All Site Types</option>
+                  <option value="On-Grid">On-Grid</option>
+                  <option value="Off-Grid">Off-Grid</option>
+                  <option value="Hybrid">Hybrid</option>
                 </select>
               </div>
 
@@ -3811,7 +3844,8 @@ const ProjectManagement = ({ onShowToast, isStaff = false }) => {
                         (st.district || '').toLowerCase().includes(siteSearch.toLowerCase());
                       const matchStatus = siteStatusFilter === 'ALL' || (st.siteStatus || st.status || 'Running') === siteStatusFilter;
                       const matchDistrict = siteDistrictFilter === 'ALL' || (st.district || '') === siteDistrictFilter;
-                      return matchQuery && matchStatus && matchDistrict;
+                      const matchType = siteTypeFilter === 'ALL' || (st.siteType || 'On-Grid') === siteTypeFilter;
+                      return matchQuery && matchStatus && matchDistrict && matchType;
                     });
 
                     return filteredSites.map((st, idx) => {
@@ -4090,7 +4124,8 @@ const ProjectManagement = ({ onShowToast, isStaff = false }) => {
                       (st.district || '').toLowerCase().includes(siteSearch.toLowerCase());
                     const matchStatus = siteStatusFilter === 'ALL' || (st.siteStatus || st.status || 'Running') === siteStatusFilter;
                     const matchDistrict = siteDistrictFilter === 'ALL' || (st.district || '') === siteDistrictFilter;
-                    return matchQuery && matchStatus && matchDistrict;
+                    const matchType = siteTypeFilter === 'ALL' || (st.siteType || 'On-Grid') === siteTypeFilter;
+                    return matchQuery && matchStatus && matchDistrict && matchType;
                   });
 
                   const smTotals = filteredSites.reduce(
@@ -4220,7 +4255,7 @@ const ProjectManagement = ({ onShowToast, isStaff = false }) => {
                 <span className="text-xs text-blue-200 font-mono">POWER24 ADVANCED ENTERPRISE</span>
               </div>
               <h2 className="text-base sm:text-lg font-black text-white tracking-wide uppercase font-mono mt-1">
-                POWER24Solar Services Pvt Ltd
+                POWER24 & Solar Services Pvt. Ltd.
               </h2>
               <h3 className="text-xs sm:text-sm font-bold text-sky-300 tracking-wider uppercase font-mono">
                 EXPENSE ENTRY – DATE-WISE MATERIAL / LABOUR / MISC COST
@@ -4650,7 +4685,7 @@ const ProjectManagement = ({ onShowToast, isStaff = false }) => {
                 <span className="text-xs text-blue-200 font-mono">POWER24 ADVANCED ENTERPRISE</span>
               </div>
               <h2 className="text-base sm:text-lg font-black text-white tracking-wide uppercase font-mono mt-1">
-                POWER24Solar Services Pvt Ltd
+                POWER24 & Solar Services Pvt. Ltd.
               </h2>
               <h3 className="text-xs sm:text-sm font-bold text-sky-300 tracking-wider uppercase font-mono">
                 PAYMENT ENTRY – CUSTOMER / LOAN / OTHER RECEIPTS
@@ -5091,7 +5126,7 @@ const ProjectManagement = ({ onShowToast, isStaff = false }) => {
                 <span className="text-xs text-blue-200 font-mono">POWER24 ADVANCED ENTERPRISE</span>
               </div>
               <h2 className="text-base sm:text-lg font-black text-white tracking-wide uppercase font-mono mt-1">
-                POWER24Solar Services Pvt Ltd
+                POWER24 & Solar Services Pvt. Ltd.
               </h2>
               <h3 className="text-xs sm:text-sm font-bold text-sky-300 tracking-wider uppercase font-mono">
                 SITE-WISE MATERIAL BUDGET VS ACTUAL (BOQ VARIANCE)
@@ -8137,7 +8172,7 @@ const ProjectManagement = ({ onShowToast, isStaff = false }) => {
                           <span className="text-[#d91478]">POWER</span>
                           <span className="text-[#16a34a]">24</span>{' '}
                           <span className="bg-gradient-to-r from-[#0284c7] via-[#16a34a] to-[#d91478] bg-clip-text text-transparent font-extrabold text-base sm:text-lg">
-                            Solar Services Pvt Ltd
+                            & Solar Services Pvt. Ltd.
                           </span>
                         </h1>
                         <p className="text-[10px] text-slate-600 font-semibold mt-1">
@@ -8466,7 +8501,7 @@ const ProjectManagement = ({ onShowToast, isStaff = false }) => {
                           <span className="text-[#d91478]">POWER</span>
                           <span className="text-[#16a34a]">24</span>{' '}
                           <span className="bg-gradient-to-r from-[#0284c7] via-[#16a34a] to-[#d91478] bg-clip-text text-transparent font-extrabold text-sm sm:text-base">
-                            Solar Services Pvt Ltd
+                            & Solar Services Pvt. Ltd.
                           </span>
                         </h1>
                         <p className="text-[10px] text-slate-600 font-semibold mt-1">
@@ -8616,7 +8651,7 @@ const ProjectManagement = ({ onShowToast, isStaff = false }) => {
                           <span className="text-[#d91478]">POWER</span>
                           <span className="text-[#16a34a]">24</span>{' '}
                           <span className="bg-gradient-to-r from-[#0284c7] via-[#16a34a] to-[#d91478] bg-clip-text text-transparent font-extrabold text-sm sm:text-base">
-                            Solar Services Pvt Ltd
+                            & Solar Services Pvt. Ltd.
                           </span>
                         </h1>
                         <p className="text-[10px] text-slate-600 font-semibold mt-1">

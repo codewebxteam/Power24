@@ -7,8 +7,8 @@ const FaqSection = () => {
 
   const faqs = [
     {
-      q: 'POWER24Solar Services Pvt Ltd कंपनी क्या है और इसका ऑफिस कहाँ है?',
-      a: 'POWER24Solar Services Pvt Ltd उत्तर प्रदेश की शीर्ष सोलर रूफटॉप और ईपीसी (EPC) कंपनी है। हमारा रजिस्टर्ड ऑफिस House No-46 F Nahar Road Shivpur Near MMM Engineering College Kurnaghat Gorakhpur UP (हेल्पलाइन: +91 7398198475) में स्थित है। हम PM Surya Ghar Muft Bijli Yojana के तहत ₹1,08,000 तक की सरकारी सब्सिडी, नेट मीटरिंग और 25 साल की वारंटी वाले Tier-1 सोलर सिस्टम प्रदान करते हैं।',
+      q: 'POWER24 & Solar Services Pvt. Ltd. कंपनी क्या है और इसका ऑफिस कहाँ है?',
+      a: 'POWER24 & Solar Services Pvt. Ltd. उत्तर प्रदेश की शीर्ष सोलर रूफटॉप और ईपीसी (EPC) कंपनी है। हमारा रजिस्टर्ड ऑफिस House No-46 F Nahar Road Shivpur Near MMM Engineering College Kurnaghat Gorakhpur UP (हेल्पलाइन: +91 7398198475) में स्थित है। हम PM Surya Ghar Muft Bijli Yojana के तहत ₹1,08,000 तक की सरकारी सब्सिडी, नेट मीटरिंग और 25 साल की वारंटी वाले Tier-1 सोलर सिस्टम प्रदान करते हैं।',
     },
     {
       q: 'पीएम सूर्य घर मुफ्त बिजली योजना के तहत कितनी सब्सिडी मिलती है?',

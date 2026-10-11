@@ -85,7 +85,7 @@ const Contacts = () => {
     <div className="bg-slate-50 min-h-screen text-slate-950 py-10 sm:py-16 font-['Outfit',sans-serif]">
       <SEO
         title="Contact Us - Helpline & Office"
-        description="Contact POWER24Solar Services Pvt Ltd. Phone: +91 7398198475. Office: House No-46 F Nahar Road Shivpur, Gorakhpur UP."
+        description="Contact POWER24 & Solar Services Pvt. Ltd. Phone: +91 7398198475. Office: House No-46 F Nahar Road Shivpur, Gorakhpur UP."
         canonical="https://power24.in/contact"
         keywords="Contact Power24, Power 24 phone number, Power 24 Gorakhpur office, Power24 Solar helpline, Solar company contact UP"
       />
@@ -168,7 +168,7 @@ const Contacts = () => {
                   Government Registered Entity
                 </span>
                 <h3 className="text-xl sm:text-2xl font-black text-slate-950">
-                  POWER24Solar Services Pvt Ltd
+                  POWER24 & Solar Services Pvt. Ltd.
                 </h3>
                 <p className="text-xs text-slate-500 font-bold mt-0.5">
                   Engineering Excellence in Power & Renewable Energy Infrastructure

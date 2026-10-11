@@ -27,7 +27,7 @@ const Hero = ({ onOpenCustomKit }) => {
             {/* Top Welcome Tag */}
             <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-slate-950/40 backdrop-blur-md border border-white/40 text-[10px] sm:text-xs font-bold tracking-widest text-emerald-300 uppercase shadow-lg">
               <Zap className="w-3.5 h-3.5 text-[#d91478] fill-[#d91478]" />
-              <span>POWER24Solar Services Pvt Ltd • Gorakhpur, UP</span>
+              <span>POWER24 & Solar Services Pvt. Ltd. • Gorakhpur, UP</span>
             </div>
 
             {/* Main Headline */}

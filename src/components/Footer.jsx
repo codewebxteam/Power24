@@ -23,7 +23,7 @@ const Footer = () => {
               <div>
                 <span className="text-xl sm:text-2xl font-black tracking-tight text-white block leading-tight">
                   <span className="text-[#d91478]">POWER</span><span className="text-[#16a34a]">24</span>
-                  <span className="bg-gradient-to-r from-emerald-400 via-sky-300 to-pink-400 bg-clip-text text-transparent text-lg ml-1 font-bold">&amp; Solar Services Pvt Ltd</span>
+                  <span className="bg-gradient-to-r from-emerald-400 via-sky-300 to-pink-400 bg-clip-text text-transparent text-lg ml-1 font-bold">&amp; Solar Services Pvt. Ltd.</span>
                 </span>
                 <span className="text-xs sm:text-sm text-emerald-400 font-bold block tracking-wide mt-0.5">
                   (Engineering Excellence in Power & Renewables)
@@ -134,7 +134,7 @@ const Footer = () => {
 
         {/* Bottom Bar */}
         <div className="pt-6 sm:pt-8 flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4 text-xs sm:text-sm text-slate-400 text-center sm:text-left font-medium">
-          <p>© 2026 POWER24Solar Services Pvt Ltd. All rights reserved.</p>
+          <p>© 2026 POWER24 & Solar Services Pvt. Ltd. All rights reserved.</p>
           <div className="flex items-center gap-4 sm:gap-6 flex-wrap justify-center">
             <button
               type="button"
@@ -183,7 +183,7 @@ const Footer = () => {
                   <h3 className="text-lg sm:text-xl font-black text-white">
                     {legalModal === 'privacy' ? 'Privacy Policy' : 'Terms of Service'}
                   </h3>
-                  <p className="text-xs text-slate-400">POWER24Solar Services Pvt Ltd</p>
+                  <p className="text-xs text-slate-400">POWER24 & Solar Services Pvt. Ltd.</p>
                 </div>
               </div>
               <button
