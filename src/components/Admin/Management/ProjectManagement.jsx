@@ -152,6 +152,7 @@ const ProjectManagement = ({ onShowToast, isStaff = false }) => {
     customerName: '',
     siteAddress: '',
     district: '',
+    siteType: 'On-Grid',
     capacity: '',
     projectValue: '',
     loanAmount: '',
@@ -453,8 +454,8 @@ const ProjectManagement = ({ onShowToast, isStaff = false }) => {
             <span class="field-val">${st.siteAddress || st.district || '-'}</span>
           </div>
           <div>
-            <span class="field-label">Solar Capacity</span>
-            <span class="field-val mono" style="color: #0284c7;">${st.capacity || '-'} kW</span>
+            <span class="field-label">Solar Capacity & Type</span>
+            <span class="field-val mono" style="color: #0284c7;">${st.capacity || '-'} kW (${st.siteType || 'On-Grid'})</span>
           </div>
           <div>
             <span class="field-label">Consumer / CA No.</span>
@@ -1174,6 +1175,7 @@ const ProjectManagement = ({ onShowToast, isStaff = false }) => {
       siteAddress: newSiteForm.siteAddress || newSiteForm.location || '',
       location: newSiteForm.siteAddress || newSiteForm.location || '',
       district: newSiteForm.district || '',
+      siteType: newSiteForm.siteType || 'On-Grid',
       projectValue: Number(newSiteForm.projectValue) || 0,
       loanAmount: loan,
       customerMargin: margin,
@@ -1204,6 +1206,7 @@ const ProjectManagement = ({ onShowToast, isStaff = false }) => {
       details: [
         { label: 'Consumer No.', value: consumerNo, highlight: true },
         { label: 'Customer Name', value: customer },
+        { label: 'Site Type', value: newSiteForm.siteType || 'On-Grid', highlight: true },
         { label: 'Solar Capacity', value: `${newSiteForm.capacity || '-'} kW` },
         { label: 'District / Location', value: newSiteForm.district || newSiteForm.siteAddress || '-' },
         { label: 'Project Value', value: formatINR(newSiteForm.projectValue || 0) },
@@ -1248,6 +1251,7 @@ const ProjectManagement = ({ onShowToast, isStaff = false }) => {
       siteAddress: editingSite.siteAddress || editingSite.location || '',
       location: editingSite.siteAddress || editingSite.location || '',
       district: editingSite.district || '',
+      siteType: editingSite.siteType || 'On-Grid',
       projectValue: Number(editingSite.projectValue) || 0,
       loanAmount: loan,
       customerMargin: margin,
@@ -1278,6 +1282,7 @@ const ProjectManagement = ({ onShowToast, isStaff = false }) => {
       details: [
         { label: 'Consumer No.', value: editingSite.id, highlight: true },
         { label: 'Customer Name', value: customer },
+        { label: 'Site Type', value: editingSite.siteType || 'On-Grid', highlight: true },
         { label: 'Solar Capacity', value: `${editingSite.capacity || '-'} kW` },
         { label: 'Total Income', value: formatINR(calcIncome) },
         { label: 'Total Expenses', value: formatINR(totExp) },
@@ -1329,6 +1334,7 @@ const ProjectManagement = ({ onShowToast, isStaff = false }) => {
       'Customer Name',
       'Site Address',
       'District',
+      'Site Type',
       'System (kW)',
       'Project Value',
       'Loan Amount',
@@ -1389,6 +1395,7 @@ const ProjectManagement = ({ onShowToast, isStaff = false }) => {
         `"${(st.customerName || st.clientName || '').replace(/"/g, '""')}"`,
         `"${(st.siteAddress || st.location || '').replace(/"/g, '""')}"`,
         `"${st.district || ''}"`,
+        `"${st.siteType || 'On-Grid'}"`,
         `"${st.capacity || ''}"`,
         st.projectValue || 0,
         loanAmt,
@@ -3674,7 +3681,7 @@ const ProjectManagement = ({ onShowToast, isStaff = false }) => {
                     </th>
                     <th className="p-3 border-r border-blue-700 whitespace-nowrap text-center min-w-[110px]">
                       <div className="flex items-center justify-center gap-1">
-                        <span>System (kW)</span>
+                        <span>System / Type</span>
                         <ChevronDown className="w-3 h-3 text-blue-200" />
                       </div>
                     </th>
@@ -3881,9 +3888,18 @@ const ProjectManagement = ({ onShowToast, isStaff = false }) => {
                             {st.district || '-'}
                           </td>
 
-                          {/* 5. System (kW) */}
-                          <td className="p-3 border-r border-blue-100 text-center font-bold text-blue-700">
-                            {st.capacity || '-'}
+                          {/* 5. System (kW) & Site Type */}
+                          <td className="p-3 border-r border-blue-100 text-center font-bold text-blue-700 whitespace-nowrap">
+                            <div>{st.capacity ? `${st.capacity} kW` : '-'}</div>
+                            <span className={`inline-block mt-0.5 px-1.5 py-0.5 rounded text-[10px] font-bold ${
+                              (st.siteType || 'On-Grid') === 'Off-Grid'
+                                ? 'bg-amber-100 text-amber-800 border border-amber-200'
+                                : (st.siteType || 'On-Grid') === 'Hybrid'
+                                ? 'bg-purple-100 text-purple-800 border border-purple-200'
+                                : 'bg-blue-100 text-blue-800 border border-blue-200'
+                            }`}>
+                              {st.siteType || 'On-Grid'}
+                            </span>
                           </td>
 
                           {/* 6. Project Value */}
@@ -5534,7 +5550,7 @@ const ProjectManagement = ({ onShowToast, isStaff = false }) => {
                       />
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                       <div>
                         <label className="text-slate-700 font-bold block mb-1">District *</label>
                         <select
@@ -5549,6 +5565,20 @@ const ProjectManagement = ({ onShowToast, isStaff = false }) => {
                               {d}
                             </option>
                           ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="text-slate-700 font-bold block mb-1">Site Type *</label>
+                        <select
+                          required
+                          value={newSiteForm.siteType || 'On-Grid'}
+                          onChange={(e) => setNewSiteForm({ ...newSiteForm, siteType: e.target.value })}
+                          className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-900 font-bold focus:outline-none focus:border-blue-500 cursor-pointer"
+                        >
+                          <option value="On-Grid">On-Grid</option>
+                          <option value="Off-Grid">Off-Grid</option>
+                          <option value="Hybrid">Hybrid</option>
                         </select>
                       </div>
 
@@ -5803,7 +5833,7 @@ const ProjectManagement = ({ onShowToast, isStaff = false }) => {
                       />
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                       <div>
                         <label className="text-slate-700 font-bold block mb-1">District</label>
                         <select
@@ -5817,6 +5847,19 @@ const ProjectManagement = ({ onShowToast, isStaff = false }) => {
                               {d}
                             </option>
                           ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="text-slate-700 font-bold block mb-1">Site Type</label>
+                        <select
+                          value={editingSite.siteType || 'On-Grid'}
+                          onChange={(e) => setEditingSite({ ...editingSite, siteType: e.target.value })}
+                          className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-900 font-bold focus:outline-none focus:border-blue-500 cursor-pointer"
+                        >
+                          <option value="On-Grid">On-Grid</option>
+                          <option value="Off-Grid">Off-Grid</option>
+                          <option value="Hybrid">Hybrid</option>
                         </select>
                       </div>
 
