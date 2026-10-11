@@ -27,8 +27,8 @@ const Navbar = ({ onOpenCustomKit }) => {
   const firstName = rawName ? rawName.split(' ')[0] : 'User';
 
   const navLinks = [
-    { name: 'HOME', path: '/' },
-    { name: 'PRODUCT', path: '/product' },
+    { name: 'PRODUCTS', path: '/' },
+    { name: 'HOME', path: '/home' },
     { name: 'ABOUT', path: '/about' },
     { name: 'GALLERY', path: '/gallery' },
     { name: 'CONTACT', path: '/contact' },
@@ -43,37 +43,43 @@ const Navbar = ({ onOpenCustomKit }) => {
           <Link to="/" className="flex items-center gap-2 sm:gap-2.5 group shrink-0 py-1">
             <img
               src={p24Logo}
-              alt="Power24 Solar - Power 24 Rooftop Solar Energy Services"
+              alt="Power24 & Solar"
               className="h-9 sm:h-11 w-auto object-contain group-hover:scale-105 transition-transform duration-300 shrink-0"
             />
             <div className="flex items-center">
-              <span className="text-base sm:text-lg lg:text-xl font-black tracking-tight font-['Outfit',sans-serif] whitespace-nowrap flex items-center gap-0.5">
-                <span className="text-[#d91478]">POWER</span>
-                <span className="text-[#16a34a]">24</span>
-                <span className="bg-gradient-to-r from-[#0284c7] via-[#16a34a] to-[#d91478] bg-clip-text text-transparent font-extrabold text-xs sm:text-sm lg:text-base ml-1">
-                  Solar Services Pvt Ltd
-                </span>
+              <span className="text-base sm:text-lg lg:text-xl font-black tracking-tight font-['Outfit',sans-serif] whitespace-nowrap flex items-center gap-1">
+                <span className="text-[#d91478]">Power</span><span className="text-[#16a34a]">24</span>
+                <span className="text-slate-600 font-extrabold">&amp;</span>
+                <span className="text-[#0284c7]">Solar</span>
               </span>
             </div>
           </Link>
 
           {/* 2. Center Navigation Links (Clean, Compact, Colorful) */}
           <nav className="hidden lg:flex items-center gap-1 bg-slate-100/90 border border-slate-200/90 rounded-full p-1 shadow-inner">
-            {navLinks.map((link) => (
-              <NavLink
-                key={link.name}
-                to={link.path}
-                className={({ isActive }) =>
-                  `px-3 xl:px-4 py-1.5 text-[11px] xl:text-xs font-black tracking-wider uppercase transition-all duration-200 rounded-full ${
-                    isActive
-                      ? 'bg-gradient-to-r from-[#d91478] to-[#16a34a] text-white shadow-md shadow-[#d91478]/25'
-                      : 'text-slate-700 hover:text-[#d91478] hover:bg-white/90'
-                  }`
-                }
-              >
-                {link.name}
-              </NavLink>
-            ))}
+            {navLinks.map((link) => {
+              const isCurrentActive =
+                (link.name === 'PRODUCTS' && (location.pathname === '/' || location.pathname.startsWith('/product'))) ||
+                (link.name === 'HOME' && location.pathname === '/home') ||
+                (link.name === 'ABOUT' && location.pathname === '/about') ||
+                (link.name === 'GALLERY' && location.pathname === '/gallery') ||
+                (link.name === 'CONTACT' && (location.pathname === '/contact' || location.pathname === '/contacts'));
+              return (
+                <NavLink
+                  key={link.name}
+                  to={link.path}
+                  className={() =>
+                    `px-3 xl:px-4 py-1.5 text-[11px] xl:text-xs font-black tracking-wider uppercase transition-all duration-200 rounded-full ${
+                      isCurrentActive
+                        ? 'bg-gradient-to-r from-[#d91478] to-[#16a34a] text-white shadow-md shadow-[#d91478]/25'
+                        : 'text-slate-700 hover:text-[#d91478] hover:bg-white/90'
+                    }`
+                  }
+                >
+                  {link.name}
+                </NavLink>
+              );
+            })}
           </nav>
 
           {/* 3. Right CTA Buttons (Desktop) */}
@@ -158,22 +164,30 @@ const Navbar = ({ onOpenCustomKit }) => {
         {isOpen && (
           <div className="lg:hidden py-4 border-t border-slate-100 space-y-3 bg-white/98 animate-in fade-in slide-in-from-top-2">
             <div className="flex flex-col space-y-1.5">
-              {navLinks.map((link) => (
-                <NavLink
-                  key={link.name}
-                  to={link.path}
-                  onClick={() => setIsOpen(false)}
-                  className={({ isActive }) =>
-                    `px-5 py-3.5 text-sm font-black uppercase tracking-wider rounded-2xl transition-all flex items-center justify-between ${
-                      isActive
-                        ? 'bg-gradient-to-r from-[#d91478] to-[#16a34a] text-white shadow-sm'
-                        : 'text-slate-800 hover:bg-slate-100'
-                    }`
-                  }
-                >
-                  <span>{link.name}</span>
-                </NavLink>
-              ))}
+              {navLinks.map((link) => {
+                const isCurrentActive =
+                  (link.name === 'PRODUCTS' && (location.pathname === '/' || location.pathname.startsWith('/product'))) ||
+                  (link.name === 'HOME' && location.pathname === '/home') ||
+                  (link.name === 'ABOUT' && location.pathname === '/about') ||
+                  (link.name === 'GALLERY' && location.pathname === '/gallery') ||
+                  (link.name === 'CONTACT' && (location.pathname === '/contact' || location.pathname === '/contacts'));
+                return (
+                  <NavLink
+                    key={link.name}
+                    to={link.path}
+                    onClick={() => setIsOpen(false)}
+                    className={() =>
+                      `px-5 py-3.5 text-sm font-black uppercase tracking-wider rounded-2xl transition-all flex items-center justify-between ${
+                        isCurrentActive
+                          ? 'bg-gradient-to-r from-[#d91478] to-[#16a34a] text-white shadow-sm'
+                          : 'text-slate-800 hover:bg-slate-100'
+                      }`
+                    }
+                  >
+                    <span>{link.name}</span>
+                  </NavLink>
+                );
+              })}
 
               {onOpenCustomKit && (
                 <button

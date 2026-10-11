@@ -41,8 +41,10 @@ const AppLayout = () => {
       <div className="flex-grow">
         <ErrorBoundary>
           <Routes>
-            <Route path="/" element={<Home onOpenCustomKit={() => setIsCustomKitOpen(true)} />} />
+            <Route path="/" element={<Product onOpenCustomKit={() => setIsCustomKitOpen(true)} />} />
             <Route path="/product" element={<Product onOpenCustomKit={() => setIsCustomKitOpen(true)} />} />
+            <Route path="/products" element={<Product onOpenCustomKit={() => setIsCustomKitOpen(true)} />} />
+            <Route path="/home" element={<Home onOpenCustomKit={() => setIsCustomKitOpen(true)} />} />
             <Route path="/product/:id" element={<ProductDetail />} />
             <Route path="/about" element={<About />} />
             <Route path="/gallery" element={<Gallery />} />
@@ -72,7 +74,7 @@ const AppLayout = () => {
             <Route path="/staff/login" element={<StaffLogin />} />
             <Route path="/staff/dashboard" element={<StaffDashboard />} />
 
-            <Route path="*" element={<Home onOpenCustomKit={() => setIsCustomKitOpen(true)} />} />
+            <Route path="*" element={<Product onOpenCustomKit={() => setIsCustomKitOpen(true)} />} />
           </Routes>
         </ErrorBoundary>
       </div>

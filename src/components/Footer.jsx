@@ -22,8 +22,9 @@ const Footer = () => {
               />
               <div>
                 <span className="text-xl sm:text-2xl font-black tracking-tight text-white block leading-tight">
-                  <span className="text-[#d91478]">POWER</span><span className="text-[#16a34a]">24</span>
-                  <span className="bg-gradient-to-r from-emerald-400 via-sky-300 to-pink-400 bg-clip-text text-transparent text-lg ml-1 font-bold">Solar Services Pvt Ltd</span>
+                  <span className="text-[#d91478]">Power</span><span className="text-[#16a34a]">24</span>
+                  <span className="text-slate-400 font-extrabold mx-1">&amp;</span>
+                  <span className="bg-gradient-to-r from-emerald-400 via-sky-300 to-pink-400 bg-clip-text text-transparent text-lg font-bold">Solar</span>
                 </span>
                 <span className="text-xs sm:text-sm text-emerald-400 font-bold block tracking-wide mt-0.5">
                   (Engineering Excellence in Power & Renewables)
@@ -58,10 +59,10 @@ const Footer = () => {
             <h4 className="text-xs sm:text-sm font-black text-white uppercase tracking-wider mb-3 sm:mb-4">Quick Links</h4>
             <ul className="space-y-2.5 sm:space-y-3 text-sm">
               <li>
-                <Link to="/" className="text-slate-300 hover:text-emerald-400 font-medium transition-colors">Home</Link>
+                <Link to="/" className="text-slate-300 hover:text-emerald-400 font-medium transition-colors">Products</Link>
               </li>
               <li>
-                <Link to="/product" className="text-slate-300 hover:text-emerald-400 font-medium transition-colors">Products</Link>
+                <Link to="/home" className="text-slate-300 hover:text-emerald-400 font-medium transition-colors">Home</Link>
               </li>
               <li>
                 <Link to="/about" className="text-slate-300 hover:text-emerald-400 font-medium transition-colors">About Us</Link>
