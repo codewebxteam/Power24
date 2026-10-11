@@ -64,12 +64,15 @@ import {
   addManagementBudgetItem,
   updateManagementBudgetItem,
   deleteManagementBudgetItem,
-  saveManagementMaterialBudget
+  saveManagementMaterialBudget,
+  getStaffAuth,
+  getAdminAuth
 } from '../../../utils/storage';
 import PendingPaymentsModal from './PendingPaymentsModal.jsx';
 import { UP_DISTRICTS } from '../../../utils/districts';
 
-const ProjectManagement = ({ onShowToast }) => {
+const ProjectManagement = ({ onShowToast, isStaff = false }) => {
+  const isStaffUser = Boolean(isStaff || (getStaffAuth() && !getAdminAuth()));
   // Sub-tabs: 'all_in_one' | 'dashboard' | 'site_master' | 'expense_entry' | 'payment_entry' | 'material_budget'
   const [subTab, setSubTab] = useState('all_in_one');
   const [showLogicRulesGuide, setShowLogicRulesGuide] = useState(false);
@@ -1278,6 +1281,10 @@ const ProjectManagement = ({ onShowToast }) => {
   };
 
   const handleDeleteSite = (id) => {
+    if (isStaffUser) {
+      toast('Access Denied: Staff members cannot delete solar sites. Only Admin has deletion rights.');
+      return;
+    }
     setPendingConfirm({
       title: `Confirm Deletion for Consumer No. #${id}`,
       subtitle: 'This will permanently remove the project site and all associated financial records.',
@@ -4024,14 +4031,16 @@ const ProjectManagement = ({ onShowToast }) => {
                               >
                                 <Edit2 className="w-3.5 h-3.5" />
                               </button>
-                              <button
-                                type="button"
-                                onClick={() => handleDeleteSite(st.id)}
-                                className="p-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 transition-colors cursor-pointer"
-                                title="Delete Site"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
+                              {!isStaffUser && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteSite(st.id)}
+                                  className="p-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 transition-colors cursor-pointer"
+                                  title="Delete Site (Admin Only)"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              )}
                             </div>
                           </td>
                         </tr>

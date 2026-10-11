@@ -132,7 +132,7 @@ const StaffDashboard = () => {
 
       {/* Main Workspace: 100% Same-to-Same Complete Project Management Module */}
       <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
-        <ProjectManagement onShowToast={showToast} />
+        <ProjectManagement onShowToast={showToast} isStaff={true} />
       </main>
 
       {/* Staff Portal Footer */}
