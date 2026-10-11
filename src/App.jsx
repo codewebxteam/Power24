@@ -18,6 +18,7 @@ import UserDashboard from './Pages/User/UserDashboard.jsx';
 import { getAdminAuth, getStaffAuth, initFirebaseAutoSync } from './utils/storage.js';
 import CustomKitModal from './components/CustomKit/CustomKitModal.jsx';
 import ScrollToTop from './components/ScrollToTop.jsx';
+import ScrollNavigator from './components/common/ScrollNavigator.jsx';
 import ErrorBoundary from './components/common/ErrorBoundary.jsx';
 
 // Layout wrapper to hide public Navbar/Footer on Admin and Staff screens
@@ -86,6 +87,7 @@ const AppLayout = () => {
       />
 
       {!isPortalView && <Footer />}
+      {!isPortalView && <ScrollNavigator />}
     </div>
   );
 };
